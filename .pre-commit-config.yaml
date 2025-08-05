@@ -1,0 +1,39 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-ast
+      - id: check-added-large-files
+      - id: check-case-conflict
+      # - id: check-json # we use check-json5 until this check-json allows comments
+      - id: check-toml
+      - id: check-xml
+      - id: check-yaml
+        args: ["--allow-multiple-documents"]
+      - id: check-merge-conflict
+      # - id: check-shebang-scripts-are-executable # not yet sure if we want to use this hook
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+      - id: check-docstring-first
+      - id: debug-statements
+      # - id: no-commit-to-branch
+      #   args: [--branch, main]
+  - repo: https://gitlab.com/bmares/check-json5
+    rev: v1.0.0
+    hooks:
+      - id: check-json5
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.13  # latest as of Jun 5, 2025
+    hooks:
+      - id: ruff
+        name: ruff check
+        args: [--fix]
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: ruff format
+        types_or: [python, pyi]
+  - repo: https://gitlab.com/schmieder.matthias/python-kacl
+    rev: 'v0.6.5' # latest as of Jun 26, 2025
+    hooks:
+      - id: kacl-verify

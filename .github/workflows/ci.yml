@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:  # to allow manual triggering
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  CI:
+    timeout-minutes: 10
+    name: Python CI pipeline
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure Poetry
+      run: pipx install poetry
+
+    - name: Configure Python
+      uses: actions/setup-python@v5 # uses .python-version file by default to determine version
+      with:
+        cache: 'poetry'
+
+    - name: Confirm Python and Poetry version
+      run: |
+        python --version
+        poetry --version
+
+    - name: Poetry install
+      run: poetry install
+
+    - name: Poetry lock check
+      run: poetry check --lock
+
+    - name: Check ruff
+      run: make check_ruff
+
+    - name: Check mypy
+      run: make check_mypy
+
+    - name: Run pytests
+      run: make pytest
+
+    - name: Upload Test Artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+          name: test_report
+          path: python_test_report.xml
+
+  publish-pytest-results:
+    needs: [CI]
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      # not needed with comment_mode: off
+      pull-requests: write
+      # only needed for private repository
+      contents: read
+      # only needed for private repository
+      issues: read
+    if: always()
+
+    steps:
+    - name: Download Test Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: test_report
+        path: artifacts
+
+    - name: Publish Test Results
+      id: test-results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: "artifacts/**/*.xml"
+
+    - name: Test Report Conclusion
+      run: echo "The tests conclusion is ${{ fromJSON( steps.test-results.outputs.json ).conclusion }}"

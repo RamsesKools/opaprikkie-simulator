@@ -1,0 +1,162 @@
+[tool.poetry]
+authors = ["Ramses Kools <ramseskools@hotmail.com>"]
+classifiers = [
+  "Programming Language :: Python :: 3.12",
+]
+description = "An example Python Project"
+documentation = "https://github.com/RamsesKools/opaprikkie-simulator"
+homepage = "https://github.com/RamsesKools/opaprikkie-simulator"
+include = ["CHANGELOG.md", "README.md"]
+keywords = ["opaprikkie", "simulator", "simulation"]
+name = "opaprikkie_sim"
+packages = [
+  {include = "opaprikkie-sim", from = "src"},
+]
+readme = "README.md"
+repository = "https://github.com/RamsesKools/opaprikkie-simulator"
+version = "0.1.0"
+
+[tool.poetry.dependencies]
+numpy = "^1.19.5"
+python = ">=3.12,<4"
+
+[tool.poetry.group.dev.dependencies]
+hypothesis = "^6.121.0"
+mypy = "^1.0"
+myst-parser = "^2.0"
+pre-commit = "^3.7.0"
+pytest = "^7.0.1"
+pytest-cov = "^4.0.0"
+python-kacl = "^0.6.5" # keepachangelog
+ruff = "==0.11.13"
+
+[tool.ruff]
+#https://github.com/astral-sh/ruff?tab=readme-ov-file
+exclude = [
+  ".eggs",
+  ".hg",
+  ".git",
+  ".mypy_cache",
+  ".tox",
+  ".venv",
+  "_build",
+  "build",
+  "dist",
+  "docs",
+]
+indent-width = 4
+line-length = 100
+target-version = "py312"
+
+src = ["src"]
+
+[tool.ruff.lint]
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+ignore = [
+  "E203", # whitespace after :
+  "E722", # bare except  # warning: `one-blank-line-before-class` (D203) and `no-blank-line-before-class` (D211) are incompatible.
+  "D211", # no-blank-line-before-class
+  "D213", # start multi line summary on first line
+  "COM812",
+  "ISC001", # may cause conflicts with the formatter
+  "ANN001",
+  "ANN204", # ignore obvious typehints
+  "D100",
+  "D101",
+  "D102",
+  "D103",
+  "D104",
+  "D105",
+  "D107", # not forcing to write docstrings
+  "D203", # No blank line before class summary
+  "D205", # No blank-line-after-summary
+  "D411",
+  "D417",
+  "D406",
+  "D407",
+  "D413",
+  "D415",
+  "D400",
+  "D401", # we choose ourselves how we write docstrings
+  "SIM108", # I think if-else block assignment is more readable
+  "ERA001", # Allow commenting out code
+  "FBT001", # Allow boolean type function arguments
+  "DTZ001",
+  "DTZ005",
+  "DTZ007", # Allow datetime with tzinfo
+  "PT015",
+  "B011", # Allow Assert False
+  "EM101", # Allow setting exception message in exception
+  "EM102", # Allow f-string in exception
+  "G004", # Allow f-string in log
+  "TRY003", # Allow custom exception message for each usage
+  "S101", # Allow assert
+  "FBT", # Allow boolean as function arguments
+  "RET505", # Allow unnecessary else after return
+  "PLR1714", # Don't merge multiple comparisons for better readability
+  "TD004",
+  "TD003",
+  "TD002",
+  "FIX002", # Allow # TODO's
+]
+select = ["ALL"] # TODO Maybe not select ALL?
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+  "S101", # asserts allowed in tests...
+  "ARG", # Unused function args -> fixtures nevertheless are functionally relevant...
+  "FBT", # Don't care about booleans as positional arguments in tests, e.g. via @pytest.mark.parametrize()
+  "PLR2004", # Magic value used in comparison
+  "ANN201", # ignore missing return type for test_...() function
+  "ANN001", # ignore annotation for function arguments,
+  "PT011", # allow catch broad exception, e.g. catch(ValueError)  #    "S311", # Standard pseudo-random generators are not suitable for cryptographic purposes
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+force-single-line = false
+split-on-trailing-comma = false
+
+[tool.pytest.ini_options]
+# here some specific options for pytest
+markers = [
+  'slow: marks tests as slow (deselect with `-m "not slow"`)',
+]
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+  'pragma: no cover',
+  'raise NotImplementedError',
+  '\.\.\.',
+]
+fail_under = 90
+
+[tool.coverage.html]
+directory = './coverage'
+
+[tool.coverage.xml]
+output = './coverage/cov.xml'
+
+[tool.mypy]
+# https://mypy.readthedocs.io/en/stable/command_line.html#cmdoption-mypy-strict
+strict = true # Can be put to false to allow for less stringent checking
+
+[[tool.mypy.overrides]]
+check_untyped_defs = true
+disallow_untyped_defs = false
+module = "tests.*"
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = [
+  "numpy.*",
+]
+
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0"]

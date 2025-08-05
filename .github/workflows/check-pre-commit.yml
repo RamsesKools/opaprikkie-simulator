@@ -1,0 +1,43 @@
+name: Check Pre-commit
+
+on:
+  pull_request:
+  workflow_dispatch:  # to allow manual triggering
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  Pre-commit:
+    timeout-minutes: 10
+    name: Pre-commit check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache pre-commit environment
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: ${{ runner.os }}-precommit-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-precommit-
+
+      - name: Install poetry
+        run: |
+          pipx install poetry
+
+      - name: Configure Python
+        uses: actions/setup-python@v5 # uses .python-version file by default to determine version
+        with:
+          cache: 'poetry'
+
+      - name: poetry install
+        run: poetry install
+
+      - name: Run Pre-Commit on all files
+        run: |
+          SKIP=no-commit-to-branch poetry run pre-commit run --all-files

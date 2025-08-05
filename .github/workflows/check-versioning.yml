@@ -1,0 +1,50 @@
+name: Check versioning and changelog
+on:
+  pull_request:
+  workflow_dispatch:  # to allow manual triggering
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  check-versioning:
+    timeout-minutes: 10
+    name: Check versioning and changelog
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Poetry
+        run: pipx install poetry
+
+      - name: Configure Python
+        uses: actions/setup-python@v5 # uses .python-version file by default to determine version
+        with:
+          cache: 'poetry'
+
+      - name: poetry install
+        run: poetry install
+
+      - name: Verify CHANGELOG.md format
+        run: |
+          poetry run python -m kacl verify
+
+      - name: Compare changelog version with pyproject.toml version
+        run: |
+          set -e
+
+          CHANGELOG_VERSION=$(poetry run python -m kacl current)
+          echo "CHANGELOG version: $CHANGELOG_VERSION"
+
+          PYPROJECT_VERSION=$(poetry version -s)
+          echo "pyproject.toml version: $PYPROJECT_VERSION"
+
+          if [ "$CHANGELOG_VERSION" != "$PYPROJECT_VERSION" ]; then
+            echo "Version mismatch: CHANGELOG.md version ($CHANGELOG_VERSION) does not match pyproject.toml version ($PYPROJECT_VERSION)"
+            exit 1
+          else
+            echo "Version check passed: $CHANGELOG_VERSION matches $PYPROJECT_VERSION"
+          fi
