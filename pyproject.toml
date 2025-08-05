@@ -10,7 +10,7 @@ include = ["CHANGELOG.md", "README.md"]
 keywords = ["opaprikkie", "simulator", "simulation"]
 name = "opaprikkie_sim"
 packages = [
-  {include = "opaprikkie-sim", from = "src"},
+  {include = "opaprikkie_sim", from = "src"},
 ]
 readme = "README.md"
 repository = "https://github.com/RamsesKools/opaprikkie-simulator"
@@ -94,7 +94,9 @@ ignore = [
   "TRY003", # Allow custom exception message for each usage
   "S101", # Allow assert
   "FBT", # Allow boolean as function arguments
+  "RET504", # Allow unnecessary assignment of return, because it can increase readability
   "RET505", # Allow unnecessary else after return
+  "PIE790", # Allow unnecessary pass for readability
   "PLR1714", # Don't merge multiple comparisons for better readability
   "TD004",
   "TD003",
