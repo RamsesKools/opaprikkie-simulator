@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/RamsesKools/opaprikkie-simulator/actions/workflows/ci.yml/badge.svg)](https://github.com/RamsesKools/opaprikkie-simulator/actions/workflows/ci.yml)
 [![Check Pre-commit](https://github.com/RamsesKools/opaprikkie-simulator/actions/workflows/check-pre-commit.yml/badge.svg)](https://github.com/RamsesKools/opaprikkie-simulator/actions/workflows/check-pre-commit.yml)
+[![Check versioning and changelog](https://github.com/RamsesKools/opaprikkie-simulator/actions/workflows/check-versioning.yml/badge.svg)](https://github.com/RamsesKools/opaprikkie-simulator/actions/workflows/check-versioning.yml)
 
 A Python project to simulate and solve the famous Dutch game: Opa Prikkie.
 
