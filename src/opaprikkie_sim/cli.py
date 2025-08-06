@@ -4,11 +4,16 @@ import argparse
 import sys
 
 from opaprikkie_sim.dice import DiceRoller
+from opaprikkie_sim.display import Display
 from opaprikkie_sim.game import Game
 from opaprikkie_sim.strategy import GreedyStrategy, RandomStrategy, SmartStrategy, Strategy
+from opaprikkie_sim.utilities import init_logger
 
 # TODO fix noqas
 # ruff: noqa: T201, BLE001, PLR2004, E501
+
+logger = init_logger(__name__)
+display = Display.get_instance()
 
 
 def create_strategy(strategy_name: str, dice_roller: DiceRoller) -> Strategy:
@@ -26,10 +31,10 @@ def create_strategy(strategy_name: str, dice_roller: DiceRoller) -> Strategy:
     return strategy_class(dice_roller)
 
 
-def play_interactive_game() -> None:  # noqa: PLR0912, C901
+def play_interactive_game() -> None:  # noqa: PLR0912, C901, PLR0915
     """Play an interactive game with user input."""
-    print("Welcome to Opa Prikkie Simulator!")
-    print("=" * 40)
+    display.display_info("Welcome to Opa Prikkie Simulator!")
+    display.display_separator()
 
     # Get number of players
     while True:
@@ -37,19 +42,20 @@ def play_interactive_game() -> None:  # noqa: PLR0912, C901
             num_players = int(input("Enter number of players (2-4): "))
             if 2 <= num_players <= 4:
                 break
-            print("Please enter a number between 2 and 4.")
+            display.display_warning("Please enter a number between 2 and 4.")
         except ValueError:
-            print("Please enter a valid number.")
+            display.display_error("Please enter a valid number.")
 
     # Create game
     game = Game(num_players=num_players)
+    logger.info(f"Created game with {num_players} players")
 
     # Set strategies
     strategies = ["random", "greedy", "smart"]
     for i in range(num_players):
-        print(f"\nChoose strategy for Player {i + 1}:")
+        display.display_info(f"\nChoose strategy for Player {i + 1}:")
         for j, strategy in enumerate(strategies, 1):
-            print(f"{j}. {strategy.capitalize()}")
+            display.display_info(f"{j}. {strategy.capitalize()}")
 
         while True:
             try:
@@ -57,60 +63,61 @@ def play_interactive_game() -> None:  # noqa: PLR0912, C901
                 if 1 <= choice <= 3:
                     strategy_obj = create_strategy(strategies[choice - 1], game.dice_roller)
                     game.set_player_strategy(i, strategy_obj)
+                    logger.info(f"Player {i + 1} assigned {strategies[choice - 1]} strategy")
                     break
-                print("Please enter a number between 1 and 3.")
+                display.display_warning("Please enter a number between 1 and 3.")
             except ValueError:
-                print("Please enter a valid number.")
+                display.display_error("Please enter a valid number.")
 
     # Play game
-    print("\nStarting game...")
-    print("=" * 40)
+    display.display_info("\nStarting game...")
+    display.display_separator()
 
     turn_count = 0
     while not game.state.game_over:
         turn_count += 1
-        print(f"\n--- Turn {turn_count} ---")
-        print(f"Current player: {game.state.get_current_player().name}")
+        display.display_turn_info(turn_count, game.state.get_current_player().name)
 
         result = game.play_turn()
 
         if result["status"] == "winner":
-            print(f"\n🎉 {result['player']} wins!")
-            print(f"Target: {result['target']}, Moves: {result['moves']}")
+            display.display_winner(result["player"])
+            display.display_target_selection(result["target"], result["moves"])
             break
         if result["status"] == "skipped":
-            print(f"⚠️  {result['player']} skipped turn ({result['reason']})")
+            display.display_warning(f"{result['player']} skipped turn ({result['reason']})")
         else:
-            print(f"🎲 Roll: {result['roll']}")
-            print(f"🎯 Target: {result['target']}, Moves: {result['moves']}")
+            display.display_dice_roll(result["roll"])
+            display.display_target_selection(result["target"], result["moves"])
 
         # Display boards
-        print(game.display_boards())
+        display.display_board(game.display_boards())
 
         # Ask to continue
         if turn_count % 5 == 0:
             response = input("\nPress Enter to continue or 'q' to quit: ")
             if response.lower() == "q":
-                print("Game stopped by user.")
+                display.display_info("Game stopped by user.")
                 break
 
-    print(f"\nGame finished after {turn_count} turns!")
+    display.display_info(f"\nGame finished after {turn_count} turns!")
+    logger.info(f"Game completed in {turn_count} turns")
 
 
 def run_simulation(
     num_games: int, num_players: int = 2, strategy1: str = "random", strategy2: str = "random"
 ) -> None:
     """Run multiple simulations and show statistics."""
-    print(f"Running {num_games} simulations...")
-    print(f"Players: {num_players}, Strategies: {strategy1} vs {strategy2}")
-    print("=" * 50)
+    display.display_info(f"Running {num_games} simulations...")
+    display.display_info(f"Players: {num_players}, Strategies: {strategy1} vs {strategy2}")
+    display.display_separator(50)
 
     wins = [0] * num_players
     total_turns = 0
 
     for i in range(num_games):
         if (i + 1) % 100 == 0:
-            print(f"Completed {i + 1} games...")
+            logger.info(f"Completed {i + 1} games...")
 
         game = Game(num_players=num_players)
 
@@ -127,16 +134,17 @@ def run_simulation(
         total_turns += game.state.turn_count
 
     # Display results
-    print(f"\nResults after {num_games} games:")
-    print("=" * 30)
+    display.display_info(f"\nResults after {num_games} games:")
+    display.display_separator(30)
     for i, win_count in enumerate(wins):
         percentage = (win_count / num_games) * 100
-        print(
+        display.display_info(
             f"Player {i + 1} ({game.players[i].strategy.__class__.__name__}): {win_count} wins ({percentage:.1f}%)"
         )
 
     avg_turns = total_turns / num_games
-    print(f"\nAverage turns per game: {avg_turns:.1f}")
+    display.display_info(f"\nAverage turns per game: {avg_turns:.1f}")
+    logger.info(f"Simulation completed: {num_games} games, avg turns: {avg_turns:.1f}")
 
 
 def main() -> None:
@@ -176,10 +184,12 @@ def main() -> None:
         else:
             run_simulation(args.games, args.players, args.strategy1, args.strategy2)
     except KeyboardInterrupt:
-        print("\nGame interrupted by user.")
+        display.display_info("\nGame interrupted by user.")
+        logger.info("Game interrupted by user")
         sys.exit(0)
     except Exception as e:
-        print(f"Error: {e}")
+        display.display_error(f"Error: {e}")
+        logger.exception("Unexpected error")
         sys.exit(1)
 
 

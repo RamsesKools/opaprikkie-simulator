@@ -18,7 +18,7 @@ Opa Prikkie is a traditional Dutch dice game where players compete to move all t
 
 1. **Setup**: Each player places 12 pegs on the bottom row of their board (one peg per number 1-12)
 2. **Goal**: Move all pegs to the top of the board first
-    - Each row is 5 spaces long. The top is reached after throwing that number 5 times.
+   - Each row is 5 spaces long. The top is reached after throwing that number 5 times.
 3. **Gameplay**:
    - Roll all 6 dice
    - Choose a target number to save:
@@ -94,12 +94,15 @@ src/opaprikkie_sim/
 ├── __init__.py          # Package initialization
 ├── board.py            # Board and peg representation
 ├── dice.py             # Dice rolling functionality
+├── display.py          # Display system for game information
 ├── game.py             # Main game logic
 ├── strategy.py         # AI strategies
+├── utilities.py        # Utility functions (including logging)
 └── cli.py              # Command-line interface
 
 tests/
 ├── test_basic_game.py  # Basic functionality tests
+├── test_logging_display.py  # Logging and display tests
 └── ...
 
 examples/
@@ -112,10 +115,10 @@ examples/
 
 ```bash
 # Run all tests
-pytest
+poetry run pytest
 
 # Run with coverage
-pytest --cov=opaprikkie_sim
+make pytest
 ```
 
 ### Code Quality
@@ -128,13 +131,13 @@ The project uses several tools for code quality:
 
 ```bash
 # Run linting
-ruff check .
+make check_ruff
 
 # Run type checking
-mypy src/
+make check_mypy
 
 # Format code
-ruff format .
+make format
 ```
 
 ## Contributing

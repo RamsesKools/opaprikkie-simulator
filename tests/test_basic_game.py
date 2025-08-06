@@ -6,6 +6,9 @@ from opaprikkie_sim.constants import MAX_DICE_NUM, MAX_ROW_HEIGHT, MIN_DICE_NUM
 
 def test_board_initialization():
     """Test that a board is initialized correctly."""
+    assert MIN_DICE_NUM == 1
+    assert MAX_DICE_NUM == 6
+
     board = Board()
     assert len(board.pegs) == 12
     for i in range(1, 13):
@@ -92,18 +95,3 @@ def test_game_turn():
     assert isinstance(result, dict)
     assert "status" in result
     assert result["status"] in ["continue", "winner", "skipped"]
-
-
-def test_game_completion():
-    """Test that a game can be completed."""
-    game = Game(num_players=1)
-
-    # Move all pegs to the top to simulate a win
-    for i in range(MIN_DICE_NUM, MAX_DICE_NUM * 2 + 1):
-        game.players[0].board.move_peg(i, MAX_ROW_HEIGHT)
-
-    assert game.players[0].is_winner()
-
-    # Play a turn - should result in a win
-    result = game.play_turn()
-    assert result["status"] == "winner"

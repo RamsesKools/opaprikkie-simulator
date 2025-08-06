@@ -1,4 +1,4 @@
-modules := src/ff tests
+modules := src/opaprikkie_sim tests
 .PHONY: clean format check_ruff check_mypy check pytest all_check_test help
 
 DEFAULT_GOAL: help
@@ -22,7 +22,7 @@ check: ##@check >> check ruff and mypy
 	$(MAKE) check_ruff
 
 pytest: ##@tests >> run tests with pytest
-	poetry run pytest --cov=opaprikkie-sim --junitxml=python_test_report.xml --basetemp=./tests/.tmp
+	poetry run pytest --cov=opaprikkie_sim --junitxml=python_test_report.xml --basetemp=./tests/.tmp
 
 all_check_test: ##@tests >> run all checks and tests
 	$(MAKE) check
