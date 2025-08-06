@@ -75,10 +75,25 @@ class Board:
         return {number: peg.position for number, peg in self.pegs.items()}
 
     def get_board_state(self) -> list[list[int | None]]:
-        """Get a 2D representation of the board state."""
+        """Get a 2D representation of the board state.
+
+        Returns:
+            list[list[int | None]]: A list of rows, where each row is a list of columns.
+                - Each row represents a position on the board,
+                    from 0 (bottom) to MAX_ROW_HEIGHT (top).
+                - Each column corresponds to a peg number, from MIN_DICE_NUM to 2 * MAX_DICE_NUM.
+                - If a peg is at a given row and column, the cell contains the peg's number (int).
+                - If no peg is present at that position, the cell contains None.
+
+        The returned structure is:
+            board_state[row][col]
+                - row: integer index for the row (0 = bottom, MAX_ROW_HEIGHT = top)
+                - col: integer index for the peg number (peg number = col + 1)
+        """
         # Create a board with max_position + 1 rows (0 to max_position)
-        # and 12 columns (one for each number)
-        board: list[list[int | None]] = [[None for _ in range(12)] for _ in range(11)]
+        board: list[list[int | None]] = [
+            [None for _ in range(1, MAX_DICE_NUM * 2 + 1)] for _ in range(MAX_ROW_HEIGHT)
+        ]
 
         for number, peg in self.pegs.items():
             if peg.position <= peg.max_position:
@@ -92,13 +107,14 @@ class Board:
         lines = []
 
         # Add header with numbers
-        header = "   " + " ".join(f"{i:2d}" for i in range(MIN_DICE_NUM, MAX_DICE_NUM * 2 + 1))
+        header = "   " + " ".join(f"{i:2d}" for i in range(MIN_DICE_NUM, 2 * MAX_DICE_NUM + 1))
         lines.append(header)
-        lines.append("   " + "-" * 35)
+        lines.append("   " + "-" * (3 * (2 * MAX_DICE_NUM + 1) - 1))
 
         # Add board rows (from top to bottom)
         for i, row in enumerate(reversed(board_state)):
-            row_str = f"{10 - i:2d} "
+            row_label = f"{self.row_height - i:2d} "
+            row_str = row_label
             for cell in row:
                 if cell is not None:
                     row_str += f" {cell:2d}"
