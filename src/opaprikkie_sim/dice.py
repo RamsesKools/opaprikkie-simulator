@@ -21,17 +21,28 @@ class DiceRoll:
         return self.values.count(target)
 
     def get_combinations_for_target(self, target: int) -> list[list[int]]:
-        """Get all possible combinations that sum to the target number."""
+        """Get all possible combinations that sum to the target number.
+        Each die is used only once per combination and duplicate pairs are avoided.
+        """
         if target <= MAX_DICE_NUM:
             # Single dice combinations
             return [[val] for val in self.values if val == target]
         else:
-            # Two dice combinations
             combinations = []
-            for i, val1 in enumerate(self.values):
-                for j, val2 in enumerate(self.values):
-                    if i != j and val1 + val2 == target:
-                        combinations.append([val1, val2])
+            used_indices = set()
+            n = len(self.values)
+            # To avoid duplicates, always use i < j
+            for i in range(n):
+                if i in used_indices:
+                    continue
+                for j in range(i + 1, n):
+                    if j in used_indices:
+                        continue
+                    if self.values[i] + self.values[j] == target:
+                        combinations.append([self.values[i], self.values[j]])
+                        used_indices.add(i)
+                        used_indices.add(j)
+                        break  # move to next i after finding a pair
             return combinations
 
 
