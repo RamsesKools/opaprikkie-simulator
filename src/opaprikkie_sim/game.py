@@ -6,6 +6,9 @@ from typing import Any
 from .board import Board
 from .dice import DiceRoller
 from .strategy import RandomStrategy, Strategy
+from .utilities import init_logger
+
+logger = init_logger(__name__)
 
 
 @dataclass
@@ -54,10 +57,13 @@ class Game:
         for player in self.players:
             player.strategy = RandomStrategy(self.dice_roller)
 
+        logger.info(f"Game initialized with {num_players} players")
+
     def set_player_strategy(self, player_index: int, strategy: Strategy) -> None:
         """Set the strategy for a specific player."""
         if 0 <= player_index < len(self.players):
             self.players[player_index].strategy = strategy
+            logger.debug(f"Player {player_index + 1} strategy set to {strategy.__class__.__name__}")
 
     def play_turn(self) -> dict[str, Any]:
         """Play a single turn for the current player."""
@@ -66,28 +72,34 @@ class Game:
 
         current_player = self.state.get_current_player()
         roll = self.dice_roller.roll()
+        logger.debug(f"Player {current_player.name} rolled: {roll.values}")
 
         # Choose target using player's strategy
         target = None
         if current_player.strategy:
             target = current_player.strategy.choose_target(current_player.board, roll)
+            logger.debug(f"Player {current_player.name} chose target: {target}")
 
         if target is None:
             # No valid target found, skip turn
+            logger.info(f"Player {current_player.name} skipped turn - no valid target")
             self.state.next_player()
             return {"status": "skipped", "player": current_player.name, "reason": "no_valid_target"}
 
         # Simulate the turn for the chosen target
         moves = self._simulate_turn_for_target(target)
+        logger.debug(f"Player {current_player.name} made {moves} moves for target {target}")
 
         # Apply moves to the board
         if moves > 0:
             current_player.board.move_peg(target, moves)
+            logger.info(f"Player {current_player.name} moved peg {target} by {moves} positions")
 
         # Check if player won
         if current_player.is_winner():
             self.state.game_over = True
             self.state.winner = current_player
+            logger.info(f"Player {current_player.name} won the game!")
             return {
                 "status": "winner",
                 "player": current_player.name,
@@ -112,11 +124,13 @@ class Game:
 
     def play_game(self) -> Player:
         """Play the complete game until someone wins."""
+        logger.info("Starting game...")
         while not self.state.game_over:
             result = self.play_turn()
             if result["status"] == "winner":
                 break
 
+        logger.info(f"Game completed in {self.state.turn_count} turns")
         return self.state.winner or self.players[0]
 
     def get_game_state(self) -> dict[str, Any]:
@@ -150,3 +164,4 @@ class Game:
         for player in self.players:
             player.board = Board()
         self.state = GameState(players=self.players)
+        logger.info("Game reset to initial state")
