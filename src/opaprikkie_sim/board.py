@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 
-from opaprikkie_sim.constants import MAX_ROW_HEIGHT
+from opaprikkie_sim.constants import MAX_DICE_NUM, MAX_ROW_HEIGHT, MIN_DICE_NUM
 
 
 @dataclass
@@ -32,12 +32,14 @@ class Board:
     """Represents a player's game board."""
 
     pegs: dict[int, Peg] = field(default_factory=dict)
-    row_height: int = 5
+    row_height: int = MAX_ROW_HEIGHT
 
     def __post_init__(self) -> None:
-        """Initialize the board with 12 pegs (one for each number 1-12)."""
+        """Initialize the board.
+        Game is played by combining taking the target of one or two dice.
+        """
         if not self.pegs:
-            for number in range(1, 13):
+            for number in range(MIN_DICE_NUM, 2 * MAX_DICE_NUM + 1):
                 self.pegs[number] = Peg(number=number, max_position=self.row_height)
 
     def get_peg(self, number: int) -> Peg:
@@ -90,7 +92,7 @@ class Board:
         lines = []
 
         # Add header with numbers
-        header = "   " + " ".join(f"{i:2d}" for i in range(1, 13))
+        header = "   " + " ".join(f"{i:2d}" for i in range(MIN_DICE_NUM, MAX_DICE_NUM * 2 + 1))
         lines.append(header)
         lines.append("   " + "-" * 35)
 

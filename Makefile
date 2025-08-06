@@ -1,4 +1,4 @@
-modules := src/ff tests
+modules := src/opaprikkie_sim tests
 .PHONY: clean format check_ruff check_mypy check pytest all_check_test help
 
 DEFAULT_GOAL: help
