@@ -3,7 +3,7 @@
 import random
 from dataclasses import dataclass
 
-from opaprikkie_sim.constants import MAX_DICE_NUM, MIN_DICE_NUM, NUMBER_OF_DICE
+from opaprikkie_sim.constants import MAX_DICE_NUM, MAX_ROW_HEIGHT, MIN_DICE_NUM, NUMBER_OF_DICE
 
 # Allow randomnumber generators in this context
 # ruff: noqa: S311
@@ -99,7 +99,11 @@ class DiceRoller:
             if count == 0:
                 break
 
+            # break when we reach the maximum score
             total_count += count
+            if total_count >= MAX_ROW_HEIGHT:
+                break
+
             if target <= MAX_DICE_NUM:
                 available_dice -= count
             else:
