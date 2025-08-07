@@ -42,21 +42,24 @@ class Board:
             for number in range(MIN_DICE_NUM, 2 * MAX_DICE_NUM + 1):
                 self.pegs.append(Peg(number=number, max_position=self.row_height))
 
-    def get_peg(self, number: int) -> Peg:
+    def get_peg(self, number: int) -> Peg | None:
         """Get the peg for a specific number."""
         for peg in self.pegs:
             if peg.number == number:
                 return peg
-        assert False, f"Peg {number} not found"
+        return None  # Peg not found
 
     def is_peg_movable(self, number: int) -> bool:
         """Check if a peg is movable. A Peg can be moved up if it is not at the top."""
         peg = self.get_peg(number)
+        if peg is None:
+            return False
         return not peg.is_at_top()
 
     def move_peg(self, number: int, steps: int) -> bool:
         """Move a peg by the given number of steps. Returns True if Peg is moved to the top."""
         peg = self.get_peg(number)
+        assert peg is not None, f"Peg {number} not found"
         assert not peg.is_at_top(), f"Peg {number} is already at the top"
         peg_at_top = peg.move(steps)
 

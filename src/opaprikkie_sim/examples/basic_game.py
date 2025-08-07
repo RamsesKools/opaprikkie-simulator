@@ -18,8 +18,8 @@ def main() -> None:
     logger.info("Created game with 2 players")
 
     # Set different strategies for the players
-    game.set_player_strategy(0, RandomStrategy(game.dice_roller))
-    game.set_player_strategy(1, GreedyStrategy(game.dice_roller))
+    game.set_player_strategy(0, RandomStrategy())
+    game.set_player_strategy(1, GreedyStrategy())
     logger.info("Assigned strategies: Player 1 (Random), Player 2 (Greedy)")
 
     display.display_info("Player 1: Random Strategy")

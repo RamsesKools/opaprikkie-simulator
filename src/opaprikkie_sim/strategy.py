@@ -4,8 +4,7 @@ import random
 from abc import ABC, abstractmethod
 
 from opaprikkie_sim.board import Board, Peg
-from opaprikkie_sim.constants import MAX_DICE_NUM
-from opaprikkie_sim.dice import DiceRoll, DiceRoller
+from opaprikkie_sim.dice import DiceRoll
 
 # Allow randomnumber generators in this context
 # ruff: noqa: S311
@@ -13,9 +12,6 @@ from opaprikkie_sim.dice import DiceRoll, DiceRoller
 
 class Strategy(ABC):
     """Abstract base class for game strategies."""
-
-    def __init__(self, dice_roller: DiceRoller):
-        self.dice_roller = dice_roller
 
     @abstractmethod
     def choose_target(self, board: Board, roll: DiceRoll) -> int | None:
@@ -33,14 +29,14 @@ class RandomStrategy(Strategy):
 
     def choose_target(self, board: Board, roll: DiceRoll) -> int | None:
         """Choose a random target from available options."""
-        available_targets = self.dice_roller.get_available_targets(roll)
+        available_targets = roll.get_available_targets()
 
         # Filter targets that have incomplete pegs
         valid_targets: list[int] = []
-        for t in available_targets:
-            peg = board.get_peg(t)
+        for target in available_targets:
+            peg = board.get_peg(target)
             if peg and not peg.is_at_top():
-                valid_targets.append(t)
+                valid_targets.append(target)
 
         if not valid_targets:
             return None
@@ -53,7 +49,7 @@ class GreedyStrategy(Strategy):
 
     def choose_target(self, board: Board, roll: DiceRoll) -> int | None:
         """Choose the target that will move a peg the furthest."""
-        available_targets = self.dice_roller.get_available_targets(roll)
+        available_targets = roll.get_available_targets()
         best_target = None
         best_score = -1
 
@@ -62,14 +58,7 @@ class GreedyStrategy(Strategy):
             if not peg or peg.is_at_top():
                 continue
 
-            # Calculate how many steps this target would move the peg
-            if target <= MAX_DICE_NUM:
-                # Single dice target
-                potential_moves = roll.count_target(target)
-            else:
-                # Two dice target
-                combinations = roll.get_combinations_for_target(target)
-                potential_moves = len(combinations)
+            potential_moves = available_targets[target]
 
             # Calculate score based on potential moves and current position
             score = potential_moves * (peg.max_position - peg.position)
@@ -89,7 +78,7 @@ class FinishPegsStrategy(Strategy):
 
     def choose_target(self, board: Board, roll: DiceRoll) -> int | None:
         """Choose target based on multiple strategic factors."""
-        available_targets = self.dice_roller.get_available_targets(roll)
+        available_targets = roll.get_available_targets()
         best_target = None
         best_score = -1.0
 
@@ -98,15 +87,7 @@ class FinishPegsStrategy(Strategy):
             if not peg or peg.is_at_top():
                 continue
 
-            # Calculate potential moves
-            if target <= MAX_DICE_NUM:
-                potential_moves = roll.count_target(target)
-            else:
-                combinations = roll.get_combinations_for_target(target)
-                potential_moves = len(combinations)
-
-            if potential_moves == 0:
-                continue
+            potential_moves = available_targets[target]
 
             # Calculate score based on multiple factors
             score = self._calculate_score(board, target, potential_moves, peg)

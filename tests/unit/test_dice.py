@@ -56,7 +56,7 @@ def test_dice_roll_get_combinations_for_target_double(
         assert combos == expected
 
 
-def test_dice_roller_roll(monkeypatch):
+def test_dice_roller_roll(monkeypatch: pytest.MonkeyPatch):
     dummy = DummyRandom([2, 3, 4])
     monkeypatch.setattr("random.randint", dummy.randint)
     roller = DiceRoller(num_dice=3)
@@ -64,20 +64,12 @@ def test_dice_roller_roll(monkeypatch):
     assert roll.values == [2, 3, 4]
 
 
-def test_dice_roller_roll_remaining(monkeypatch):
+def test_dice_roller_roll_remaining(monkeypatch: pytest.MonkeyPatch):
     dummy = DummyRandom([1, 6])
     monkeypatch.setattr("random.randint", dummy.randint)
     roller = DiceRoller(num_dice=2)
     roll = roller.roll_remaining(2)
     assert roll.values == [1, 6]
-
-
-def test_dice_roller_get_available_targets():
-    roller = DiceRoller(num_dice=3)
-    roll = DiceRoll([1, 2, 3])
-    targets = roller.get_available_targets(roll)
-    # singles: 1,2,3; doubles: 1+2=3, 1+3=4, 2+3=5
-    assert set(targets) == {1, 2, 3, 4, 5}
 
 
 @pytest.mark.parametrize(
@@ -105,7 +97,9 @@ def test_dice_roller_get_available_targets():
         ([2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1], 8, 0),
     ],
 )
-def test_dice_roller_simulate_turn(monkeypatch, dummy_values, target, expected):
+def test_dice_roller_simulate_turn(
+    monkeypatch: pytest.MonkeyPatch, dummy_values: list[int], target: int, expected: int
+):
     # num_dice is always 6
     assert MAX_ROW_HEIGHT == 5
     assert NUMBER_OF_DICE == 6
@@ -117,3 +111,43 @@ def test_dice_roller_simulate_turn(monkeypatch, dummy_values, target, expected):
     roller = DiceRoller(num_dice=6)
     count = roller.simulate_turn(target)
     assert count == expected
+
+
+def _sorted_dict(d: dict[int, int]) -> dict[int, int]:
+    """Helper to sort dict for comparison."""
+    return dict(sorted(d.items()))
+
+
+@pytest.mark.parametrize(
+    ("dice_values", "expected"),
+    [
+        # All singles
+        ([1, 2, 3, 4, 5, 6], {1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 3, 8: 2, 9: 2, 10: 1, 11: 1}),
+        # All the same
+        ([2, 2, 2, 2, 2, 2], {2: 6}),
+        # Three 5s
+        ([5, 5, 5], {5: 3, 10: 1}),
+        # Pairs
+        ([1, 1, 6, 6], {1: 2, 6: 2, 7: 2, 12: 1}),
+        # Mixed, some pairs
+        ([1, 2, 2, 3], {1: 1, 2: 2, 3: 1}),
+        # No pairs
+        ([1, 3, 5, 6], {1: 1, 3: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 11: 1}),
+        # 5s and 6s
+        ([5, 5, 5, 6, 6, 6], {5: 3, 6: 3, 10: 1, 11: 3, 12: 1}),
+        # 6s
+        ([6, 6, 6, 6, 6, 6], {6: 6, 12: 3}),
+        # Only one die
+        ([4], {4: 1}),
+        # two dice
+        ([2, 5], {2: 1, 5: 1, 7: 1}),
+        # three dice
+        ([1, 2, 3], {1: 1, 2: 1, 3: 1}),
+    ],
+)
+def test_dice_roll_get_available_targets(dice_values: list[int], expected: dict[int, int]) -> None:
+    assert MIN_DICE_NUM == 1
+    assert MAX_DICE_NUM == 6
+    roll = DiceRoll(dice_values)
+    result = roll.get_available_targets()
+    assert _sorted_dict(result) == _sorted_dict(expected)

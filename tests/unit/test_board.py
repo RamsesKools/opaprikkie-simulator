@@ -54,13 +54,13 @@ def test_board_get_peg():
     peg = board.get_peg(MIN_DICE_NUM)
     assert isinstance(peg, Peg)
     assert peg.number == MIN_DICE_NUM
-    with pytest.raises(AssertionError):
-        board.get_peg(999)  # Not present
+    assert board.get_peg(999) is None  # Not present
 
 
 def test_board_is_peg_movable():
     board = Board()
     peg = board.get_peg(MIN_DICE_NUM)
+    assert peg is not None
     assert board.is_peg_movable(MIN_DICE_NUM)
     peg.position = peg.max_position
     assert not board.is_peg_movable(MIN_DICE_NUM)
@@ -69,6 +69,7 @@ def test_board_is_peg_movable():
 def test_board_move_peg_normal():
     board = Board()
     peg = board.get_peg(MIN_DICE_NUM)
+    assert peg is not None
     assert peg.position == 0
     result = board.move_peg(MIN_DICE_NUM, 3)
     assert peg.position == 3
@@ -78,6 +79,7 @@ def test_board_move_peg_normal():
 def test_board_move_peg_to_top():
     board = Board()
     peg = board.get_peg(MIN_DICE_NUM)
+    assert peg is not None
     peg.position = 3
     result = board.move_peg(MIN_DICE_NUM, 2)
     assert peg.position == peg.max_position
@@ -87,6 +89,7 @@ def test_board_move_peg_to_top():
 def test_board_move_peg_already_at_top():
     board = Board()
     peg = board.get_peg(MIN_DICE_NUM)
+    assert peg is not None
     peg.position = peg.max_position
     with pytest.raises(AssertionError):
         board.move_peg(MIN_DICE_NUM, 1)

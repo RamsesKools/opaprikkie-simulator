@@ -55,7 +55,7 @@ class Game:
 
         # Assign random strategy to all players by default
         for player in self.players:
-            player.strategy = RandomStrategy(self.dice_roller)
+            player.strategy = RandomStrategy()
 
         logger.info(f"Game initialized with {num_players} players")
 
