@@ -38,9 +38,12 @@ def test_peg_move_beyond_top():
 # --- Board class tests ---
 def test_board_initialization():
     board = Board()
-    expected_keys = list(range(MIN_DICE_NUM, 2 * MAX_DICE_NUM + 1))
-    assert sorted(board.pegs.keys()) == expected_keys
-    for peg in board.pegs.values():
+    expected_peg_order = list(range(MIN_DICE_NUM, 2 * MAX_DICE_NUM + 1))
+    actual_peg_order = [peg.number for peg in board.pegs]
+
+    assert actual_peg_order == expected_peg_order
+
+    for peg in board.pegs:
         assert isinstance(peg, Peg)
         assert peg.position == 0
         assert peg.max_position == board.row_height
@@ -94,7 +97,7 @@ def test_board_is_complete_and_get_incomplete_pegs():
     assert not board.is_complete()
     incomplete = board.get_incomplete_pegs()
     assert len(incomplete) == len(board.pegs)
-    for peg in board.pegs.values():
+    for peg in board.pegs:
         peg.position = peg.max_position
     assert board.is_complete()
     assert board.get_incomplete_pegs() == []

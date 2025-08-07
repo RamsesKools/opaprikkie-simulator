@@ -1,6 +1,6 @@
 """Game board representation for Opa Prikkie."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from opaprikkie_sim.constants import MAX_DICE_NUM, MAX_ROW_HEIGHT, MIN_DICE_NUM
 
@@ -31,7 +31,7 @@ class Peg:
 class Board:
     """Represents a player's game board."""
 
-    pegs: list[Peg]
+    pegs: list[Peg] = field(default_factory=list[Peg])
     row_height: int = MAX_ROW_HEIGHT
 
     def __post_init__(self) -> None:
@@ -40,7 +40,7 @@ class Board:
         """
         if not self.pegs:
             for number in range(MIN_DICE_NUM, 2 * MAX_DICE_NUM + 1):
-                self.pegs[number] = Peg(number=number, max_position=self.row_height)
+                self.pegs.append(Peg(number=number, max_position=self.row_height))
 
     def get_peg(self, number: int) -> Peg:
         """Get the peg for a specific number."""

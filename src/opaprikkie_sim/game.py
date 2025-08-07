@@ -3,10 +3,10 @@
 from dataclasses import dataclass, field
 from typing import Any
 
-from .board import Board
-from .dice import DiceRoller
-from .strategy import RandomStrategy, Strategy
-from .utilities import init_logger
+from opaprikkie_sim.board import Board
+from opaprikkie_sim.dice import DiceRoller
+from opaprikkie_sim.strategy import RandomStrategy, Strategy
+from opaprikkie_sim.utilities import init_logger
 
 logger = init_logger(__name__)
 
@@ -152,7 +152,7 @@ class Game:
 
     def display_boards(self) -> str:
         """Display all player boards."""
-        lines = []
+        lines: list[str] = []
         for player in self.players:
             lines.append(f"\n{player.name}'s Board:")
             lines.append("=" * 40)

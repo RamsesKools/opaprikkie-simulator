@@ -11,10 +11,13 @@ def test_board_initialization():
 
     board = Board()
     assert len(board.pegs) == 12
+    for peg in board.pegs:
+        assert peg.number in range(1, 13)
+
     for i in range(1, 13):
-        assert i in board.pegs
-        assert board.pegs[i].position == 0
-        assert not board.pegs[i].is_at_top()
+        peg = board.get_peg(i)
+        assert peg.position == 0
+        assert not peg.is_at_top()
 
 
 def test_peg_movement():
