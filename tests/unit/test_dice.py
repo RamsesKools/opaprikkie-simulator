@@ -1,15 +1,15 @@
 import pytest
 
-from opaprikkie_sim.constants import MAX_DICE_NUM
+from opaprikkie_sim.constants import MAX_DICE_NUM, MAX_ROW_HEIGHT, MIN_DICE_NUM, NUMBER_OF_DICE
 from opaprikkie_sim.dice import DiceRoll, DiceRoller
 
 
 class DummyRandom:
-    def __init__(self, values):
+    def __init__(self, values: list[int]):
         self.values = values
         self.index = 0
 
-    def randint(self, a, b):
+    def randint(self, _a: int, _b: int) -> int:
         val = self.values[self.index % len(self.values)]
         self.index += 1
         return val
@@ -44,7 +44,7 @@ def test_dice_roll_get_combinations_for_target_single():
 )
 def test_dice_roll_get_combinations_for_target_double(
     dice_values: list[int], target: int, expected: list[list[int]]
-):
+) -> None:
     roll = DiceRoll(dice_values)
     combos = roll.get_combinations_for_target(target)
     # For two-dice combos, sort inner lists for comparison
@@ -80,14 +80,40 @@ def test_dice_roller_get_available_targets():
     assert set(targets) == {1, 2, 3, 4, 5}
 
 
-def test_dice_roller_simulate_turn(monkeypatch):
-    # Always roll [2,2,2]
-    dummy = DummyRandom([2, 2, 2])
+@pytest.mark.parametrize(
+    ("dummy_values", "target", "expected"),
+    [
+        # First roll: 6x6 (3 pairs for 12), second roll: 6x1 (no pairs for 12)
+        ([6, 6, 6, 6, 6, 6, 1, 1, 1, 1, 1, 1], 12, 3),
+        # First roll: 6x2 (no 12s), second roll: 6x6 (3 pairs for 12)
+        ([2, 2, 2, 2, 2, 2, 6, 6, 6, 6, 6, 6], 2, 6),
+        # First roll: 6x5 (no 12s), second roll: 6x6 (3 pairs for 12)
+        ([5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6], 10, 3),
+        # First roll: 6x1 (no 12s), second roll: 6x2 (no 12s)
+        ([1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2], 12, 0),
+        # User requested: goal=7, roll: 3,4,5,2,1,6, count=3
+        ([3, 4, 5, 2, 1, 6, 1, 1, 1, 1, 1, 1], 7, 3),
+        # User requested: goal=8, roll: 5,3,6,2,4,4, count=3
+        ([5, 3, 6, 2, 4, 4, 1, 1, 1, 1, 1, 1], 8, 3),
+        # User requested: goal=9, roll: 6,3,5,4,1,1, count=2
+        ([6, 3, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1], 9, 2),
+        # More: goal=5, roll: 1,2,3,4,5,6, count=1 (5)
+        ([1, 2, 3, 4, 5, 6, 1, 1, 1, 1, 1, 1], 5, 1),
+        # More: goal=11, roll: 6,5,4,3,2,1, count=1 (5+6)
+        ([6, 5, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1], 11, 1),
+        # More: goal=8, roll: 2,2,2,2,2,2, count=0 (no pairs sum to 8)
+        ([2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1], 8, 0),
+    ],
+)
+def test_dice_roller_simulate_turn(monkeypatch, dummy_values, target, expected):
+    # num_dice is always 6
+    assert MAX_ROW_HEIGHT == 5
+    assert NUMBER_OF_DICE == 6
+    assert MIN_DICE_NUM == 1
+    assert MAX_DICE_NUM == 6
+    assert len(dummy_values) == 12, "Dummy values should have 12 elements"
+    dummy = DummyRandom(dummy_values)
     monkeypatch.setattr("random.randint", dummy.randint)
-    roller = DiceRoller(num_dice=3)
-    # Target 2: should always get 3 per roll, then reset
-    count = roller.simulate_turn(2)
-    assert count > 0
-    # Target 4: only possible as 2+2, so 3 dice -> 1 combo per roll
-    count_double = roller.simulate_turn(4)
-    assert count_double > 0
+    roller = DiceRoller(num_dice=6)
+    count = roller.simulate_turn(target)
+    assert count == expected
