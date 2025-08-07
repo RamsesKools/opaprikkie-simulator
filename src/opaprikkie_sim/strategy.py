@@ -1,13 +1,14 @@
 """Strategy implementations for Opa Prikkie game."""
 
+from __future__ import annotations
+
 import random
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
-from opaprikkie_sim.board import Board, Peg
-from opaprikkie_sim.dice import DiceRoll
-
-# Allow randomnumber generators in this context
-# ruff: noqa: S311
+if TYPE_CHECKING:
+    from opaprikkie_sim.board import Board, Peg
+    from opaprikkie_sim.dice import DiceRoll
 
 
 class Strategy(ABC):
@@ -41,7 +42,7 @@ class RandomStrategy(Strategy):
         if not valid_targets:
             return None
 
-        return random.choice(valid_targets)
+        return random.choice(valid_targets)  # noqa: S311
 
 
 class GreedyStrategy(Strategy):
@@ -111,3 +112,11 @@ class FinishPegsStrategy(Strategy):
             completion_bonus = peg.max_position
 
         return base_score + completion_bonus
+
+
+# available strategies: random, greedy, smart
+STRATEGIES_NAME_MAPPING: dict[str, type[Strategy]] = {
+    "random": RandomStrategy,
+    "greedy": GreedyStrategy,
+    "smart": FinishPegsStrategy,
+}
