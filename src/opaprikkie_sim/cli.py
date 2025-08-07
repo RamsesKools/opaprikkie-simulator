@@ -3,7 +3,6 @@
 import argparse
 import sys
 
-from opaprikkie_sim.dice import DiceRoller
 from opaprikkie_sim.display import Display
 from opaprikkie_sim.game import Game
 from opaprikkie_sim.strategy import FinishPegsStrategy, GreedyStrategy, RandomStrategy, Strategy
@@ -16,7 +15,7 @@ logger = init_logger(__name__)
 display = Display.get_instance()
 
 
-def create_strategy(strategy_name: str, dice_roller: DiceRoller) -> Strategy:
+def create_strategy(strategy_name: str) -> Strategy:
     """Create a strategy based on the name."""
     strategies: dict[str, type[Strategy]] = {
         "random": RandomStrategy,
@@ -28,7 +27,7 @@ def create_strategy(strategy_name: str, dice_roller: DiceRoller) -> Strategy:
     if not strategy_class:
         raise ValueError(f"Unknown strategy: {strategy_name}")
 
-    return strategy_class(dice_roller)
+    return strategy_class()
 
 
 def play_interactive_game() -> None:  # noqa: PLR0912, C901, PLR0915
@@ -61,7 +60,7 @@ def play_interactive_game() -> None:  # noqa: PLR0912, C901, PLR0915
             try:
                 choice = int(input("Enter choice (1-3): "))
                 if 1 <= choice <= 3:
-                    strategy_obj = create_strategy(strategies[choice - 1], game.dice_roller)
+                    strategy_obj = create_strategy(strategies[choice - 1])
                     game.set_player_strategy(i, strategy_obj)
                     logger.info(f"Player {i + 1} assigned {strategies[choice - 1]} strategy")
                     break
@@ -114,6 +113,7 @@ def run_simulation(
 
     wins = [0] * num_players
     total_turns = 0
+    player_strategy_names = [""] * num_players
 
     for i in range(num_games):
         if (i + 1) % 100 == 0:
@@ -122,10 +122,13 @@ def run_simulation(
         game = Game(num_players=num_players)
 
         # Set strategies
-        dice_roller = game.dice_roller
-        game.set_player_strategy(0, create_strategy(strategy1, dice_roller))
+        game.set_player_strategy(0, create_strategy(strategy1))
         if num_players > 1:
-            game.set_player_strategy(1, create_strategy(strategy2, dice_roller))
+            game.set_player_strategy(1, create_strategy(strategy2))
+
+        # Store strategy class names for display
+        for idx, player in enumerate(game.players):
+            player_strategy_names[idx] = player.strategy.__class__.__name__
 
         # Play game
         winner = game.play_game()
@@ -139,7 +142,7 @@ def run_simulation(
     for i, win_count in enumerate(wins):
         percentage = (win_count / num_games) * 100
         display.display_info(
-            f"Player {i + 1} ({game.players[i].strategy.__class__.__name__}): {win_count} wins ({percentage:.1f}%)"
+            f"Player {i + 1} ({player_strategy_names[i]}): {win_count} wins ({percentage:.1f}%)"
         )
 
     avg_turns = total_turns / num_games
