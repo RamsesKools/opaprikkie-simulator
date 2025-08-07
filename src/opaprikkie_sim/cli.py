@@ -6,7 +6,7 @@ import sys
 from opaprikkie_sim.dice import DiceRoller
 from opaprikkie_sim.display import Display
 from opaprikkie_sim.game import Game
-from opaprikkie_sim.strategy import GreedyStrategy, RandomStrategy, SmartStrategy, Strategy
+from opaprikkie_sim.strategy import FinishPegsStrategy, GreedyStrategy, RandomStrategy, Strategy
 from opaprikkie_sim.utilities import init_logger
 
 # TODO fix noqas
@@ -21,7 +21,7 @@ def create_strategy(strategy_name: str, dice_roller: DiceRoller) -> Strategy:
     strategies: dict[str, type[Strategy]] = {
         "random": RandomStrategy,
         "greedy": GreedyStrategy,
-        "smart": SmartStrategy,
+        "smart": FinishPegsStrategy,
     }
 
     strategy_class = strategies.get(strategy_name.lower())

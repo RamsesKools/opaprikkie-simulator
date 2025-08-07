@@ -36,7 +36,7 @@ class RandomStrategy(Strategy):
         available_targets = self.dice_roller.get_available_targets(roll)
 
         # Filter targets that have incomplete pegs
-        valid_targets = []
+        valid_targets: list[int] = []
         for t in available_targets:
             peg = board.get_peg(t)
             if peg and not peg.is_at_top():
@@ -81,8 +81,11 @@ class GreedyStrategy(Strategy):
         return best_target
 
 
-class SmartStrategy(Strategy):
-    """Smart strategy - considers multiple factors when choosing targets."""
+class FinishPegsStrategy(Strategy):
+    """FinishPegsStrategy strategy - look at moving fast and finishing.
+    This strategy prioritizes targets if they can be finished,
+    otherwise it looks to move a peg the furthest.
+    """
 
     def choose_target(self, board: Board, roll: DiceRoll) -> int | None:
         """Choose target based on multiple strategic factors."""
@@ -119,17 +122,11 @@ class SmartStrategy(Strategy):
     ) -> float:
         """Calculate a score for a target based on multiple factors."""
         # Base score: potential moves * remaining distance
-        base_score = potential_moves * (peg.max_position - peg.position)
+        base_score = potential_moves
 
-        # Bonus for targets that are closer to completion
-        completion_bonus = peg.position / peg.max_position
-
-        # Penalty for targets that are very far from completion (spread out progress)
-        distance_penalty = 1.0 / (peg.max_position - peg.position + 1)
-
-        # Bonus for completing a peg (getting it to the top)
-        completion_bonus = 0.0
+        # Bonus when a peg can be finished
+        completion_bonus = 0
         if peg.position + potential_moves >= peg.max_position:
-            completion_bonus = 2.0
+            completion_bonus = peg.max_position
 
-        return base_score + completion_bonus - distance_penalty
+        return base_score + completion_bonus

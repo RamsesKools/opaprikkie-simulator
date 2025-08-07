@@ -5,7 +5,7 @@ from opaprikkie_sim.cli import main as cli_main
 from opaprikkie_sim.dice import DiceRoll, DiceRoller
 from opaprikkie_sim.display import Display
 from opaprikkie_sim.game import Game, Player
-from opaprikkie_sim.strategy import GreedyStrategy, RandomStrategy, SmartStrategy, Strategy
+from opaprikkie_sim.strategy import FinishPegsStrategy, GreedyStrategy, RandomStrategy, Strategy
 from opaprikkie_sim.utilities import init_logger
 
 # Single-sourcing the version number with poetry:
@@ -18,12 +18,12 @@ __all__ = [
     "DiceRoll",
     "DiceRoller",
     "Display",
+    "FinishPegsStrategy",
     "Game",
     "GreedyStrategy",
     "Peg",
     "Player",
     "RandomStrategy",
-    "SmartStrategy",
     "Strategy",
     "cli_main",
     "init_logger",
