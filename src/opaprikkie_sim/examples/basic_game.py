@@ -4,9 +4,6 @@ from opaprikkie_sim import Game, GreedyStrategy, RandomStrategy
 from opaprikkie_sim.display import Display
 from opaprikkie_sim.utilities import init_logger
 
-# TODO fix noqas
-# ruff: noqa: T201
-
 logger = init_logger(__name__)
 display = Display.get_instance()
 
