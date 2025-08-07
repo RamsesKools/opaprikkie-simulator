@@ -1,7 +1,8 @@
 """Command-line interface for Opa Prikkie simulator."""
 
-import argparse
 import sys
+
+import click
 
 from opaprikkie_sim.display import Display
 from opaprikkie_sim.game import Game
@@ -30,20 +31,14 @@ def create_strategy(strategy_name: str) -> Strategy:
     return strategy_class()
 
 
-def play_interactive_game() -> None:  # noqa: PLR0912, C901, PLR0915
+def play_interactive_game(num_players: int) -> None:  # noqa: C901
     """Play an interactive game with user input."""
     display.display_info("Welcome to Opa Prikkie Simulator!")
     display.display_separator()
 
-    # Get number of players
-    while True:
-        try:
-            num_players = int(input("Enter number of players (2-4): "))
-            if 2 <= num_players <= 4:
-                break
-            display.display_warning("Please enter a number between 2 and 4.")
-        except ValueError:
-            display.display_error("Please enter a valid number.")
+    if not (2 <= num_players <= 4):
+        display.display_error("Number of players must be between 2 and 4.")
+        return
 
     # Create game
     game = Game(num_players=num_players)
@@ -56,16 +51,17 @@ def play_interactive_game() -> None:  # noqa: PLR0912, C901, PLR0915
         for j, strategy in enumerate(strategies, 1):
             display.display_info(f"{j}. {strategy.capitalize()}")
 
+        # Use click.prompt for input
         while True:
             try:
-                choice = int(input("Enter choice (1-3): "))
+                choice: int = click.prompt("Enter choice (1-3)", type=int)
                 if 1 <= choice <= 3:
                     strategy_obj = create_strategy(strategies[choice - 1])
                     game.set_player_strategy(i, strategy_obj)
                     logger.info(f"Player {i + 1} assigned {strategies[choice - 1]} strategy")
                     break
                 display.display_warning("Please enter a number between 1 and 3.")
-            except ValueError:
+            except Exception:
                 display.display_error("Please enter a valid number.")
 
     # Play game
@@ -94,7 +90,9 @@ def play_interactive_game() -> None:  # noqa: PLR0912, C901, PLR0915
 
         # Ask to continue
         if turn_count % 5 == 0:
-            response = input("\nPress Enter to continue or 'q' to quit: ")
+            response = click.prompt(
+                "\nPress Enter to continue or 'q' to quit", default="", show_default=False
+            )
             if response.lower() == "q":
                 display.display_info("Game stopped by user.")
                 break
@@ -150,42 +148,52 @@ def run_simulation(
     logger.info(f"Simulation completed: {num_games} games, avg turns: {avg_turns:.1f}")
 
 
-def main() -> None:
-    """Main entry point for the CLI."""
-    parser = argparse.ArgumentParser(description="Opa Prikkie Simulator")
-    parser.add_argument(
-        "--mode",
-        choices=["interactive", "simulation"],
-        default="interactive",
-        help="Game mode (default: interactive)",
-    )
-    parser.add_argument(
-        "--games",
-        type=int,
-        default=1000,
-        help="Number of games for simulation mode (default: 1000)",
-    )
-    parser.add_argument("--players", type=int, default=2, help="Number of players (default: 2)")
-    parser.add_argument(
-        "--strategy1",
-        choices=["random", "greedy", "smart"],
-        default="random",
-        help="Strategy for player 1 (default: random)",
-    )
-    parser.add_argument(
-        "--strategy2",
-        choices=["random", "greedy", "smart"],
-        default="random",
-        help="Strategy for player 2 (default: random)",
-    )
+# Click CLI group and commands
+@click.group()
+def cli() -> None:
+    """Opa Prikkie Simulator CLI."""
+    pass
 
-    args = parser.parse_args()
 
+@cli.command()
+@click.option("--players", default=2, show_default=True, type=int, help="Number of players (2-4)")
+def interactive(players: int) -> None:
+    """Play an interactive game with user input."""
     try:
-        if args.mode == "interactive":
-            play_interactive_game()
-        else:
-            run_simulation(args.games, args.players, args.strategy1, args.strategy2)
+        play_interactive_game(players)
+    except KeyboardInterrupt:
+        display.display_info("\nGame interrupted by user.")
+        logger.info("Game interrupted by user")
+        sys.exit(0)
+    except Exception as e:
+        display.display_error(f"Error: {e}")
+        logger.exception("Unexpected error")
+        sys.exit(1)
+
+
+@cli.command()
+@click.option(
+    "--games", default=1000, show_default=True, type=int, help="Number of games for simulation mode"
+)
+@click.option("--players", default=2, show_default=True, type=int, help="Number of players")
+@click.option(
+    "--strategy1",
+    default="random",
+    show_default=True,
+    type=click.Choice(["random", "greedy", "smart"]),
+    help="Strategy for player 1",
+)
+@click.option(
+    "--strategy2",
+    default="random",
+    show_default=True,
+    type=click.Choice(["random", "greedy", "smart"]),
+    help="Strategy for player 2",
+)
+def simulation(games: int, players: int, strategy1: str, strategy2: str) -> None:
+    """Run multiple simulations and show statistics."""
+    try:
+        run_simulation(games, players, strategy1, strategy2)
     except KeyboardInterrupt:
         display.display_info("\nGame interrupted by user.")
         logger.info("Game interrupted by user")
@@ -197,4 +205,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    cli()
