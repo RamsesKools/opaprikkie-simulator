@@ -5,7 +5,7 @@ import pytest
 from opaprikkie_sim.examples import basic_game
 
 
-def test_basic_game_runs_and_has_winner(capsys: pytest.CaptureFixture[str]):
+def test_basic_game_runs_and_has_winner(capsys: pytest.CaptureFixture[str]) -> None:
     # Seed randomness for reproducibility
     random.seed(42)
     # Run the main function

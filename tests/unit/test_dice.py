@@ -56,7 +56,7 @@ def test_dice_roll_get_combinations_for_target_double(
         assert combos == expected
 
 
-def test_dice_roller_roll(monkeypatch: pytest.MonkeyPatch):
+def test_dice_roller_roll(monkeypatch: pytest.MonkeyPatch) -> None:
     dummy = DummyRandom([2, 3, 4])
     monkeypatch.setattr("random.randint", dummy.randint)
     roller = DiceRoller(num_dice=3)
@@ -64,7 +64,7 @@ def test_dice_roller_roll(monkeypatch: pytest.MonkeyPatch):
     assert roll.values == [2, 3, 4]
 
 
-def test_dice_roller_roll_remaining(monkeypatch: pytest.MonkeyPatch):
+def test_dice_roller_roll_remaining(monkeypatch: pytest.MonkeyPatch) -> None:
     dummy = DummyRandom([1, 6])
     monkeypatch.setattr("random.randint", dummy.randint)
     roller = DiceRoller(num_dice=2)
@@ -99,7 +99,7 @@ def test_dice_roller_roll_remaining(monkeypatch: pytest.MonkeyPatch):
 )
 def test_dice_roller_simulate_turn(
     monkeypatch: pytest.MonkeyPatch, dummy_values: list[int], target: int, expected: int
-):
+) -> None:
     # num_dice is always 6
     assert MAX_ROW_HEIGHT == 5
     assert NUMBER_OF_DICE == 6

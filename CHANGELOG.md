@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 
 - Implemented click cli
+- Made all code mypy strict compatible
+- Increase test coverage to >90%
 - Added unit tests
   - dice test
   - board test

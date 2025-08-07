@@ -15,10 +15,10 @@ def test_board_initialization():
         assert peg.number in range(1, 13)
 
     for i in range(1, 13):
-        peg = board.get_peg(i)
-        assert peg is not None
-        assert peg.position == 0
-        assert not peg.is_at_top()
+        peg2 = board.get_peg(i)
+        assert peg2 is not None
+        assert peg2.position == 0
+        assert not peg2.is_at_top()
 
 
 def test_peg_movement():
