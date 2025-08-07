@@ -16,6 +16,16 @@ logger = init_logger(__name__)
 display = Display.get_instance()
 
 
+def get_version() -> str:
+    """Get the version of the Opa Prikkie simulator."""
+    import importlib.metadata
+
+    try:
+        return importlib.metadata.version("opaprikkie_sim")
+    except importlib.metadata.PackageNotFoundError:
+        return "unknown"
+
+
 def create_strategy(strategy_name: str) -> Strategy:
     """Create a strategy based on the name."""
     strategies: dict[str, type[Strategy]] = {
@@ -149,7 +159,10 @@ def run_simulation(
 
 
 # Click CLI group and commands
+
+
 @click.group()
+@click.version_option(message="%(version)s")
 def cli() -> None:
     """Opa Prikkie Simulator CLI."""
     pass
@@ -205,4 +218,4 @@ def simulation(games: int, players: int, strategy1: str, strategy2: str) -> None
 
 
 if __name__ == "__main__":
-    cli()
+    cli(obj={"version": get_version()})

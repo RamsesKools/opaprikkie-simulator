@@ -55,11 +55,17 @@ poetry run pre-commit install
 The simulator includes a command-line interface for playing games:
 
 ```bash
-# Interactive mode (default)
-python -m opaprikkie_sim.cli
+# Interactive mode
+python -m opaprikkie_sim.cli interactive
 
 # Simulation mode
-python -m opaprikkie_sim.cli --mode simulation --games 1000 --strategy1 greedy --strategy2 smart
+python -m opaprikkie_sim.cli simulation --games 1000 --strategy1 greedy --strategy2 smart
+
+# Show version
+python -m opaprikkie_sim.cli --version
+
+# Show help
+python -m opaprikkie_sim.cli --help
 ```
 
 ### Python API
