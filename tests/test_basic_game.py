@@ -11,10 +11,14 @@ def test_board_initialization():
 
     board = Board()
     assert len(board.pegs) == 12
+    for peg in board.pegs:
+        assert peg.number in range(1, 13)
+
     for i in range(1, 13):
-        assert i in board.pegs
-        assert board.pegs[i].position == 0
-        assert not board.pegs[i].is_at_top()
+        peg2 = board.get_peg(i)
+        assert peg2 is not None
+        assert peg2.position == 0
+        assert not peg2.is_at_top()
 
 
 def test_peg_movement():
@@ -27,11 +31,13 @@ def test_peg_movement():
     # Move peg up
     board.move_peg(1, MAX_ROW_HEIGHT - 2)
     peg = board.get_peg(1)
+    assert peg is not None
     assert peg.position == MAX_ROW_HEIGHT - 2
 
     # Try to move beyond max position
     board.move_peg(1, MAX_ROW_HEIGHT)  # Would exceed max position
     peg = board.get_peg(1)
+    assert peg is not None
     assert peg.position == MAX_ROW_HEIGHT
 
 
@@ -56,8 +62,8 @@ def test_dice_roller():
     assert all(1 <= val <= 6 for val in roll.values)
 
     # Test available targets
-    targets = roller.get_available_targets(roll)
-    assert isinstance(targets, list)
+    targets = roll.get_available_targets()
+    assert isinstance(targets, dict)
     assert all(isinstance(t, int) for t in targets)
 
 
@@ -71,11 +77,11 @@ def test_game_creation():
 
 def test_strategy_creation():
     """Test that strategies can be created and used."""
-    roller = DiceRoller()
-    random_strategy = RandomStrategy(roller)
-    greedy_strategy = GreedyStrategy(roller)
+    random_strategy = RandomStrategy()
+    greedy_strategy = GreedyStrategy()
 
     board = Board()
+    roller = DiceRoller()
     roll = roller.roll()
 
     # Test that strategies can choose targets

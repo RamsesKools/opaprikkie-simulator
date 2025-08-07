@@ -4,9 +4,6 @@ from opaprikkie_sim import Game, GreedyStrategy, RandomStrategy
 from opaprikkie_sim.display import Display
 from opaprikkie_sim.utilities import init_logger
 
-# TODO fix noqas
-# ruff: noqa: T201
-
 logger = init_logger(__name__)
 display = Display.get_instance()
 
@@ -21,8 +18,8 @@ def main() -> None:
     logger.info("Created game with 2 players")
 
     # Set different strategies for the players
-    game.set_player_strategy(0, RandomStrategy(game.dice_roller))
-    game.set_player_strategy(1, GreedyStrategy(game.dice_roller))
+    game.set_player_strategy(0, RandomStrategy())
+    game.set_player_strategy(1, GreedyStrategy())
     logger.info("Assigned strategies: Player 1 (Random), Player 2 (Greedy)")
 
     display.display_info("Player 1: Random Strategy")

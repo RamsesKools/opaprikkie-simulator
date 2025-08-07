@@ -1,30 +1,32 @@
 """Opa Prikkie Simulator - A Python implementation of the Dutch dice game."""
 
 from opaprikkie_sim.board import Board, Peg
-from opaprikkie_sim.cli import main as cli_main
 from opaprikkie_sim.dice import DiceRoll, DiceRoller
 from opaprikkie_sim.display import Display
 from opaprikkie_sim.game import Game, Player
-from opaprikkie_sim.strategy import GreedyStrategy, RandomStrategy, SmartStrategy, Strategy
+from opaprikkie_sim.strategy import FinishPegsStrategy, GreedyStrategy, RandomStrategy, Strategy
 from opaprikkie_sim.utilities import init_logger
 
 # Single-sourcing the version number with poetry:
 # https://github.com/python-poetry/poetry/pull/2366#issuecomment-652418094
-__version__ = __import__("importlib.metadata").metadata.version(
-    __package__.replace(".", "-")  # canonicalize any namespaced module
-)
+
+__version__: str = "unknown"
+if __package__ is not None:
+    __version__ = __import__("importlib.metadata").metadata.version(
+        __package__.replace(".", "-")  # canonicalize any namespaced module
+    )
+
 __all__ = [
     "Board",
     "DiceRoll",
     "DiceRoller",
     "Display",
+    "FinishPegsStrategy",
     "Game",
     "GreedyStrategy",
     "Peg",
     "Player",
     "RandomStrategy",
-    "SmartStrategy",
     "Strategy",
-    "cli_main",
     "init_logger",
 ]

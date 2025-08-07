@@ -14,11 +14,11 @@ packages = [
 ]
 readme = "README.md"
 repository = "https://github.com/RamsesKools/opaprikkie-simulator"
-version = "0.2.0"
+version = "0.3.0"
 
 [tool.poetry.dependencies]
-numpy = "^1.19.5"
 python = ">=3.12,<4"
+click = "^8.2.1"
 
 [tool.poetry.group.dev.dependencies]
 hypothesis = "^6.121.0"
@@ -103,7 +103,7 @@ ignore = [
   "TD002",
   "FIX002", # Allow # TODO's
 ]
-select = ["ALL"] # TODO Maybe not select ALL?
+select = ["ALL"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = [

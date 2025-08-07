@@ -22,7 +22,7 @@ check: ##@check >> check ruff and mypy
 	$(MAKE) check_ruff
 
 pytest: ##@tests >> run tests with pytest
-	poetry run pytest --cov=opaprikkie_sim --junitxml=python_test_report.xml --basetemp=./tests/.tmp
+	poetry run pytest --cov=opaprikkie_sim --cov-branch --junitxml=python_test_report.xml
 
 all_check_test: ##@tests >> run all checks and tests
 	$(MAKE) check
