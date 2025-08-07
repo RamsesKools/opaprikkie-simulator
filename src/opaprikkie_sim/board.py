@@ -97,7 +97,7 @@ class Board:
 
         for number, peg in self.pegs.items():
             if peg.position <= peg.max_position:
-                board[peg.position][number - 1] = number
+                board[peg.position - 1][number - 1] = number
 
         return board
 
