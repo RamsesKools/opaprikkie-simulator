@@ -29,6 +29,7 @@ pytest = "^7.0.1"
 pytest-cov = "^4.0.0"
 python-kacl = "^0.6.5" # keepachangelog
 ruff = "==0.11.13"
+ipykernel = "^6.30.1"
 
 [tool.ruff]
 #https://github.com/astral-sh/ruff?tab=readme-ov-file

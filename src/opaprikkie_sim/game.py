@@ -5,6 +5,7 @@ from typing import Any
 
 from opaprikkie_sim.board import Board
 from opaprikkie_sim.dice import DiceRoller
+from opaprikkie_sim.game_stats import GameStats
 from opaprikkie_sim.strategy import RandomStrategy, Strategy
 from opaprikkie_sim.utilities import init_logger
 
@@ -57,6 +58,20 @@ class Game:
         for player in self.players:
             player.strategy = RandomStrategy()
 
+        # Get package version
+        version = "unknown"
+
+        # Initialize dice stats: count for each number 1-6
+        self.dice_stats = dict.fromkeys(range(1, 7), 0)
+
+        # GameStats object
+        self.stats = GameStats(
+            game_package_version=version,
+            game_seed=0,  # Could be set if using random seed
+            total_turns=0,
+            number_of_players=num_players,
+        )
+
         logger.info(f"Game initialized with {num_players} players")
 
     def set_player_strategy(self, player_index: int, strategy: Strategy) -> None:
@@ -73,6 +88,10 @@ class Game:
         current_player = self.state.get_current_player()
         roll = self.dice_roller.roll()
         logger.debug(f"Player {current_player.name} rolled: {roll.values}")
+        # Update dice stats
+        for value in roll.values:
+            if value in self.dice_stats:
+                self.dice_stats[value] += 1
 
         # Choose target using player's strategy
         target = None
@@ -109,6 +128,8 @@ class Game:
 
         # Move to next player
         self.state.next_player()
+        # Update stats
+        self.stats.total_turns = self.state.turn_count
 
         return {
             "status": "continue",
@@ -164,4 +185,6 @@ class Game:
         for player in self.players:
             player.board = Board()
         self.state = GameState(players=self.players)
+        self.dice_stats = dict.fromkeys(range(1, 7), 0)
+        self.stats.total_turns = 0
         logger.info("Game reset to initial state")
