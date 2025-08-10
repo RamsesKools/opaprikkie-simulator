@@ -7,7 +7,7 @@ from opaprikkie_sim.board import Board
 from opaprikkie_sim.dice import DiceRoller
 from opaprikkie_sim.game_stats import GameStats
 from opaprikkie_sim.strategy import RandomStrategy, Strategy
-from opaprikkie_sim.utilities import init_logger
+from opaprikkie_sim.utilities import get_version, init_logger
 
 logger = init_logger(__name__)
 
@@ -58,18 +58,13 @@ class Game:
         for player in self.players:
             player.strategy = RandomStrategy()
 
-        # Get package version
-        version = "unknown"
-
-        # Initialize dice stats: count for each number 1-6
-        self.dice_stats = dict.fromkeys(range(1, 7), 0)
-
         # GameStats object
         self.stats = GameStats(
-            game_package_version=version,
+            game_package_version=get_version(),
             game_seed=0,  # Could be set if using random seed
             total_turns=0,
             number_of_players=num_players,
+            dice_rolls=self.dice_stats,
         )
 
         logger.info(f"Game initialized with {num_players} players")
@@ -88,10 +83,8 @@ class Game:
         current_player = self.state.get_current_player()
         roll = self.dice_roller.roll()
         logger.debug(f"Player {current_player.name} rolled: {roll.values}")
-        # Update dice stats
-        for value in roll.values:
-            if value in self.dice_stats:
-                self.dice_stats[value] += 1
+
+        self.stats.add_dice_rolls(roll)
 
         # Choose target using player's strategy
         target = None
