@@ -2,10 +2,12 @@ import re
 
 import pytest
 
-from opaprikkie_sim.cli import create_strategy, get_version
+from opaprikkie_sim.cli import create_strategy
 from opaprikkie_sim.strategy import FinishPegsStrategy, GreedyStrategy, RandomStrategy
+from opaprikkie_sim.utilities import get_version
 
 
+# TODO move this to a separate test file for utilities
 def test_version() -> None:
     """Test that the version is correctly set and matches the format X.Y.Z."""
     version = get_version()

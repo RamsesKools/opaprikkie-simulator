@@ -8,20 +8,10 @@ from opaprikkie_sim.constants import PVP_MAX_PLAYERS, PVP_MIN_PLAYERS
 from opaprikkie_sim.display import Display
 from opaprikkie_sim.game import Game
 from opaprikkie_sim.strategy import STRATEGIES_NAME_MAPPING, Strategy
-from opaprikkie_sim.utilities import init_logger
+from opaprikkie_sim.utilities import get_version, init_logger
 
 logger = init_logger(__name__)
 display = Display.get_instance()
-
-
-def get_version() -> str:
-    """Get the version of the Opa Prikkie simulator."""
-    import importlib.metadata
-
-    try:
-        return importlib.metadata.version("opaprikkie_sim")
-    except importlib.metadata.PackageNotFoundError:
-        return "unknown"
 
 
 def create_strategy(strategy_name: str) -> Strategy:
