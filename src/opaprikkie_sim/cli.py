@@ -50,13 +50,13 @@ def play_interactive_game(num_players: int) -> None:  # noqa: C901
         max_prompt_attempts = 3
         prompt_attempts = 0
         while True:
-            choice: int = click.prompt("Enter choice (1-3)", type=int)
+            choice: int = click.prompt(f"Enter choice (1-{number_of_strategies})", type=int)
             if 1 <= choice <= number_of_strategies:
                 strategy_obj = create_strategy(strategies[choice - 1])
                 game.set_player_strategy(i, strategy_obj)
                 logger.info(f"Player {i + 1} assigned {strategies[choice - 1]} strategy")
                 break
-            display.display_warning("Please enter a number between 1 and 3.")
+            display.display_warning(f"Please enter a number between 1 and {number_of_strategies}.")
             prompt_attempts += 1
 
             if prompt_attempts >= max_prompt_attempts:

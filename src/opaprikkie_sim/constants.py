@@ -7,4 +7,4 @@ MIN_DICE_NUM: int = 1
 MAX_DICE_NUM: int = 6
 
 PVP_MIN_PLAYERS: int = 2
-PVP_MAX_PLAYERS: int = 4
+PVP_MAX_PLAYERS: int = 2
