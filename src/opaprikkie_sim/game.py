@@ -61,10 +61,8 @@ class Game:
         # GameStats object
         self.stats = GameStats(
             game_package_version=get_version(),
-            game_seed=0,  # Could be set if using random seed
-            total_turns=0,
+            game_seed=0,
             number_of_players=num_players,
-            dice_rolls=self.dice_stats,
         )
 
         logger.info(f"Game initialized with {num_players} players")

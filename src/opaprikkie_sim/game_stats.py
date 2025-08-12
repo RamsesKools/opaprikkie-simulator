@@ -1,6 +1,6 @@
 """Classes and methods for tracking game statistics."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from opaprikkie_sim.dice import DiceRoll
 
@@ -11,9 +11,9 @@ class GameStats:
 
     game_package_version: str
     game_seed: int
-    dice_rolls: dict[int, int]
+    number_of_players: int
+    dice_rolls: dict[int, int] = field(default_factory=dict[int, int])
     total_turns: int = 0
-    number_of_players: int = 0
 
     def add_dice_rolls(self, dice_roll: DiceRoll) -> None:
         """Add a dice roll to the statistics."""
