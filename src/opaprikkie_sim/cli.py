@@ -158,7 +158,13 @@ def cli() -> None:
 
 
 @cli.command()
-@click.option("--players", default=2, show_default=True, type=int, help="Number of players (2-4)")
+@click.option(
+    "--players",
+    default=2,
+    show_default=True,
+    type=int,
+    help=f"Number of players ({PVP_MIN_PLAYERS}-{PVP_MAX_PLAYERS})",
+)
 def interactive(players: int) -> None:
     """Play an interactive game with user input."""
     try:
