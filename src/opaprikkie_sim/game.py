@@ -49,19 +49,24 @@ class GameState:
 class Game:
     """Main game class that manages the Opa Prikkie game."""
 
-    def __init__(self, num_players: int = 2, dice_roller: DiceRoller | None = None):
-        self.dice_roller = dice_roller or DiceRoller()
+    def __init__(
+        self, num_players: int = 2, dice_roller: DiceRoller | None = None, seed: int | None = None
+    ):
+        self.seed = seed
+        self.dice_roller = dice_roller or DiceRoller(seed=seed)
         self.players = [Player(f"Player {i + 1}") for i in range(num_players)]
         self.state = GameState(players=self.players)
 
-        # Assign random strategy to all players by default
-        for player in self.players:
-            player.strategy = RandomStrategy()
+        # Assign random strategy to all players by default with different seeds
+        for i, player in enumerate(self.players):
+            # Use different seeds for each player to avoid identical behavior
+            player_seed = None if seed is None else seed + i + 1000
+            player.strategy = RandomStrategy(seed=player_seed)
 
         # GameStats object
         self.stats = GameStats(
             game_package_version=get_version(),
-            game_seed=0,
+            game_seed=seed or 0,
             number_of_players=num_players,
         )
 

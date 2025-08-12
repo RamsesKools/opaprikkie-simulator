@@ -88,17 +88,18 @@ class DiceRoll:
 class DiceRoller:
     """Handles dice rolling for the Opa Prikkie game."""
 
-    def __init__(self, num_dice: int = NUMBER_OF_DICE):
+    def __init__(self, num_dice: int = NUMBER_OF_DICE, seed: int | None = None):
         self.num_dice = num_dice
+        self.rng = random.Random(seed)
 
     def roll(self) -> DiceRoll:
         """Roll all dice and return the result."""
-        values = [random.randint(MIN_DICE_NUM, MAX_DICE_NUM) for _ in range(self.num_dice)]
+        values = [self.rng.randint(MIN_DICE_NUM, MAX_DICE_NUM) for _ in range(self.num_dice)]
         return DiceRoll(values=values)
 
     def roll_remaining(self, remaining_dice: int) -> DiceRoll:
         """Roll the remaining dice after some have been set aside."""
-        values = [random.randint(MIN_DICE_NUM, MAX_DICE_NUM) for _ in range(remaining_dice)]
+        values = [self.rng.randint(MIN_DICE_NUM, MAX_DICE_NUM) for _ in range(remaining_dice)]
         return DiceRoll(values=values)
 
     def simulate_turn(self, target: int) -> int:

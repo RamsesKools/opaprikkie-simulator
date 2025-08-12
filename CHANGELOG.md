@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
-- Seed random number for reproduceable games
+- Seed random number for reproduceable games.
 - Track and store game statistics.
 
 ## 0.3.0 (2025-08-07)

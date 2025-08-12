@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 class Strategy(ABC):
     """Abstract base class for game strategies."""
 
+    def __init__(self, seed: int | None = None):
+        self.rng = random.Random(seed)  # noqa: S311
+
     @abstractmethod
     def choose_target(self, board: Board, roll: DiceRoll) -> int | None:
         """Choose which target number to save for in this turn.
@@ -42,7 +45,7 @@ class RandomStrategy(Strategy):
         if not valid_targets:
             return None
 
-        return random.choice(valid_targets)  # noqa: S311
+        return self.rng.choice(valid_targets)
 
 
 class GreedyStrategy(Strategy):

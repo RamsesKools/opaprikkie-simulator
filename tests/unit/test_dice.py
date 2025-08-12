@@ -1,3 +1,5 @@
+import random
+
 import pytest
 
 from opaprikkie_sim.constants import MAX_DICE_NUM, MAX_ROW_HEIGHT, MIN_DICE_NUM, NUMBER_OF_DICE
@@ -56,18 +58,25 @@ def test_dice_roll_get_combinations_for_target_double(
         assert combos == expected
 
 
-def test_dice_roller_roll(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_dice_roller_roll() -> None:
     dummy = DummyRandom([2, 3, 4])
-    monkeypatch.setattr("random.randint", dummy.randint)
+
+    dummy_rng = random.Random()  # noqa: S311
+    dummy_rng.randint = dummy.randint
     roller = DiceRoller(num_dice=3)
+    roller.rng = dummy_rng
     roll = roller.roll()
     assert roll.values == [2, 3, 4]
 
 
-def test_dice_roller_roll_remaining(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_dice_roller_roll_remaining() -> None:
     dummy = DummyRandom([1, 6])
-    monkeypatch.setattr("random.randint", dummy.randint)
+    import random
+
+    dummy_rng = random.Random()  # noqa: S311
+    dummy_rng.randint = dummy.randint
     roller = DiceRoller(num_dice=2)
+    roller.rng = dummy_rng
     roll = roller.roll_remaining(2)
     assert roll.values == [1, 6]
 
@@ -97,9 +106,7 @@ def test_dice_roller_roll_remaining(monkeypatch: pytest.MonkeyPatch) -> None:
         ([2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1], 8, 0),
     ],
 )
-def test_dice_roller_simulate_turn(
-    monkeypatch: pytest.MonkeyPatch, dummy_values: list[int], target: int, expected: int
-) -> None:
+def test_dice_roller_simulate_turn(dummy_values: list[int], target: int, expected: int) -> None:
     # num_dice is always 6
     assert MAX_ROW_HEIGHT == 5
     assert NUMBER_OF_DICE == 6
@@ -107,8 +114,12 @@ def test_dice_roller_simulate_turn(
     assert MAX_DICE_NUM == 6
     assert len(dummy_values) == 12, "Dummy values should have 12 elements"
     dummy = DummyRandom(dummy_values)
-    monkeypatch.setattr("random.randint", dummy.randint)
+    import random
+
+    dummy_rng = random.Random()  # noqa: S311
+    dummy_rng.randint = dummy.randint
     roller = DiceRoller(num_dice=6)
+    roller.rng = dummy_rng
     count = roller.simulate_turn(target)
     assert count == expected
 
