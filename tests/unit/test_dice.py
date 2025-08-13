@@ -6,12 +6,12 @@ from opaprikkie_sim.constants import MAX_DICE_NUM, MAX_ROW_HEIGHT, MIN_DICE_NUM,
 from opaprikkie_sim.dice import DiceRoll, DiceRoller
 
 
-class DummyRandom:
+class DummyRandom(random.Random):
     def __init__(self, values: list[int]):
         self.values = values
         self.index = 0
 
-    def randint(self, _a: int, _b: int) -> int:
+    def randint(self, a: int, b: int) -> int:
         val = self.values[self.index % len(self.values)]
         self.index += 1
         return val
@@ -59,10 +59,8 @@ def test_dice_roll_get_combinations_for_target_double(
 
 
 def test_dice_roller_roll() -> None:
-    dummy = DummyRandom([2, 3, 4])
+    dummy_rng = DummyRandom([2, 3, 4])
 
-    dummy_rng = random.Random()  # noqa: S311
-    dummy_rng.randint = dummy.randint
     roller = DiceRoller(num_dice=3)
     roller.rng = dummy_rng
     roll = roller.roll()
@@ -70,11 +68,8 @@ def test_dice_roller_roll() -> None:
 
 
 def test_dice_roller_roll_remaining() -> None:
-    dummy = DummyRandom([1, 6])
-    import random
+    dummy_rng = DummyRandom([1, 6])
 
-    dummy_rng = random.Random()  # noqa: S311
-    dummy_rng.randint = dummy.randint
     roller = DiceRoller(num_dice=2)
     roller.rng = dummy_rng
     roll = roller.roll_remaining(2)
@@ -113,11 +108,8 @@ def test_dice_roller_simulate_turn(dummy_values: list[int], target: int, expecte
     assert MIN_DICE_NUM == 1
     assert MAX_DICE_NUM == 6
     assert len(dummy_values) == 12, "Dummy values should have 12 elements"
-    dummy = DummyRandom(dummy_values)
-    import random
+    dummy_rng = DummyRandom(dummy_values)
 
-    dummy_rng = random.Random()  # noqa: S311
-    dummy_rng.randint = dummy.randint
     roller = DiceRoller(num_dice=6)
     roller.rng = dummy_rng
     count = roller.simulate_turn(target)
