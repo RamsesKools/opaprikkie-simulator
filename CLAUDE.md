@@ -69,6 +69,8 @@ The game simulates traditional Opa Prikkie rules:
 - Pegs move up 5 positions to reach the top
 - First player to move all pegs to top wins
 
+In the python code all these 'numbers' are implemented via constant defined in `constants.py`. The game's implementation should when possible allow for these constants to vary.
+
 ### Strategy System
 
 Strategies implement the `Strategy` ABC:
@@ -86,6 +88,7 @@ Strategies implement the `Strategy` ABC:
 
 - **Linting**: Ruff with strict configuration (line length 100, Python 3.12+)
 - **Type checking**: MyPy in strict mode
+  - Add type hints everywhere in the code.
 - **Pre-commit hooks**: Automated code quality checks
 - **Import organization**: Combined imports, no trailing commas in isort
 
