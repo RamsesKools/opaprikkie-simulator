@@ -5,7 +5,7 @@ from typing import Any
 
 from opaprikkie_sim.board import Board
 from opaprikkie_sim.dice import DiceRoller
-from opaprikkie_sim.game_stats import GameStats
+from opaprikkie_sim.game_stats import GameStats, PlayerMove
 from opaprikkie_sim.strategy import RandomStrategy, Strategy
 from opaprikkie_sim.utilities import get_version, init_logger
 
@@ -70,13 +70,23 @@ class Game:
             number_of_players=num_players,
         )
 
+        # Add players to stats tracking
+        for player in self.players:
+            strategy_name = player.strategy.__class__.__name__ if player.strategy else "None"
+            self.stats.add_player(player.name, strategy_name)
+
         logger.info(f"Game initialized with {num_players} players")
 
     def set_player_strategy(self, player_index: int, strategy: Strategy) -> None:
         """Set the strategy for a specific player."""
         if 0 <= player_index < len(self.players):
             self.players[player_index].strategy = strategy
-            logger.debug(f"Player {player_index + 1} strategy set to {strategy.__class__.__name__}")
+            # Update stats with new strategy name
+            player_name = self.players[player_index].name
+            strategy_name = strategy.__class__.__name__
+            if player_name in self.stats.player_stats:
+                self.stats.player_stats[player_name].strategy_name = strategy_name
+            logger.debug(f"Player {player_index + 1} strategy set to {strategy_name}")
 
     def play_turn(self) -> dict[str, Any]:
         """Play a single turn for the current player."""
@@ -98,6 +108,19 @@ class Game:
         if target is None:
             # No valid target found, skip turn
             logger.info(f"Player {current_player.name} skipped turn - no valid target")
+
+            # Record the skipped turn
+            move = PlayerMove(
+                turn_number=self.state.turn_count,
+                player_name=current_player.name,
+                dice_roll=roll.values,
+                target_chosen=None,
+                moves_made=0,
+                status="skipped",
+                reason="no_valid_target",
+            )
+            self.stats.add_player_move(move)
+
             self.state.next_player()
             return {"status": "skipped", "player": current_player.name, "reason": "no_valid_target"}
 
@@ -114,6 +137,19 @@ class Game:
         if current_player.is_winner():
             self.state.game_over = True
             self.state.winner = current_player
+            self.stats.set_winner(current_player.name)
+
+            # Record the winning move
+            move = PlayerMove(
+                turn_number=self.state.turn_count,
+                player_name=current_player.name,
+                dice_roll=roll.values,
+                target_chosen=target,
+                moves_made=moves,
+                status="winner",
+            )
+            self.stats.add_player_move(move)
+
             logger.info(f"Player {current_player.name} won the game!")
             return {
                 "status": "winner",
@@ -121,6 +157,17 @@ class Game:
                 "target": target,
                 "moves": moves,
             }
+
+        # Record the regular move
+        move = PlayerMove(
+            turn_number=self.state.turn_count,
+            player_name=current_player.name,
+            dice_roll=roll.values,
+            target_chosen=target,
+            moves_made=moves,
+            status="continue",
+        )
+        self.stats.add_player_move(move)
 
         # Move to next player
         self.state.next_player()
@@ -146,6 +193,9 @@ class Game:
             result = self.play_turn()
             if result["status"] == "winner":
                 break
+
+        # Finalize game statistics
+        self.stats.finalize_game(self.state.turn_count)
 
         logger.info(f"Game completed in {self.state.turn_count} turns")
         return self.state.winner or self.players[0]
@@ -176,11 +226,57 @@ class Game:
             lines.append(player.board.display())
         return "\n".join(lines)
 
+    def get_game_statistics(self) -> dict[str, Any]:
+        """Get comprehensive game statistics."""
+        return self.stats.get_summary()
+
+    def get_detailed_move_history(self) -> dict[str, list[dict[str, Any]]]:
+        """Get detailed move history for all players."""
+        return self.stats.get_detailed_moves()
+
+    def display_game_summary(self) -> str:
+        """Display a formatted summary of the game statistics."""
+        summary = self.stats.get_summary()
+        lines: list[str] = []
+
+        lines.append("=" * 50)
+        lines.append("GAME SUMMARY")
+        lines.append("=" * 50)
+        lines.append(f"Version: {summary['game_info']['version']}")
+        lines.append(f"Seed: {summary['game_info']['seed']}")
+        lines.append(f"Total Turns: {summary['game_info']['total_turns']}")
+        lines.append(f"Winner: {summary['game_info']['winner']}")
+        lines.append("")
+
+        lines.append("PLAYER STATISTICS:")
+        lines.append("-" * 30)
+        for name, stats in summary["player_stats"].items():
+            lines.append(f"{name} ({stats['strategy']}):")
+            lines.append(f"  Total Moves: {stats['total_moves']}")
+            lines.append(f"  Turns Played: {stats['turns_played']}")
+            lines.append(f"  Turns Skipped: {stats['turns_skipped']}")
+            lines.append(f"  Winner: {'Yes' if stats['is_winner'] else 'No'}")
+            lines.append("")
+
+        return "\n".join(lines)
+
     def reset(self) -> None:
         """Reset the game to initial state."""
         for player in self.players:
             player.board = Board()
         self.state = GameState(players=self.players)
         self.dice_stats = dict.fromkeys(range(1, 7), 0)
-        self.stats.total_turns = 0
+
+        # Reset stats
+        self.stats = GameStats(
+            game_package_version=self.stats.game_package_version,
+            game_seed=self.stats.game_seed,
+            number_of_players=self.stats.number_of_players,
+        )
+
+        # Re-add players to stats tracking
+        for player in self.players:
+            strategy_name = player.strategy.__class__.__name__ if player.strategy else "None"
+            self.stats.add_player(player.name, strategy_name)
+
         logger.info("Game reset to initial state")
