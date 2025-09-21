@@ -1,5 +1,5 @@
 # Define the modules as a global variable
-$global:modules = "src/ff tests"
+$global:modules = "src/opaprikkie_sim tests"
 
 function RunClean {
     Remove-Item -Path ".coverage" -Force -Recurse -ErrorAction SilentlyContinue
@@ -9,39 +9,55 @@ function RunClean {
     Remove-Item -Path "*.egg-info" -Force -Recurse -ErrorAction SilentlyContinue
     Remove-Item -Path "dist" -Force -Recurse -ErrorAction SilentlyContinue
     Get-ChildItem -Path . | Where-Object { $_.Name -match "__pycache__|docs_.*|\.pyc|\.pyo" } | ForEach-Object { Remove-Item $_.FullName -Force -Recurse }
-    Write-Output "Clean command executed successfully."
 }
 
 function RunFormat {
     & poetry run ruff format $global:modules
-    Write-Output "Format command executed successfully for modules: $global:modules"
 }
 
 function RunCheckRuff {
     & poetry run ruff check $global:modules
-    Write-Output "Ruff check command executed successfully for modules: $global:modules"
 }
 
 function RunCheckMypy {
-    & poetry run mypy --pretty $global:modules --install-types --non-interactive
-    Write-Output "Mypy type-check command executed successfully for modules: $global:modules"
+    & poetry run mypy $global:modules --pretty --install-types --non-interactive
 }
 
 function RunCheck {
-    RunCheckRuff
     RunCheckMypy
-    Write-Output "Check command executed successfully (ruff + mypy)."
+    RunCheckRuff
 }
 
 function RunPytest {
-    & poetry run pytest --cov=opaprikkie-sim --junitxml=python_test_report.xml --basetemp=.\tests\.tmp
-    Write-Output "Pytest command executed successfully."
+    & poetry run pytest --cov=opaprikkie_sim --cov-branch --junitxml=python_test_report.xml
 }
 
-function RunCheckTest {
+function RunAllCheckTest {
     RunCheck
     RunPytest
-    Write-Output "Check + Test command executed successfully."
+}
+
+function ShowHelp {
+    Write-Output "usage: .\make.ps1 [target]"
+    Write-Output ""
+    Write-Output "clean:"
+    Write-Output "  clean                          remove all generated temp files"
+    Write-Output ""
+    Write-Output "format:"
+    Write-Output "  format                         format code by ruff"
+    Write-Output ""
+    Write-Output "check:"
+    Write-Output "  check_ruff                     check code linting and formatting with ruff"
+    Write-Output "  check_mypy                     check typing with mypy"
+    Write-Output "  check                          check ruff and mypy"
+    Write-Output ""
+    Write-Output "tests:"
+    Write-Output "  pytest                         run tests with pytest"
+    Write-Output "  all_check_test                 run all checks and tests"
+    Write-Output ""
+    Write-Output "other:"
+    Write-Output "  help                           show this help"
+    Write-Output ""
 }
 
 # Check the command-line arguments and execute the corresponding command
@@ -52,6 +68,7 @@ switch ($args[0]) {
     "check_mypy" { RunCheckMypy }
     "check" { RunCheck }
     "pytest" { RunPytest }
-    "check-test" { RunCheckTest }
-    default { Write-Output "Invalid argument. Please specify a valid command: clean, format, check_ruff, check_mypy, check, pytest, check-test, or documentation." }
+    "all_check_test" { RunAllCheckTest }
+    "help" { ShowHelp }
+    default { ShowHelp }
 }
