@@ -8,32 +8,22 @@ from opaprikkie_sim.constants import PVP_MAX_PLAYERS, PVP_MIN_PLAYERS
 from opaprikkie_sim.display import Display
 from opaprikkie_sim.game import Game
 from opaprikkie_sim.strategy import STRATEGIES_NAME_MAPPING, Strategy
-from opaprikkie_sim.utilities import init_logger
+from opaprikkie_sim.utilities import get_version, init_logger
 
 logger = init_logger(__name__)
 display = Display.get_instance()
 
 
-def get_version() -> str:
-    """Get the version of the Opa Prikkie simulator."""
-    import importlib.metadata
-
-    try:
-        return importlib.metadata.version("opaprikkie_sim")
-    except importlib.metadata.PackageNotFoundError:
-        return "unknown"
-
-
-def create_strategy(strategy_name: str) -> Strategy:
+def create_strategy(strategy_name: str, seed: int | None = None) -> Strategy:
     """Create a strategy based on the name."""
     strategy_class = STRATEGIES_NAME_MAPPING.get(strategy_name.lower())
     if not strategy_class:
         raise ValueError(f"Unknown strategy: {strategy_name}")
 
-    return strategy_class()
+    return strategy_class(seed=seed)
 
 
-def play_interactive_game(num_players: int) -> None:  # noqa: C901
+def play_interactive_game(num_players: int, seed: int | None = None) -> None:  # noqa: C901
     """Play an interactive game with user input."""
     display.display_info("Welcome to Opa Prikkie Simulator!")
     display.display_separator()
@@ -45,7 +35,7 @@ def play_interactive_game(num_players: int) -> None:  # noqa: C901
         return
 
     # Create game
-    game = Game(num_players=num_players)
+    game = Game(num_players=num_players, seed=seed)
     logger.info(f"Created game with {num_players} players")
 
     # Set strategies
@@ -60,13 +50,14 @@ def play_interactive_game(num_players: int) -> None:  # noqa: C901
         max_prompt_attempts = 3
         prompt_attempts = 0
         while True:
-            choice: int = click.prompt("Enter choice (1-3)", type=int)
+            choice: int = click.prompt(f"Enter choice (1-{number_of_strategies})", type=int)
             if 1 <= choice <= number_of_strategies:
-                strategy_obj = create_strategy(strategies[choice - 1])
+                player_seed = None if seed is None else seed + i + 2000
+                strategy_obj = create_strategy(strategies[choice - 1], seed=player_seed)
                 game.set_player_strategy(i, strategy_obj)
                 logger.info(f"Player {i + 1} assigned {strategies[choice - 1]} strategy")
                 break
-            display.display_warning("Please enter a number between 1 and 3.")
+            display.display_warning(f"Please enter a number between 1 and {number_of_strategies}.")
             prompt_attempts += 1
 
             if prompt_attempts >= max_prompt_attempts:
@@ -111,7 +102,11 @@ def play_interactive_game(num_players: int) -> None:  # noqa: C901
 
 
 def run_simulation(
-    num_games: int, num_players: int = 2, strategy1: str = "random", strategy2: str = "random"
+    num_games: int,
+    num_players: int = 2,
+    strategy1: str = "random",
+    strategy2: str = "random",
+    seed: int | None = None,
 ) -> None:
     """Run multiple simulations and show statistics."""
     display.display_info(f"Running {num_games} simulations...")
@@ -126,12 +121,16 @@ def run_simulation(
         if (i + 1) % 100 == 0:
             logger.info(f"Completed {i + 1} games...")
 
-        game = Game(num_players=num_players)
+        # Use a different seed for each game if base seed is provided
+        game_seed = None if seed is None else seed + i
+        game = Game(num_players=num_players, seed=game_seed)
 
         # Set strategies
-        game.set_player_strategy(0, create_strategy(strategy1))
+        strategy1_seed = None if seed is None else seed + i + 10000
+        strategy2_seed = None if seed is None else seed + i + 20000
+        game.set_player_strategy(0, create_strategy(strategy1, seed=strategy1_seed))
         if num_players > 1:
-            game.set_player_strategy(1, create_strategy(strategy2))
+            game.set_player_strategy(1, create_strategy(strategy2, seed=strategy2_seed))
 
         # Store strategy class names for display
         for idx, player in enumerate(game.players):
@@ -168,11 +167,23 @@ def cli() -> None:
 
 
 @cli.command()
-@click.option("--players", default=2, show_default=True, type=int, help="Number of players (2-4)")
-def interactive(players: int) -> None:
+@click.option(
+    "--players",
+    default=2,
+    show_default=True,
+    type=int,
+    help=f"Number of players ({PVP_MIN_PLAYERS}-{PVP_MAX_PLAYERS})",
+)
+@click.option(
+    "--seed",
+    default=None,
+    type=int,
+    help="Random seed for reproducible games",
+)
+def interactive(players: int, seed: int | None) -> None:
     """Play an interactive game with user input."""
     try:
-        play_interactive_game(players)
+        play_interactive_game(players, seed)
     except KeyboardInterrupt:
         display.display_info("\nGame interrupted by user.")
         logger.info("Game interrupted by user")
@@ -202,10 +213,16 @@ def interactive(players: int) -> None:
     type=click.Choice(["random", "greedy", "smart"]),
     help="Strategy for player 2",
 )
-def simulation(games: int, players: int, strategy1: str, strategy2: str) -> None:
+@click.option(
+    "--seed",
+    default=None,
+    type=int,
+    help="Random seed for reproducible simulations",
+)
+def simulation(games: int, players: int, strategy1: str, strategy2: str, seed: int | None) -> None:
     """Run multiple simulations and show statistics."""
     try:
-        run_simulation(games, players, strategy1, strategy2)
+        run_simulation(games, players, strategy1, strategy2, seed)
     except KeyboardInterrupt:
         display.display_info("\nGame interrupted by user.")
         logger.info("Game interrupted by user")

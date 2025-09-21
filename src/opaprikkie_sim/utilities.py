@@ -34,3 +34,13 @@ def init_logger(name: str = "opaprikkie_sim", level: int = logging.INFO) -> logg
         logger.addHandler(console_handler)
 
     return logger
+
+
+def get_version() -> str:
+    """Get the version of the Opa Prikkie simulator."""
+    import importlib.metadata
+
+    try:
+        return importlib.metadata.version("opaprikkie_sim")
+    except importlib.metadata.PackageNotFoundError:
+        return "unknown"
