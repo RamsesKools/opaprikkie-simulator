@@ -1,5 +1,5 @@
 [tool.poetry]
-authors = ["Ramses Kools <ramseskools@hotmail.com>"]
+authors = ["Ramses Kools <14346781+RamsesKools@users.noreply.github.com>"]
 classifiers = [
   "Programming Language :: Python :: 3.12",
 ]
