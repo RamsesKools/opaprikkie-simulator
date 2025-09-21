@@ -1,5 +1,5 @@
 # Define the modules as a global variable
-$global:modules = "src/opaprikkie_sim tests"
+$global:modules = @("src/opaprikkie_sim", "tests")
 
 function RunClean {
     Remove-Item -Path ".coverage" -Force -Recurse -ErrorAction SilentlyContinue
