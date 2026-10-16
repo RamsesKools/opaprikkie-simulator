@@ -3,6 +3,8 @@ name: CI
 on:
   pull_request:
   workflow_dispatch:  # to allow manual triggering
+  schedule:
+    - cron: '0 0 * * 6'  # every saturday morning at midnight UTC
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
@@ -55,6 +57,7 @@ jobs:
 
   publish-pytest-results:
     needs: [CI]
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     permissions:
       checks: write

@@ -1,15 +1,17 @@
+import random
+
 import pytest
 
 from opaprikkie_sim.constants import MAX_DICE_NUM, MAX_ROW_HEIGHT, MIN_DICE_NUM, NUMBER_OF_DICE
 from opaprikkie_sim.dice import DiceRoll, DiceRoller
 
 
-class DummyRandom:
+class DummyRandom(random.Random):
     def __init__(self, values: list[int]):
         self.values = values
         self.index = 0
 
-    def randint(self, _a: int, _b: int) -> int:
+    def randint(self, a: int, b: int) -> int:
         val = self.values[self.index % len(self.values)]
         self.index += 1
         return val
@@ -56,18 +58,20 @@ def test_dice_roll_get_combinations_for_target_double(
         assert combos == expected
 
 
-def test_dice_roller_roll(monkeypatch: pytest.MonkeyPatch) -> None:
-    dummy = DummyRandom([2, 3, 4])
-    monkeypatch.setattr("random.randint", dummy.randint)
+def test_dice_roller_roll() -> None:
+    dummy_rng = DummyRandom([2, 3, 4])
+
     roller = DiceRoller(num_dice=3)
+    roller.rng = dummy_rng
     roll = roller.roll()
     assert roll.values == [2, 3, 4]
 
 
-def test_dice_roller_roll_remaining(monkeypatch: pytest.MonkeyPatch) -> None:
-    dummy = DummyRandom([1, 6])
-    monkeypatch.setattr("random.randint", dummy.randint)
+def test_dice_roller_roll_remaining() -> None:
+    dummy_rng = DummyRandom([1, 6])
+
     roller = DiceRoller(num_dice=2)
+    roller.rng = dummy_rng
     roll = roller.roll_remaining(2)
     assert roll.values == [1, 6]
 
@@ -97,18 +101,17 @@ def test_dice_roller_roll_remaining(monkeypatch: pytest.MonkeyPatch) -> None:
         ([2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1], 8, 0),
     ],
 )
-def test_dice_roller_simulate_turn(
-    monkeypatch: pytest.MonkeyPatch, dummy_values: list[int], target: int, expected: int
-) -> None:
+def test_dice_roller_simulate_turn(dummy_values: list[int], target: int, expected: int) -> None:
     # num_dice is always 6
     assert MAX_ROW_HEIGHT == 5
     assert NUMBER_OF_DICE == 6
     assert MIN_DICE_NUM == 1
     assert MAX_DICE_NUM == 6
     assert len(dummy_values) == 12, "Dummy values should have 12 elements"
-    dummy = DummyRandom(dummy_values)
-    monkeypatch.setattr("random.randint", dummy.randint)
+    dummy_rng = DummyRandom(dummy_values)
+
     roller = DiceRoller(num_dice=6)
+    roller.rng = dummy_rng
     count = roller.simulate_turn(target)
     assert count == expected
 

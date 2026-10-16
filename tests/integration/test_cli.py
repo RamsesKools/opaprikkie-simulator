@@ -1,6 +1,7 @@
 from click.testing import CliRunner
 
 from opaprikkie_sim.cli import cli
+from opaprikkie_sim.constants import PVP_MAX_PLAYERS, PVP_MIN_PLAYERS
 
 
 def test_simulation_basic():
@@ -71,7 +72,10 @@ def test_interactive_invalid_players() -> None:
         ["interactive", "--players", "1"],
     )
     assert result.exit_code == 0
-    assert "Number of players must be between 2 and 4." in result.output
+    assert (
+        f"Number of players must be between {PVP_MIN_PLAYERS} and {PVP_MAX_PLAYERS}."
+        in result.output
+    )
 
 
 def test_interactive_invalid_strategy_choice():
