@@ -13,7 +13,10 @@ async function call(path: string, body: unknown): Promise<GameResponse> {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   })
-  if (!r.ok) throw new Error((await r.json()).detail ?? r.statusText)
+  if (!r.ok) {
+    const detail = await r.json().then((b) => b.detail, () => null)
+    throw new Error(typeof detail === 'string' ? detail : `backend unavailable (HTTP ${r.status})`)
+  }
   return r.json()
 }
 

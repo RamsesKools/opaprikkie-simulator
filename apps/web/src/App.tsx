@@ -1,6 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react'
 import { Board } from './components/Board'
 import { DiceMat, type Die } from './components/DiceMat'
+import { PixelSelect } from './components/PixelSelect'
 import { chooseTarget, newGame, type GameResponse, type GameState, type Opponent, type TurnEvent } from './lib/contract'
 import { describe, label } from './lib/format'
 
@@ -25,7 +26,6 @@ export default function App() {
   const [seed, setSeed] = useState('')
   const [gameId, setGameId] = useState<string | null>(null)
   const [game, setGame] = useState<GameState | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   const [pegs, setPegs] = useState(emptyPegs)
@@ -130,10 +130,9 @@ export default function App() {
       }
       setGameId(r.game_id)
       setGame(r.state)
-      setError(null)
       await replay(prev, r.state)
     } catch (e) {
-      setError((e as Error).message)
+      setRibbon(`Error: ${(e as Error).message}`)
     }
     setBusy(false)
   }
@@ -160,16 +159,7 @@ export default function App() {
       <h1 className="px-title">Opa Prikkie (React)</h1>
 
       <form className="px-controls" onSubmit={start}>
-        <label>
-          Opponent
-          <select className="px-input" value={opponent} onChange={(e) => setOpponent(e.target.value as Opponent)}>
-            {Object.entries(opponents).map(([value, text]) => (
-              <option key={value} value={value}>
-                {text}
-              </option>
-            ))}
-          </select>
-        </label>
+        <PixelSelect label="Opponent" value={opponent} options={opponents} onChange={setOpponent} disabled={busy} />
         <label>
           Seed <input className="px-input" type="number" value={seed} onChange={(e) => setSeed(e.target.value)} />
         </label>
@@ -177,8 +167,6 @@ export default function App() {
           Start game
         </button>
       </form>
-
-      {error && <p className="ribbon">Error: {error}</p>}
 
       <div className="px-table">
         {board(0)}
