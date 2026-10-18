@@ -1,0 +1,28 @@
+[project]
+name = "opaprikkie-web"
+version = "0.0.0"
+description = "Opa Prikkie browser game, NiceGUI candidate for #6"
+requires-python = ">=3.11"
+dependencies = [
+  "nicegui",
+  "httpx",
+]
+
+[project.scripts]
+opaprikkie-web = "opaprikkie_web.main:main"
+
+[dependency-groups]
+dev = ["pillow"]
+
+[build-system]
+requires = ["uv_build>=0.13,<0.14"]
+build-backend = "uv_build"
+
+[tool.ruff]
+extend = "../../pyproject.toml"
+
+[tool.ruff.lint]
+extend-ignore = ["C901", "PLR0915", "S311", "PLR2004", "PERF401"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*" = ["INP001"]
