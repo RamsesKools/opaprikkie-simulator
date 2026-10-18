@@ -2,6 +2,12 @@
 
 React candidate for [#6](https://github.com/RamsesKools/opaprikkie-simulator/issues/6): the browser game as a Vite + React single-page app in TypeScript, calling [`apps/backend`](../backend/README.md) over HTTP.
 
+## Status
+
+Good enough as the MVP frontend: it plays a full game against the AI or hot-seat and only renders the state the backend returns.
+The gameplay itself does not follow the published rules completely yet; see [Rules status](../backend/README.md#rules-status).
+Those fixes land in the backend, with at most small UI additions here, such as showing set-aside dice for [#16](https://github.com/RamsesKools/opaprikkie-simulator/issues/16).
+
 ## Run
 
 Needs [uv](https://docs.astral.sh/uv/) and [Node](https://nodejs.org/) 22+. From the repo root:
