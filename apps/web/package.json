@@ -1,0 +1,26 @@
+{
+  "name": "opaprikkie-web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --port 5173",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "gen:api": "npx -y openapi-typescript@7.13.0 http://127.0.0.1:8000/openapi.json -o src/lib/api.d.ts",
+    "prepare": "svelte-kit sync || echo \"\""
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-auto": "^8.0.0",
+    "@sveltejs/kit": "^3.1.0",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@types/node": "^26.6.5",
+    "svelte": "^5.57.2",
+    "svelte-check": "^4.7.7",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.4"
+  },
+  "imports": {
+    "#lib": "./src/lib/index.js",
+    "#lib/*": "./src/lib/*"
+  }
+}
