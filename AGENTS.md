@@ -37,3 +37,14 @@ The default game has two players, six dice, and pegs for targets 1 through 12. T
 - Add or update tests alongside behavior changes, following the existing test layout.
 - Keep formatting and lint rules in `pyproject.toml` authoritative; use Ruff rather than introducing another formatter or linter.
 - Keep package implementation under `src/opaprikkie_sim/` and preserve the existing Poetry project layout.
+
+## Wayfinder planning
+
+The browser MVP map lives in GitHub: map issue #14, with its tickets as sub-issues.
+Read and write the map there with `gh`, following the GitHub mapping in the global wayfinder docs.
+`.plan/` is a gitignored, read-only cache for `wayfinder-maps status`, `lint`, and the viewer; never hand-edit it.
+Refresh it after every map change:
+
+```sh
+wayfinder-pull RamsesKools/opaprikkie-simulator 14 .plan/opa-prikkie-browser-mvp
+```
