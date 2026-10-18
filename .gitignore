@@ -92,3 +92,6 @@ ENV/
 # mypy
 .mypy_cache/
 python_test_report.xml
+
+# Wayfinder map cache, pulled from GitHub (see AGENTS.md)
+.plan/
