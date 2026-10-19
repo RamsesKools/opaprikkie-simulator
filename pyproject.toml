@@ -41,13 +41,14 @@ notebook = [
 ]
 
 [tool.taskipy.tasks]
-format = { cmd = "ruff format && ruff check --select I --fix", help = "format Python" }
-lint = { cmd = "ruff check && ruff format --check", help = "lint Python" }
-typecheck = { cmd = "ty check", help = "type-check Python" }
+format = { cmd = "ruff format && ruff check --select I --fix && npm --prefix frontend run format", help = "format Python and frontend" }
+lint = { cmd = "ruff check && ruff format --check && npm --prefix frontend run lint", help = "lint Python and frontend" }
+typecheck = { cmd = "ty check && npm --prefix frontend run typecheck", help = "type-check Python and frontend" }
 lint_imports = { cmd = "lint-imports", help = "check module boundaries" }
-test = { cmd = "pytest", help = "run tests with the coverage gate" }
+test = { cmd = "pytest && npm --prefix frontend test", help = "run Python and frontend tests with the coverage gates" }
 check = { cmd = "task lint && task typecheck && task lint_imports && task test", help = "run every check" }
-dev = { cmd = "uvicorn opaprikkie.backend.app:create_app --factory --reload", help = "run the backend with reload" }
+dev = { cmd = "python scripts/dev.py", help = "run the backend with reload and Vite with its /api proxy" }
+bump = { cmd = "python scripts/version.py bump", help = "bump the app version: major, minor, or patch" }
 wayfinder_pull = { cmd = "wayfinder-pull RamsesKools/opaprikkie-simulator 14 .plan/opa-prikkie-browser-mvp", help = "refresh the planning map cache" }
 
 [tool.pytest.ini_options]

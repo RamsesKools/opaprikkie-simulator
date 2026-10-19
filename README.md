@@ -23,12 +23,13 @@ The plan is in [the roadmap](docs/roadmap/monorepo_mvp.md), and the work in issu
 
 ## Setup
 
-Install [uv](https://docs.astral.sh/uv/), then:
+Install [uv](https://docs.astral.sh/uv/) and [Node](https://nodejs.org/) 24 (see `.nvmrc`), then:
 
 ```bash
 git clone https://github.com/RamsesKools/opaprikkie-simulator.git
 cd opaprikkie-simulator
 uv sync
+npm --prefix frontend ci
 uv run pre-commit install
 ```
 
@@ -51,7 +52,7 @@ taskipy runs every common command; `uv run task --list` shows them all.
 ```bash
 uv run task format  # format the code
 uv run task check   # lint, type-check, module boundaries, and tests
-uv run task dev     # backend with reload
+uv run task dev     # backend and frontend with reload on http://localhost:5173
 ```
 
 Layout, tooling, and conventions are in [docs/development](docs/development/conventions.md).

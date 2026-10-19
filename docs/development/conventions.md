@@ -8,7 +8,7 @@ Where things live is in [repository layout](repo_layout.md).
 - Frontend: React SPA with Vite and TypeScript, started from the [#22 prototype](https://github.com/RamsesKools/opaprikkie-simulator/pull/22) ([ADR 0001](../adr/0001_react_spa_frontend.md)).
 - API client: `openapi-typescript` types with `openapi-fetch`. No router, state library, or CSS framework until one is needed.
 - API: FastAPI and uvicorn, with Pydantic models as the HTTP contract.
-- Move the frontend to TypeScript 7 once Vite, React types, and tsgolint support it.
+- Frontend toolchain: Node 24 LTS from `.nvmrc`, npm, and TypeScript 7, which Vite, the React types, and tsgolint all support.
 
 ## Commands
 
@@ -35,7 +35,8 @@ taskipy is the single command surface for Python and frontend: `uv run task <nam
 - Avoid `select = ["ALL"]` with long ignore lists: every Ruff upgrade silently enables new rules.
 - ty is the Python type checker.
 - Frontend: oxlint with type-aware rules (`oxlint-tsgolint`), React Compiler rules, and snake_case filenames; oxfmt formats; `tsc -b` type-checks separately from the build ([research](../research/frontend_lint_format.md)).
-- Pin exact versions of `oxlint`, `oxfmt`, and `oxlint-tsgolint`; oxfmt is still beta.
+- Pin exact npm versions (`save-exact` in `frontend/.npmrc`); oxfmt is still beta.
+- oxfmt leaves Markdown to mdformat.
 
 ## Testing
 
@@ -43,6 +44,7 @@ taskipy is the single command surface for Python and frontend: `uv run task <nam
 - A parity test plays the same seeded game via FastAPI's TestClient and in-process and compares the logs.
 - Container tests (marker `container`) run against the built image and are skipped by default.
 - Frontend: Vitest, React Testing Library, and jsdom, 90% v8 coverage excluding generated types and `main.tsx`.
+  Unit tests sit next to the source as `*.test.ts(x)`.
 - Contract suite: `frontend/tests/contract/` drives the real API client against a live backend through every flow the UI relies on (create session, start game, choose target, game end, rejected target, cookie resume).
 - Drift check: `task gen_api` writes `frontend/openapi.json` and `api.d.ts` without a server; both are committed, and CI fails when regenerating them changes anything.
 
@@ -50,16 +52,16 @@ taskipy is the single command surface for Python and frontend: `uv run task <nam
 
 - pre-commit-hooks: large files, merge conflicts, TOML and YAML, end of file, line endings, whitespace, `debug-statements`, `check-ast`, shebang checks, and `no-commit-to-branch` on `main`.
 - `uv-lock`, `validate-pyproject`, mdformat with `--number` and compact tables in `.mdformat.toml` (gfm, which includes tables, and frontmatter), and Ruff format and check.
-- Local frontend hooks scoped to `^frontend/`: oxfmt, oxlint, `tsc`, and `vitest related --run`.
-- A version-sync check between `pyproject.toml` and `frontend/package.json`.
+- Local frontend hooks scoped to `^frontend/`: oxfmt, oxlint, `tsc`, and `vitest related --run`; they need `npm ci` in `frontend/`.
+- A version-sync check between `pyproject.toml` and `frontend/package.json` (`scripts/version.py`).
 - Not on commit: ty (CI and `task check` only). Not yet: gitleaks, and shellcheck (helper scripts are Python).
 
 ## CI
 
 - One workflow on pull requests, no path filters:
-  - `pre-commit`
-  - `python`: setup-uv with cache, then `task check` and tests
-  - `web`: Node 24 LTS from `.nvmrc`, npm cache, `npm ci`, `npm run check`
+  - `pre-commit`, with Node for the frontend hooks
+  - `python`: setup-uv and Node, then `task check`, which covers both stacks
+  - `web`: Node 24 LTS from `.nvmrc`, npm cache, `npm ci`, `npm run check`, `npm run build`
   - `contract`: drift check and contract suite
   - `docker`: amd64 build check without pushing
 - On `main`, a publish job pushes the image to GHCR.
