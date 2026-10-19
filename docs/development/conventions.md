@@ -28,6 +28,7 @@ taskipy is the single command surface for Python and frontend: `uv run task <nam
 | `bump <part>` | sets the version in `pyproject.toml` and `frontend/package.json` |
 | `wayfinder_pull` | refreshes the `.plan/` cache of the planning map |
 | `image_build`, `image_build_multiarch` | local Docker builds |
+| `test_container` | the container tests against the built image |
 
 ## Linting and type checking
 
@@ -42,7 +43,7 @@ taskipy is the single command surface for Python and frontend: `uv run task <nam
 
 - Python: pytest, one combined 90% coverage gate over `opaprikkie`.
 - A parity test plays the same seeded game via FastAPI's TestClient and in-process and compares the logs.
-- Container tests (marker `container`) run against the built image and are skipped by default.
+- Container tests (marker `container`) run against the built image and are skipped by default; `task test_container` runs them.
 - Frontend: Vitest, React Testing Library, and jsdom, 90% v8 coverage excluding generated types and `main.tsx`.
   Unit tests sit next to the source as `*.test.ts(x)`.
 - Contract suite: `frontend/tests/contract/` drives the real API client against a live backend through every flow the UI relies on (create session, start game, choose target, game end, rejected target, cookie resume).
@@ -63,8 +64,8 @@ taskipy is the single command surface for Python and frontend: `uv run task <nam
   - `python`: setup-uv and Node, then `task check`, which covers both stacks
   - `web`: Node 24 LTS from `.nvmrc`, npm cache, `npm ci`, `npm run check`, `npm run build`
   - `contract`: drift check and contract suite
-  - `docker`: amd64 build check without pushing
-- On `main`, a publish job pushes the image to GHCR.
+  - `docker`: amd64 build without pushing, then the container tests
+- On `main`, the `publish.yml` workflow pushes the image to GHCR.
 
 ## Versioning and images
 
@@ -72,6 +73,7 @@ taskipy is the single command surface for Python and frontend: `uv run task <nam
   No changelog, and no forced bump per PR.
 - Image tag `<version>`, then `<version>.postN` when the same version rebuilds to a different digest, plus `latest`.
   Version and commit are image `LABEL`s.
+- Publishing pushes by digest, with `SOURCE_DATE_EPOCH` at the commit time so a rerun of the same commit can match, then tags it only when it differs from the newest tag for the version.
 - CI builds amd64 only.
   The Dockerfile must also build on arm64, so a Mac builds natively with `docker compose up --build`.
   This split isn't fixed yet and may change once deployment is clearer.
@@ -85,6 +87,7 @@ taskipy is the single command surface for Python and frontend: `uv run task <nam
 - BuildKit cache mounts for npm and uv, and GHA layer cache in CI.
 - FastAPI serves the SPA at `/` and the API at `/api`, so everything is same origin with no CORS.
 - `compose.yaml` has one service with `image: ghcr.io/ramseskools/opaprikkie:latest` and `build: .`, port `${PORT:-8000}:8000`, optional `.env`, `restart: unless-stopped`, and a Python healthcheck on `/api/health`.
+  It pins `HOST`, `PORT`, and `STATIC_DIR` so a `.env` written for native runs can't break the container.
   - Laptop: `docker compose up --build`.
   - Homeserver: `docker compose pull && docker compose up -d`.
 - The dev loop is native `task dev`, not Compose. Keep it loose until we've used it.

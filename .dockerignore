@@ -1,0 +1,12 @@
+*
+!pyproject.toml
+!uv.lock
+!.python-version
+!README.md
+!LICENSE
+!src/opaprikkie/
+!frontend/
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+**/__pycache__/

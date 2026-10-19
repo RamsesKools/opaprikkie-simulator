@@ -19,3 +19,26 @@ def test_docs_are_served_in_dev_mode_only(dev_mode, status):
 
     assert client.get("/docs").status_code == status
     assert client.get("/openapi.json").status_code == status
+
+
+@pytest.fixture
+def spa(tmp_path):
+    (tmp_path / "assets").mkdir()
+    (tmp_path / "index.html").write_text("<div id=root></div>")
+    (tmp_path / "assets" / "app.js").write_text("console.log(1)")
+    return tmp_path
+
+
+def test_serves_the_spa_next_to_the_api(spa):
+    client = TestClient(create_app(Settings(static_dir=spa)))
+
+    assert client.get("/").text == "<div id=root></div>"
+    assert client.get("/assets/app.js").text == "console.log(1)"
+    assert client.get("/api/health").status_code == 200
+
+
+def test_runs_without_a_built_spa(tmp_path):
+    client = TestClient(create_app(Settings(static_dir=tmp_path / "missing")))
+
+    assert client.get("/").status_code == 404
+    assert client.get("/api/health").status_code == 200

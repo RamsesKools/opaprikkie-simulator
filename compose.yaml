@@ -1,0 +1,21 @@
+services:
+  opaprikkie:
+    image: ghcr.io/ramseskools/opaprikkie:latest
+    build: .
+    ports:
+      - "${PORT:-8000}:8000"
+    env_file:
+      - path: .env
+        required: false
+    # Pinned so a .env written for native runs can't break the container.
+    environment:
+      OPAPRIKKIE_HOST: 0.0.0.0
+      OPAPRIKKIE_PORT: 8000
+      OPAPRIKKIE_STATIC_DIR: /app/static
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
