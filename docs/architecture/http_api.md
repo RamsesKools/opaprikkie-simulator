@@ -26,6 +26,7 @@ Choices, observations, and rejections follow the [strategy contract](strategy_co
 
 - The cookie `opaprikkie_session` holds only an opaque id: HttpOnly, SameSite=Lax, `Secure` with `OPAPRIKKIE_COOKIE_SECURE`, and a `Max-Age` of `SESSION_TTL_DAYS`, refreshed on every use.
 - Sessions live in memory, one game each, at most `MAX_SESSIONS`: creating one past the cap evicts the least recently used.
+- The store lives in one process, so the backend must run as a single uvicorn worker.
 - A session unused for `SESSION_TTL_DAYS` expires.
 - Non-browser callers use the same path: `POST /api/sessions`, then send the cookie back.
 
@@ -39,7 +40,7 @@ Choices, observations, and rejections follow the [strategy contract](strategy_co
 
 - With `OPAPRIKKIE_DEV_MODE` off, `seed`, `first_player`, or `strategy` on `POST /api/game` gets a 403 `dev_mode_only` listing the `fields`, and `Game` shows neither `seed` nor `strategy`.
 - With it on, those fields are accepted, `Game` shows both, and `/docs` and `/openapi.json` are served.
-- A dev `first_player` skips the dice-off when the players are named.
+- A dev `first_player` must be a seat number, checked on creation, and skips the dice-off when the players are named.
 
 ## Errors
 
@@ -50,9 +51,12 @@ Every error body is `{code, message, ...hints}`:
 | 401 | `no_session` |  |
 | 403 | `dev_mode_only` | `fields` |
 | 404 | `no_game` |  |
+| 404 | `not_found` |  |
+| 405 | `method_not_allowed` |  |
 | 422 | `wrong_phase`, `illegal_target`, `invalid_names`, `invalid_player` | as in the [strategy contract](strategy_contract.md#rejections) |
 | 422 | `unknown_strategy` | `strategies` |
-| 422 | `invalid_request` | `errors` from Pydantic, for a malformed body |
+| 422 | `invalid_request` | `errors`, each a Pydantic `{loc, msg}`, for a malformed body |
+| 500 | `internal_error` |  |
 
 Choice fields (`names`, `player`, `target`) are typed in the schema but passed to the engine as sent, so a wrong type is an engine rejection, not `invalid_request`.
 

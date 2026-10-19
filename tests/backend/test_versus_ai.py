@@ -58,3 +58,14 @@ def test_the_ai_picks_the_first_player_after_winning_the_dice_off(dev_client):
     assert "roll_sequence" in kinds
     assert update["logs"][-1]["player"] == 1
     assert update["game"]["observation"]["seat"] == 0
+
+
+def test_outside_dev_mode_nothing_reveals_the_seed_or_strategy(client):
+    responses = [client.post("/api/game", json=VERSUS_AI)]
+    responses.append(client.post("/api/game/names", json=NAMES))
+    responses += [client.get("/api/game"), client.get("/api/session")]
+
+    games = [r.json().get("game", r.json()) for r in responses]
+    assert all(game["seed"] is None and game["strategy"] is None for game in games)
+    for name in engine.BUILTIN_STRATEGIES:
+        assert all(name not in r.text for r in responses)

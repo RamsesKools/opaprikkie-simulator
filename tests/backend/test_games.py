@@ -188,3 +188,18 @@ def test_malformed_requests_are_rejected_in_the_same_shape(client, body):
 
     assert response.status_code == 422
     assert response.json() == {"code": "invalid_request", "message": ANY, "errors": ANY}
+    assert all(set(error) == {"loc", "msg"} for error in response.json()["errors"])
+
+
+def test_a_topped_peg_is_not_a_legal_target(dev_client):
+    dev_client.post("/api/game", json=HOT_SEAT | {"seed": "topped", "first_player": 0})
+    game = dev_client.post("/api/game/names", json=NAMES).json()["game"]
+    while not (
+        topped := [t for t, row in game["pegs"][game["observation"]["seat"]].items() if row == 5]
+    ):
+        target = game["observation"]["legal_targets"][0]["target"]
+        game = dev_client.post("/api/game/target", json={"target": target}).json()["game"]
+
+    response = dev_client.post("/api/game/target", json={"target": int(topped[0])})
+
+    assert response.json()["reason"] == "topped"

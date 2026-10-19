@@ -20,7 +20,7 @@ class Game:
     state: engine.GameState
     controllers: tuple[Controller, ...]
     strategy: str | None = None
-    first_player: object = None
+    first_player: int | None = None
 
 
 type _Action = Callable[[engine.GameState], tuple[engine.GameState, engine.Log]]
@@ -30,7 +30,7 @@ def new_game(
     controllers: tuple[Controller, ...],
     seed: int | str | None = None,
     strategy: str | None = None,
-    first_player: object = None,
+    first_player: int | None = None,
 ) -> Game:
     state, _ = engine.new_game(engine.CLASSIC, secrets.token_hex(8) if seed is None else seed)
     if Controller.AI in controllers and strategy is None:
@@ -43,8 +43,8 @@ def new_game(
 
 
 def name_players(game: Game, names: object) -> tuple[Game, engine.Log]:
-    names, first_player = cast(Sequence[str], names), cast(int | None, game.first_player)
-    return _act(game, lambda state: engine.name_players(state, names, first_player))
+    names = cast(Sequence[str], names)
+    return _act(game, lambda state: engine.name_players(state, names, game.first_player))
 
 
 def choose_first_player(game: Game, player: object) -> tuple[Game, engine.Log]:

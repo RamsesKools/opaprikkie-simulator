@@ -1,6 +1,6 @@
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, WithJsonSchema
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, TypeAdapter, WithJsonSchema
 
 from opaprikkie import engine
 from opaprikkie.backend import games, sessions
@@ -146,7 +146,6 @@ class Request(BaseModel):
 
 # Typed in the schema but passed on as sent: the engine is the only validator.
 Integer = Annotated[Any, WithJsonSchema({"type": "integer"})]
-OptionalInteger = Annotated[Any, WithJsonSchema({"anyOf": [{"type": "integer"}, {"type": "null"}]})]
 Strings = Annotated[Any, WithJsonSchema({"type": "array", "items": {"type": "string"}})]
 
 
@@ -156,7 +155,7 @@ class NewGame(Request):
         Field(min_length=engine.CLASSIC.players, max_length=engine.CLASSIC.players),
     ]
     seed: int | str | None = None
-    first_player: OptionalInteger = None
+    first_player: Annotated[StrictInt, Field(ge=0, lt=engine.CLASSIC.players)] | None = None
     strategy: str | None = None
 
     def dev_only_fields(self) -> list[str]:

@@ -68,12 +68,42 @@ def test_a_first_player_skips_the_dice_off(dev_client):
     assert update["game"]["observation"]["seat"] == state.current_player
 
 
-def test_a_first_player_outside_the_game_is_rejected_at_naming(dev_client):
-    dev_client.post("/api/game", json=HOT_SEAT | {"first_player": 2})
+@pytest.mark.parametrize("player", [2, -1, "0", True, 0.5])
+def test_a_first_player_outside_the_game_is_rejected_at_creation(dev_client, player):
+    response = dev_client.post("/api/game", json=HOT_SEAT | {"first_player": player})
 
-    response = dev_client.post("/api/game/names", json=NAMES)
+    assert response.status_code == 422
+    assert response.json()["code"] == "invalid_request"
+    assert dev_client.get("/api/game").status_code == 404
 
-    assert response.json() == {"code": "invalid_player", "message": ANY, "players": 2}
+
+def test_the_ai_strategy_is_drawn_from_every_builtin_by_seed(dev_client):
+    def strategy(seed: int) -> str:
+        game = dev_client.post("/api/game", json=VERSUS_AI | {"seed": seed}).json()["game"]
+        return game["strategy"]
+
+    assert strategy(7) == strategy(7)
+    assert {strategy(seed) for seed in range(40)} == set(engine.BUILTIN_STRATEGIES)
+
+
+@pytest.mark.parametrize("strategy", sorted(engine.BUILTIN_STRATEGIES))
+def test_every_builtin_can_be_picked_and_played(dev_client, strategy):
+    dev_client.post("/api/game", json=VERSUS_AI | {"strategy": strategy, "first_player": 1})
+
+    update = dev_client.post("/api/game/names", json=NAMES).json()
+
+    assert update["game"]["strategy"] == strategy
+    assert update["logs"][0]["player"] == 1
+
+
+def test_a_game_between_two_ais_finishes_during_auto_play(dev_client):
+    dev_client.post("/api/game", json={"controllers": ["ai", "ai"]})
+
+    update = dev_client.post("/api/game/names", json=NAMES).json()
+
+    assert update["game"]["phase"] == "finished"
+    assert update["game"]["winner"] in (0, 1)
+    assert {e["player"] for e in update["logs"] if e["kind"] == "roll_sequence"} == {0, 1}
 
 
 def play(client, seed: str) -> list[dict]:

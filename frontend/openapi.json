@@ -886,7 +886,9 @@
           "first_player": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "integer",
+                "exclusiveMaximum": 2.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
