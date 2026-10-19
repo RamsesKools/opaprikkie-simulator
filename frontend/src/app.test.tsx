@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { App } from "./app.tsx";
 import { createFixtureClient, scriptedGame, type Script } from "./game/fixture_client.ts";
-import type { GameClient } from "./game/model.ts";
+import { GameError, type GameClient } from "./game/model.ts";
 import { strings } from "./lib/strings.ts";
 
 beforeEach(() => {
@@ -74,9 +74,10 @@ test("clicks a game versus AI through with the AI starting", async () => {
 }, 60_000);
 
 test("lets an AI dice-off winner start by itself", async () => {
+  const choice = scriptedGame.first_player_choice;
   const script: Script = {
     ...scriptedGame,
-    first_player_choice: { ...scriptedGame.first_player_choice, current_player: 1 },
+    first_player_choice: { ...choice, observation: { ...choice.observation!, seat: 1 } },
   };
   render(<App createClient={() => createFixtureClient(script)} />);
   fireEvent.click(screen.getByLabelText(strings.menu.versusAi));
@@ -91,12 +92,17 @@ test("opens and closes the rules booklet", () => {
   render(<App />);
   const open = () => fireEvent.click(screen.getByRole("button", { name: strings.rules }));
 
+  screen.getByRole("button", { name: strings.rules }).focus();
   open();
   expect(screen.getByRole("dialog", { name: strings.booklet.title })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: strings.close })).toHaveFocus();
+  fireEvent.keyDown(window, { key: "Tab" });
+  expect(screen.getByRole("button", { name: strings.close })).toHaveFocus();
   fireEvent.keyDown(window, { key: "Enter" });
   expect(screen.getByRole("dialog")).toBeInTheDocument();
   fireEvent.keyDown(window, { key: "Escape" });
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: strings.rules })).toHaveFocus();
 
   open();
   fireEvent.click(screen.getByRole("heading", { name: strings.booklet.title }));
@@ -109,14 +115,34 @@ test("opens and closes the rules booklet", () => {
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
 
-test("says something went wrong when the client fails", async () => {
+const down = () => Promise.reject(new GameError("internal_error", "down"));
+
+test("lets the menu start again after a failed start", async () => {
+  render(<App createClient={() => ({ ...createFixtureClient(), start: down })} />);
+  const start = screen.getByRole("button", { name: strings.menu.start });
+  fireEvent.click(start);
+  expect(start).toBeDisabled();
+
+  expect(await until(() => screen.queryByRole("alert"))).toHaveTextContent(strings.game.error);
+  expect(start).toBeEnabled();
+});
+
+test("lets the dice-off winner choose again after a failed choice", async () => {
+  const fixture = createFixtureClient();
   const client: GameClient = {
-    start: () => Promise.reject(new Error("down")),
-    chooseFirstPlayer: () => Promise.reject(new Error("down")),
-    chooseTarget: () => Promise.reject(new Error("down")),
+    ...fixture,
+    chooseFirstPlayer: vi
+      .fn<GameClient["chooseFirstPlayer"]>((player) => fixture.chooseFirstPlayer(player))
+      .mockImplementationOnce(down),
   };
   render(<App createClient={() => client} />);
   fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+  const starts = () => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") });
 
+  fireEvent.click(await until(starts));
   expect(await until(() => screen.queryByRole("alert"))).toHaveTextContent(strings.game.error);
-});
+  fireEvent.click(starts()!);
+
+  await until(() => screen.queryByText(strings.game.pick("Player 1")));
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+}, 60_000);

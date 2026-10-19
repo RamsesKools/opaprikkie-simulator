@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { Dice } from "../components/dice.tsx";
-import type { DiceOffRound, Update } from "../game/model.ts";
+import type { DiceOffRound, GameUpdate } from "../game/model.ts";
 import { timing } from "../game/timing.ts";
 import { seatStyle } from "../lib/palette.ts";
 import { strings } from "../lib/strings.ts";
@@ -49,21 +49,21 @@ function Thrower({ player, name, human, dice, onThrow }: ThrowerProps) {
 }
 
 type Props = {
-  update: Update;
-  onChooseFirst: (player: number) => void;
-  onAiStarts: (update: Update) => void;
+  update: GameUpdate;
+  onChooseFirst: (player: number) => Promise<boolean>;
+  onAiStarts: (update: GameUpdate) => void;
 };
 
 export function DiceOff({ update, onChooseFirst, onAiStarts }: Props) {
-  const { state } = update;
-  const rounds = update.log.filter((entry): entry is DiceOffRound => entry.kind === "dice_off");
+  const { game } = update;
+  const rounds = update.logs.filter((entry): entry is DiceOffRound => entry.kind === "dice_off");
   const [round, setRound] = useState(0);
   const [thrown, setThrown] = useState<number[]>([]);
   const [chosen, setChosen] = useState(false);
   const rolls = rounds[round]?.rolls ?? [];
   const roundDone = rolls.every(({ player }) => thrown.includes(player));
   const last = round >= rounds.length - 1;
-  const humanChooses = state.phase === "choosing_first_player";
+  const humanChooses = game.phase === "choosing_first_player";
   const throwFor = useCallback(
     (player: number) => setThrown((done) => (done.includes(player) ? done : [...done, player])),
     [],
@@ -84,12 +84,12 @@ export function DiceOff({ update, onChooseFirst, onAiStarts }: Props) {
 
   let message: string = strings.diceOff.explain;
   if (roundDone && !last) {
-    message = strings.diceOff.tie(rolls.map(({ player }) => state.names[player]!));
+    message = strings.diceOff.tie(rolls.map(({ player }) => game.names[player]!));
   } else if (roundDone && humanChooses) {
-    message = strings.diceOff.wins(state.names[state.current_player!]!);
+    message = strings.diceOff.wins(game.names[game.observation!.seat]!);
   } else if (roundDone) {
-    const ai = state.controllers.indexOf("ai");
-    message = strings.diceOff.aiStarts(state.names[ai]!);
+    const ai = game.controllers.indexOf("ai");
+    message = strings.diceOff.aiStarts(game.names[ai]!);
   }
 
   return (
@@ -103,8 +103,8 @@ export function DiceOff({ update, onChooseFirst, onAiStarts }: Props) {
           <Thrower
             key={`${round}:${player}`}
             player={player}
-            name={state.names[player]!}
-            human={state.controllers[player] === "human"}
+            name={game.names[player]!}
+            human={game.controllers[player] === "human"}
             dice={thrown.includes(player) ? dice : null}
             onThrow={throwFor}
           />
@@ -113,7 +113,7 @@ export function DiceOff({ update, onChooseFirst, onAiStarts }: Props) {
       {roundDone && last && humanChooses && (
         <div className="choices">
           <p>{strings.diceOff.whoStarts}</p>
-          {state.names.map((name, player) => (
+          {game.names.map((name, player) => (
             <button
               key={player}
               type="button"
@@ -122,7 +122,7 @@ export function DiceOff({ update, onChooseFirst, onAiStarts }: Props) {
               disabled={chosen}
               onClick={() => {
                 setChosen(true);
-                onChooseFirst(player);
+                void onChooseFirst(player).then((ok) => setChosen(ok));
               }}
             >
               {strings.diceOff.starts(name)}

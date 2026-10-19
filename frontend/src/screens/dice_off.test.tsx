@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import type { GameView, Update } from "../game/model.ts";
+import type { GameUpdate, Phase } from "../game/model.ts";
 import { timing } from "../game/timing.ts";
 import { strings } from "../lib/strings.ts";
 import { DiceOff } from "./dice_off.tsx";
@@ -16,22 +16,30 @@ afterEach(() => {
 
 const advance = (ms: number) => act(() => vi.advanceTimersByTimeAsync(ms));
 
-function update(state: Partial<GameView>): Update {
+type Choose = (player: number) => Promise<boolean>;
+
+function update(phase: Phase, seat: number): GameUpdate {
   return {
-    state: {
-      phase: "choosing_first_player",
+    game: {
+      ruleset: "classic",
+      phase,
       names: ["Ann", "Opa"],
       controllers: ["human", "ai"],
       pegs: [{}, {}],
-      current_player: 0,
-      opening_roll: [],
-      legal_targets: [],
-      turn: 0,
-      continuation: 0,
+      observation: {
+        ruleset: "classic",
+        seat,
+        pegs: [{}, {}],
+        opening_roll: [],
+        legal_targets: [],
+        turn: 1,
+        continuation: 0,
+      },
       winner: null,
-      ...state,
+      seed: null,
+      strategy: null,
     },
-    log: [
+    logs: [
       {
         kind: "dice_off",
         rolls: [
@@ -47,9 +55,9 @@ test("lets the AI throw by itself and auto-presses the human's Throw button", as
   vi.spyOn(Math, "random").mockReturnValue(0.5);
   render(
     <DiceOff
-      update={update({})}
-      onChooseFirst={vi.fn<(player: number) => void>()}
-      onAiStarts={vi.fn<(update: Update) => void>()}
+      update={update("choosing_first_player", 0)}
+      onChooseFirst={vi.fn<Choose>()}
+      onAiStarts={vi.fn<(update: GameUpdate) => void>()}
     />,
   );
 
@@ -63,12 +71,12 @@ test("lets the AI throw by itself and auto-presses the human's Throw button", as
 });
 
 test("asks a human winner who starts", async () => {
-  const onChooseFirst = vi.fn<(player: number) => void>();
+  const onChooseFirst = vi.fn<Choose>(() => Promise.resolve(true));
   render(
     <DiceOff
-      update={update({})}
+      update={update("choosing_first_player", 0)}
       onChooseFirst={onChooseFirst}
-      onAiStarts={vi.fn<(update: Update) => void>()}
+      onAiStarts={vi.fn<(update: GameUpdate) => void>()}
     />,
   );
 
@@ -81,16 +89,29 @@ test("asks a human winner who starts", async () => {
   expect(onChooseFirst).toHaveBeenCalledExactlyOnceWith(1);
 });
 
-test("hands over once an AI winner has started", async () => {
-  const onAiStarts = vi.fn<(update: Update) => void>();
-  const started = update({ phase: "choosing_target", current_player: 0, turn: 2 });
+test("offers the choice again after it fails", async () => {
+  const onChooseFirst = vi.fn<Choose>(() => Promise.resolve(false));
   render(
     <DiceOff
-      update={started}
-      onChooseFirst={vi.fn<(player: number) => void>()}
-      onAiStarts={onAiStarts}
+      update={update("choosing_first_player", 0)}
+      onChooseFirst={onChooseFirst}
+      onAiStarts={vi.fn<(update: GameUpdate) => void>()}
     />,
   );
+  fireEvent.click(screen.getByRole("button", { name: strings.diceOff.throw }));
+  await advance(timing.aiThrow);
+
+  fireEvent.click(screen.getByRole("button", { name: strings.diceOff.starts("Opa") }));
+  await advance(0);
+  fireEvent.click(screen.getByRole("button", { name: strings.diceOff.starts("Ann") }));
+
+  expect(onChooseFirst.mock.calls).toEqual([[1], [0]]);
+});
+
+test("hands over once an AI winner has started", async () => {
+  const onAiStarts = vi.fn<(update: GameUpdate) => void>();
+  const started = update("choosing_target", 0);
+  render(<DiceOff update={started} onChooseFirst={vi.fn<Choose>()} onAiStarts={onAiStarts} />);
 
   fireEvent.click(screen.getByRole("button", { name: strings.diceOff.throw }));
   await advance(timing.aiThrow);

@@ -1,32 +1,35 @@
 import { describe, expect, test } from "vitest";
 import { createFixtureClient, scriptedGame, type Script } from "./fixture_client.ts";
-import type { GameClient, LogEntry, Update } from "./model.ts";
+import { GameError, type GameClient, type GameUpdate, type LogEntry } from "./model.ts";
 
 const names: [string, string] = ["Ann", "Bob"];
 
-async function playOut(client: GameClient, update: Update): Promise<LogEntry[]> {
-  const log = [...update.log];
-  let state = update.state;
-  while (state.phase === "choosing_target") {
-    expect(state.controllers[state.current_player!]).toBe("human");
-    const next = await client.chooseTarget(state.legal_targets[0]!.target);
-    log.push(...next.log);
-    state = next.state;
+async function playOut(client: GameClient, update: GameUpdate): Promise<LogEntry[]> {
+  const logs = [...update.logs];
+  let game = update.game;
+  while (game.phase === "choosing_target") {
+    const observation = game.observation!;
+    expect(game.controllers[observation.seat]).toBe("human");
+    const next = await client.chooseTarget(observation.legal_targets[0]!.target);
+    logs.push(...next.logs);
+    game = next.game;
   }
-  expect(state.phase).toBe("finished");
-  return log;
+  expect(game.phase).toBe("finished");
+  expect(game.observation).toBeNull();
+  return logs;
 }
 
 describe("hot-seat", () => {
   test("starts with the dice-off and the winner's choice", async () => {
     const update = await createFixtureClient().start({ mode: "hot_seat", names });
 
-    expect(update.log.every((entry) => entry.kind === "dice_off")).toBe(true);
-    expect(update.state).toMatchObject({
+    expect(update.logs.every((entry) => entry.kind === "dice_off")).toBe(true);
+    expect(update.game).toMatchObject({
+      ruleset: "classic",
       phase: "choosing_first_player",
       names,
       controllers: ["human", "human"],
-      current_player: 0,
+      observation: { seat: 0 },
     });
   });
 
@@ -35,26 +38,26 @@ describe("hot-seat", () => {
     await client.start({ mode: "hot_seat", names });
     const opening = await client.chooseFirstPlayer(first);
 
-    expect(opening.state.current_player).toBe(first);
-    const log = await playOut(client, opening);
-    expect(log.some((entry) => entry.kind === "no_move")).toBe(true);
+    expect(opening.game.observation?.seat).toBe(first);
+    const logs = await playOut(client, opening);
+    expect(logs.some((entry) => entry.kind === "no_move")).toBe(true);
   });
 
   test("rejects a target off the script", async () => {
     const client = createFixtureClient();
     await client.start({ mode: "hot_seat", names });
-    const { state } = await client.chooseFirstPlayer(0);
-    const off = state.legal_targets[0]!.target === 1 ? 2 : 1;
+    const { game } = await client.chooseFirstPlayer(0);
+    const off = game.observation!.legal_targets[0]!.target === 1 ? 2 : 1;
 
-    await expect(client.chooseTarget(off)).rejects.toThrow("not scripted");
+    await expect(client.chooseTarget(off)).rejects.toMatchObject({ code: "illegal_target" });
   });
 
   test("rejects a first player before the start or twice", async () => {
     const client = createFixtureClient();
-    await expect(client.chooseFirstPlayer(0)).rejects.toThrow("wrong phase");
+    await expect(client.chooseFirstPlayer(0)).rejects.toBeInstanceOf(GameError);
     await client.start({ mode: "hot_seat", names });
     await client.chooseFirstPlayer(0);
-    await expect(client.chooseFirstPlayer(1)).rejects.toThrow("wrong phase");
+    await expect(client.chooseFirstPlayer(1)).rejects.toMatchObject({ code: "wrong_phase" });
   });
 });
 
@@ -64,22 +67,23 @@ describe("versus AI", () => {
     await client.start({ mode: "versus_ai", names });
     const opening = await client.chooseFirstPlayer(1);
 
-    expect(opening.log.some((entry) => "player" in entry && entry.player === 1)).toBe(true);
-    const log = await playOut(client, opening);
-    expect(log.filter((entry) => entry.kind === "roll_sequence").length).toBe(
+    expect(opening.logs.some((entry) => "player" in entry && entry.player === 1)).toBe(true);
+    const logs = await playOut(client, opening);
+    expect(logs.filter((entry) => entry.kind === "roll_sequence").length).toBe(
       scriptedGame.branches[1]!.steps.length,
     );
   });
 
   test("lets an AI dice-off winner start by itself", async () => {
+    const choice = scriptedGame.first_player_choice;
     const script: Script = {
       ...scriptedGame,
-      first_player_choice: { ...scriptedGame.first_player_choice, current_player: 1 },
+      first_player_choice: { ...choice, observation: { ...choice.observation!, seat: 1 } },
     };
     const update = await createFixtureClient(script).start({ mode: "versus_ai", names });
 
-    expect(update.state.phase).toBe("choosing_target");
-    expect(update.state.current_player).toBe(0);
-    expect(update.log.some((entry) => entry.kind === "roll_sequence")).toBe(true);
+    expect(update.game.phase).toBe("choosing_target");
+    expect(update.game.observation?.seat).toBe(0);
+    expect(update.logs.some((entry) => entry.kind === "roll_sequence")).toBe(true);
   });
 });

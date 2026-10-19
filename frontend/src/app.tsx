@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { RulesBooklet } from "./components/rules_booklet.tsx";
 import { createFixtureClient } from "./game/fixture_client.ts";
-import type { GameClient, GameSetup, GameView, Update } from "./game/model.ts";
+import type { Game, GameClient, GameSetup, GameUpdate } from "./game/model.ts";
 import { strings } from "./lib/strings.ts";
 import { DiceOff } from "./screens/dice_off.tsx";
 import { GameScreen } from "./screens/game_screen.tsx";
@@ -10,9 +10,9 @@ import { Victory } from "./screens/victory.tsx";
 
 type Screen =
   | { kind: "menu" }
-  | { kind: "dice_off"; update: Update }
-  | { kind: "game"; update: Update }
-  | { kind: "victory"; view: GameView };
+  | { kind: "dice_off"; update: GameUpdate }
+  | { kind: "game"; update: GameUpdate }
+  | { kind: "victory"; game: Game };
 
 type Props = { createClient?: () => GameClient };
 
@@ -22,22 +22,35 @@ export function App({ createClient = createFixtureClient }: Props) {
   const [setup, setSetup] = useState<GameSetup | null>(null);
   const [rules, setRules] = useState(false);
   const [failed, setFailed] = useState(false);
-
-  const fail = () => setFailed(true);
+  const [starting, setStarting] = useState(false);
 
   const start = (chosen: GameSetup) => {
     const fresh = createClient();
     setClient(fresh);
     setSetup(chosen);
     setFailed(false);
-    fresh.start(chosen).then((update) => setScreen({ kind: "dice_off", update }), fail);
+    setStarting(true);
+    fresh
+      .start(chosen)
+      .then(
+        (update) => setScreen({ kind: "dice_off", update }),
+        () => setFailed(true),
+      )
+      .finally(() => setStarting(false));
   };
 
-  const play = useCallback((update: Update) => setScreen({ kind: "game", update }), []);
-  const chooseFirst = (player: number) => {
-    client?.chooseFirstPlayer(player).then(play, fail);
+  const play = useCallback((update: GameUpdate) => setScreen({ kind: "game", update }), []);
+  const chooseFirst = async (player: number) => {
+    setFailed(false);
+    try {
+      play(await client!.chooseFirstPlayer(player));
+      return true;
+    } catch {
+      setFailed(true);
+      return false;
+    }
   };
-  const finished = useCallback((view: GameView) => setScreen({ kind: "victory", view }), []);
+  const finished = useCallback((game: Game) => setScreen({ kind: "victory", game }), []);
   const closeRules = useCallback(() => setRules(false), []);
 
   return (
@@ -50,7 +63,7 @@ export function App({ createClient = createFixtureClient }: Props) {
       </header>
       <main>
         {failed && <p role="alert">{strings.game.error}</p>}
-        {screen.kind === "menu" && <Menu initial={setup} onStart={start} />}
+        {screen.kind === "menu" && <Menu initial={setup} pending={starting} onStart={start} />}
         {screen.kind === "dice_off" && (
           <DiceOff update={screen.update} onChooseFirst={chooseFirst} onAiStarts={play} />
         )}
@@ -58,7 +71,7 @@ export function App({ createClient = createFixtureClient }: Props) {
           <GameScreen client={client} initial={screen.update} onFinished={finished} />
         )}
         {screen.kind === "victory" && (
-          <Victory view={screen.view} onAgain={() => setScreen({ kind: "menu" })} />
+          <Victory game={screen.game} onAgain={() => setScreen({ kind: "menu" })} />
         )}
       </main>
       {rules && <RulesBooklet onClose={closeRules} />}

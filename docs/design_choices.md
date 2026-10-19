@@ -8,7 +8,8 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 1. Menu: pick hot-seat or versus AI, and enter names.
    - Names are trimmed, 1 to 20 characters, and stored in the session so they're prefilled next time.
    - Defaults: "Player 1", "Player 2", and "Opa" for the AI; all editable.
-   - Names must differ, compared trimmed and case-insensitively, because the engine rejects duplicates; Start stays disabled until they do.
+   - Duplicate names are fine; seat colours tell players apart.
+   - Start stays disabled while a name is out of range or the game is being created.
    - Versus AI, the human is seat 1 and the AI seat 2.
 2. Dice-off, animated and explained on screen.
    - Each player throws two dice in their colour onto the board; the winner is shown once all dice have landed.
@@ -24,7 +25,7 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
    - A six-dice reset gets its own message.
    - No legal target: an animated "Oh no, you didn't roll any legal targets", then the turn passes.
    - Continuation: a cue like "Peg 7 is at the top, roll again".
-   - AI turns animate from the returned logs, each starting with "Opa is thinking..." over its opening roll.
+   - AI turns animate from the returned logs, each starting with "Opa is thinking..." over its opening roll, dead turns included.
    - Topped pegs get a gold ring.
 4. Victory screen when the last peg is topped: the winner's name in their colour, both final boards, and "Play again".
    - "Play again" returns to the menu with the last mode and names kept.
@@ -44,6 +45,7 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 
 - A "Rules" button in the header opens a small booklet in the centre of the screen, on every screen.
 - It closes with its "Close" button, Escape, or a click outside it.
+- Focus moves to "Close" while it's open and returns to the "Rules" button afterwards.
 - Short, player-facing text in `frontend/`, written separately from the engine-facing [game rules](game_rules.md).
 
 ## Animations
@@ -70,7 +72,8 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 
 ## View model
 
-- Screens talk to a `GameClient` (`frontend/src/game/model.ts`) that returns the state and the logs of each action, shaped like the engine's.
+- Screens talk to a `GameClient` (`frontend/src/game/model.ts`) whose types mirror the backend's [HTTP API](architecture/http_api.md): each action returns a `GameUpdate`, `{game, logs}`.
+- A failed action rejects with a `GameError` carrying the API's `code`; the screens show a generic message and let the player try again.
 - Until the API is connected, a fixture client replays a game recorded from the engine; each choice point offers only the recorded target.
 
 ## Dev mode

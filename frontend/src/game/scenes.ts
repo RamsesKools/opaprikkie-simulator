@@ -1,5 +1,5 @@
 import { strings } from "../lib/strings.ts";
-import type { GameView, LogEntry, Pegs, RollSequence } from "./model.ts";
+import type { Game, LogEntry, Pegs, RollSequence } from "./model.ts";
 import { timing } from "./timing.ts";
 
 export type Tone = "info" | "oh_no" | "cue";
@@ -24,46 +24,29 @@ function isContinuation(sequence: RollSequence, following: Position | undefined)
   );
 }
 
-export function buildScenes(start: Pegs[], log: LogEntry[], next: GameView): Scene[] {
+export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[] {
   const scenes: Scene[] = [];
   let pegs = start;
-  const turnLog = log.filter((entry) => entry.kind !== "dice_off");
-  const nextPosition =
-    next.phase === "finished" || next.current_player === null
-      ? undefined
-      : { player: next.current_player, continuation: next.continuation };
+  const turnLog = logs.filter((entry) => entry.kind !== "dice_off");
+  const nextPosition = next.observation
+    ? { player: next.observation.seat, continuation: next.observation.continuation }
+    : undefined;
 
   turnLog.forEach((entry, index) => {
     const name = next.names[entry.player]!;
     const human = next.controllers[entry.player] === "human";
     const base = { player: entry.player, turn: entry.turn, tone: "info" as Tone };
+    const opening = entry.kind === "no_move" ? entry.opening_roll : entry.rolls[0]!.dice;
+    const still = { ...base, pegs, dice: opening, setAside: [], target: null };
+    if (!human) {
+      scenes.push({ ...still, message: strings.game.aiThinking(name), ms: timing.aiThink });
+    }
     if (entry.kind === "no_move") {
-      scenes.push({
-        ...base,
-        pegs,
-        dice: entry.opening_roll,
-        setAside: [],
-        target: null,
-        message: strings.game.ohNo(name, human),
-        tone: "oh_no",
-        ms: timing.ohNo,
-      });
+      const message = strings.game.ohNo(name, human);
+      scenes.push({ ...still, message, tone: "oh_no", ms: timing.ohNo });
       return;
     }
     const { target, rolls, movement } = entry;
-    const opening = rolls[0]!.dice;
-    if (!human) {
-      const message = strings.game.aiThinking(name);
-      scenes.push({
-        ...base,
-        pegs,
-        dice: opening,
-        setAside: [],
-        target: null,
-        message,
-        ms: timing.aiThink,
-      });
-    }
     for (const roll of rolls) {
       const message = roll.reset ? strings.game.reset : strings.game.goesFor(name, target);
       scenes.push({

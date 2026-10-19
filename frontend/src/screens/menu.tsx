@@ -11,9 +11,9 @@ const defaults: Record<Mode, Names> = {
   versus_ai: [strings.menu.player(0), strings.menu.defaultAiName],
 };
 
-type Props = { initial: GameSetup | null; onStart: (setup: GameSetup) => void };
+type Props = { initial: GameSetup | null; pending: boolean; onStart: (setup: GameSetup) => void };
 
-export function Menu({ initial, onStart }: Props) {
+export function Menu({ initial, pending, onStart }: Props) {
   const [mode, setMode] = useState<Mode>(initial?.mode ?? "hot_seat");
   const [names, setNames] = useState<Record<Mode, Names>>(() =>
     initial ? { ...defaults, [initial.mode]: initial.names } : defaults,
@@ -36,7 +36,7 @@ export function Menu({ initial, onStart }: Props) {
       className="menu"
       onSubmit={(event) => {
         event.preventDefault();
-        if (problem === null) {
+        if (problem === null && !pending) {
           onStart({ mode, names: [current[0].trim(), current[1].trim()] });
         }
       }}
@@ -67,7 +67,7 @@ export function Menu({ initial, onStart }: Props) {
           {problem}
         </p>
       )}
-      <button type="submit" className="primary" disabled={problem !== null}>
+      <button type="submit" className="primary" disabled={problem !== null || pending}>
         {strings.menu.start}
       </button>
     </form>

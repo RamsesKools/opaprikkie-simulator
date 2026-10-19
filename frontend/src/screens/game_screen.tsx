@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Board } from "../components/board.tsx";
 import { Dice } from "../components/dice.tsx";
-import type { GameClient, GameView, Pegs, Update } from "../game/model.ts";
+import type { Game, GameClient, GameUpdate, Pegs } from "../game/model.ts";
 import { buildScenes, type Scene } from "../game/scenes.ts";
 import { seatStyle } from "../lib/palette.ts";
 import { strings } from "../lib/strings.ts";
@@ -9,28 +9,29 @@ import { strings } from "../lib/strings.ts";
 const emptyPegs = (pegs: Pegs[]): Pegs[] =>
   pegs.map((board) => Object.fromEntries(Object.keys(board).map((target) => [target, 0])));
 
-type Playback = { view: GameView; scenes: Scene[]; index: number };
+type Playback = { game: Game; scenes: Scene[]; index: number };
 
 type Props = {
   client: GameClient;
-  initial: Update;
-  onFinished: (view: GameView) => void;
+  initial: GameUpdate;
+  onFinished: (game: Game) => void;
 };
 
 export function GameScreen({ client, initial, onFinished }: Props) {
   const [playback, setPlayback] = useState<Playback>(() => ({
-    view: initial.state,
-    scenes: buildScenes(emptyPegs(initial.state.pegs), initial.log, initial.state),
+    game: initial.game,
+    scenes: buildScenes(emptyPegs(initial.game.pegs), initial.logs, initial.game),
     index: 0,
   }));
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
-  const { view, scenes, index } = playback;
+  const { game, scenes, index } = playback;
   const scene = scenes[index];
+  const observation = game.observation;
 
   useEffect(() => {
     if (!scene) {
-      if (view.phase === "finished") onFinished(view);
+      if (game.phase === "finished") onFinished(game);
       return;
     }
     const timer = setTimeout(
@@ -38,14 +39,15 @@ export function GameScreen({ client, initial, onFinished }: Props) {
       scene.ms,
     );
     return () => clearTimeout(timer);
-  }, [scene, view, onFinished]);
+  }, [scene, game, onFinished]);
 
   const pick = (target: number) => {
     setBusy(true);
+    setFailed(false);
     client.chooseTarget(target).then(
       (update) => {
-        const next = buildScenes(view.pegs, update.log, update.state);
-        setPlayback({ view: update.state, scenes: next, index: 0 });
+        const next = buildScenes(game.pegs, update.logs, update.game);
+        setPlayback({ game: update.game, scenes: next, index: 0 });
         setBusy(false);
       },
       () => {
@@ -55,11 +57,11 @@ export function GameScreen({ client, initial, onFinished }: Props) {
     );
   };
 
-  const player = scene?.player ?? view.current_player ?? 0;
-  const name = view.names[player]!;
-  const choosing = !scene && view.phase === "choosing_target";
-  const humanChoice = choosing && !busy && view.controllers[player] === "human";
-  const pegs = scene?.pegs ?? view.pegs;
+  const player = scene?.player ?? observation?.seat ?? 0;
+  const name = game.names[player]!;
+  const choosing = !scene && game.phase === "choosing_target" && observation !== null;
+  const humanChoice = choosing && !busy && game.controllers[player] === "human";
+  const pegs = scene?.pegs ?? game.pegs;
   let message = scene?.message ?? "";
   if (humanChoice) message = strings.game.pick(name);
   if (failed) message = strings.game.error;
@@ -67,7 +69,7 @@ export function GameScreen({ client, initial, onFinished }: Props) {
   return (
     <div className="game">
       <div className="status" style={seatStyle(player)}>
-        <p className="turn">{strings.game.turn(scene?.turn ?? view.turn, name)}</p>
+        <p className="turn">{strings.game.turn(scene?.turn ?? observation?.turn ?? 0, name)}</p>
         <div className="tray">
           {scene ? (
             <Dice
@@ -79,15 +81,17 @@ export function GameScreen({ client, initial, onFinished }: Props) {
           ) : (
             choosing && (
               <Dice
-                values={view.opening_roll}
+                values={observation.opening_roll}
                 player={player}
-                rollKey={`${view.turn}:${view.continuation}`}
+                rollKey={`${observation.turn}:${observation.continuation}`}
               />
             )
           )}
         </div>
-        <p className={`message ${scene?.tone ?? "info"}`} aria-live="polite" key={message}>
-          {message}
+        <p className="message" aria-live="polite">
+          <span className={scene?.tone ?? "info"} key={message}>
+            {message}
+          </span>
         </p>
       </div>
       <div className="boards">
@@ -95,12 +99,12 @@ export function GameScreen({ client, initial, onFinished }: Props) {
           <Board
             key={seat}
             player={seat}
-            name={view.names[seat]!}
+            name={game.names[seat]!}
             pegs={board}
             active={seat === player}
             highlight={seat === player ? (scene?.target ?? null) : null}
             {...(humanChoice && seat === player
-              ? { legal: view.legal_targets.map(({ target }) => target), onPick: pick }
+              ? { legal: observation!.legal_targets.map(({ target }) => target), onPick: pick }
               : {})}
           />
         ))}

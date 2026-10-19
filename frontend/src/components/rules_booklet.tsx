@@ -1,13 +1,25 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { strings } from "../lib/strings.ts";
 
 export function RulesBooklet({ onClose }: { onClose: () => void }) {
+  const close = useRef<HTMLButtonElement>(null);
+
   useEffect(() => {
+    const opener = document.activeElement;
+    close.current?.focus();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
+      // Close is the only control, so Tab keeps focus there.
+      if (event.key === "Tab") {
+        event.preventDefault();
+        close.current?.focus();
+      }
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      if (opener instanceof HTMLElement) opener.focus();
+    };
   }, [onClose]);
 
   return (
@@ -26,7 +38,7 @@ export function RulesBooklet({ onClose }: { onClose: () => void }) {
             <p>{text}</p>
           </section>
         ))}
-        <button type="button" onClick={onClose} autoFocus>
+        <button type="button" onClick={onClose} ref={close}>
           {strings.close}
         </button>
       </div>

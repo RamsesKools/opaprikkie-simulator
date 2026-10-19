@@ -12,7 +12,6 @@ export const strings = {
     defaultAiName: "Opa",
     start: "Start",
     nameLength: "Names need 1 to 20 characters.",
-    nameDuplicate: "Names must differ.",
   },
   diceOff: {
     title: "Dice-off",
@@ -35,7 +34,7 @@ export const strings = {
     continuation: (target: number) => `Peg ${target} is at the top, roll again!`,
     ohNo: (name: string, human: boolean) =>
       human
-        ? `Oh no, you didn't roll any legal targets, ${name}.`
+        ? "Oh no, you didn't roll any legal targets!"
         : `Oh no, ${name} didn't roll any legal targets.`,
     board: (name: string) => `${name}'s board`,
     column: (target: number, row: number) => `Target ${target}, row ${row}`,
@@ -51,11 +50,15 @@ export const strings = {
     sections: [
       {
         heading: "Goal",
-        text: "Move all twelve of your pegs from the bottom to the top of your board. The first player to top every peg wins.",
+        text: "Move all twelve of your pegs from the bottom to the top of your board. The game ends the moment one player tops their last peg, and that player wins.",
+      },
+      {
+        heading: "Who starts",
+        text: "Each player throws two dice. The highest total chooses who starts; on a tie, the tied players throw again.",
       },
       {
         heading: "Your turn",
-        text: "You roll all six dice and pick one peg that matches. The game keeps rolling for that peg until a roll has no match.",
+        text: "You roll all six dice and pick one peg that matches. The game keeps rolling for that peg by itself.",
       },
       {
         heading: "Matching",
@@ -63,15 +66,15 @@ export const strings = {
       },
       {
         heading: "Rolling on",
-        text: "Matching dice are set aside and the rest roll again. When every die is set aside, all six roll again and the count carries on.",
+        text: "Matching dice are set aside and the rest roll again. When every die is set aside, all six roll again and the count carries on. The rolling stops when a roll has no match, when too few dice are left for a match, or when the peg reaches the top.",
       },
       {
         heading: "Moving",
-        text: "Your peg moves up one row per match, until it reaches the top. Top a peg and you roll again for a new one.",
+        text: "Your peg moves up one row per match, until it reaches the top. Top a peg and you roll all six again for a new one.",
       },
       {
         heading: "Bad luck",
-        text: "If your first roll matches none of your pegs, your turn passes.",
+        text: "If a fresh roll of all six matches none of your pegs, your turn passes. That goes for a roll after topping a peg too.",
       },
     ],
   },

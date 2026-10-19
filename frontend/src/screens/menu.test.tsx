@@ -6,7 +6,7 @@ import { Menu } from "./menu.tsx";
 
 test("starts a hot-seat game with the default names", () => {
   const onStart = vi.fn<(setup: GameSetup) => void>();
-  render(<Menu initial={null} onStart={onStart} />);
+  render(<Menu initial={null} pending={false} onStart={onStart} />);
 
   fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
 
@@ -15,7 +15,7 @@ test("starts a hot-seat game with the default names", () => {
 
 test("defaults the AI's name to Opa and trims names", () => {
   const onStart = vi.fn<(setup: GameSetup) => void>();
-  render(<Menu initial={null} onStart={onStart} />);
+  render(<Menu initial={null} pending={false} onStart={onStart} />);
 
   fireEvent.click(screen.getByLabelText(strings.menu.versusAi));
   expect(screen.getByLabelText(strings.menu.opponent)).toHaveValue("Opa");
@@ -25,9 +25,9 @@ test("defaults the AI's name to Opa and trims names", () => {
   expect(onStart).toHaveBeenCalledWith({ mode: "versus_ai", names: ["Ann", "Opa"] });
 });
 
-test("blocks blank and duplicate names", () => {
+test("blocks blank names but allows duplicates", () => {
   const onStart = vi.fn<(setup: GameSetup) => void>();
-  render(<Menu initial={null} onStart={onStart} />);
+  render(<Menu initial={null} pending={false} onStart={onStart} />);
   const start = screen.getByRole("button", { name: strings.menu.start });
 
   fireEvent.change(screen.getByLabelText(strings.menu.player(0)), { target: { value: " " } });
@@ -37,7 +37,17 @@ test("blocks blank and duplicate names", () => {
   fireEvent.change(screen.getByLabelText(strings.menu.player(0)), {
     target: { value: "player 2" },
   });
-  expect(screen.getByRole("alert")).toHaveTextContent(strings.menu.nameDuplicate);
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  fireEvent.click(start);
+  expect(onStart).toHaveBeenCalledWith({ mode: "hot_seat", names: ["player 2", "Player 2"] });
+});
+
+test("blocks a second start while one is pending", () => {
+  const onStart = vi.fn<(setup: GameSetup) => void>();
+  render(<Menu initial={null} pending onStart={onStart} />);
+  const start = screen.getByRole("button", { name: strings.menu.start });
+
+  expect(start).toBeDisabled();
   fireEvent.submit(start);
   expect(onStart).not.toHaveBeenCalled();
 });
@@ -45,6 +55,7 @@ test("blocks blank and duplicate names", () => {
 test("keeps the previous setup", () => {
   render(
     <Menu
+      pending={false}
       initial={{ mode: "versus_ai", names: ["Ann", "Oma"] }}
       onStart={vi.fn<(setup: GameSetup) => void>()}
     />,

@@ -1,25 +1,26 @@
-import type {
-  Controller,
-  DiceOffRound,
-  GameClient,
-  GameSetup,
-  GameView,
-  LogEntry,
-  Update,
-} from "./model.ts";
 import recorded from "./fixtures/scripted_game.json";
+import {
+  GameError,
+  type Controller,
+  type DiceOffRound,
+  type Game,
+  type GameClient,
+  type GameSetup,
+  type GameUpdate,
+  type LogEntry,
+} from "./model.ts";
 
-type ScriptState = Omit<GameView, "names" | "controllers">;
+type ScriptGame = Omit<Game, "names" | "controllers">;
 
 type Branch = {
-  log: LogEntry[];
-  steps: { state: ScriptState; target: number; log: LogEntry[] }[];
-  final: ScriptState;
+  logs: LogEntry[];
+  steps: { game: ScriptGame; target: number; logs: LogEntry[] }[];
+  final: ScriptGame;
 };
 
 export type Script = {
   dice_off: DiceOffRound[];
-  first_player_choice: ScriptState;
+  first_player_choice: ScriptGame;
   branches: Branch[];
 };
 
@@ -33,33 +34,37 @@ export function createFixtureClient(script: Script = scriptedGame): GameClient {
   let branch: Branch | null = null;
   let cursor = 0;
 
-  const current = (): ScriptState =>
-    branch ? (branch.steps[cursor]?.state ?? branch.final) : script.first_player_choice;
+  const current = (): ScriptGame =>
+    branch ? (branch.steps[cursor]?.game ?? branch.final) : script.first_player_choice;
 
   function pickFirst(player: number): LogEntry[] {
     const picked = script.branches[player];
-    if (!picked || branch || names.length === 0) throw new Error("wrong phase");
+    if (!picked || branch || names.length === 0) {
+      throw new GameError("wrong_phase", "no first player to choose");
+    }
     branch = picked;
     cursor = 0;
-    return [...picked.log];
+    return [...picked.logs];
   }
 
   function pickTarget(target: number): LogEntry[] {
     const step = branch?.steps[cursor];
-    if (!step || step.target !== target) throw new Error(`target ${target} is not scripted`);
+    if (!step || step.target !== target) {
+      throw new GameError("illegal_target", `target ${target} is not scripted`);
+    }
     cursor += 1;
-    return [...step.log];
+    return [...step.logs];
   }
 
-  function respond(log: LogEntry[]): Update {
+  function respond(logs: LogEntry[]): GameUpdate {
     for (;;) {
-      const state = current();
-      const seat = state.current_player;
-      if (state.phase === "finished" || seat === null || controllers[seat] !== "ai") {
-        return { state: { ...state, names: [...names], controllers: [...controllers] }, log };
+      const game = current();
+      const seat = game.observation?.seat;
+      if (seat === undefined || controllers[seat] !== "ai") {
+        return { game: { ...game, names: [...names], controllers: [...controllers] }, logs };
       }
-      log.push(
-        ...(state.phase === "choosing_first_player"
+      logs.push(
+        ...(game.phase === "choosing_first_player"
           ? pickFirst(seat)
           : pickTarget(branch!.steps[cursor]!.target)),
       );

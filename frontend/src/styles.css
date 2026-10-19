@@ -201,17 +201,21 @@ button.primary:disabled {
   min-height: 1.5em;
   margin: 0;
   text-align: center;
+}
+
+.message span {
+  display: inline-block;
   animation: appear 250ms ease-out;
 }
 
-.message.oh_no {
+.message .oh_no {
   color: #b3261e;
   font-size: 1.3rem;
   font-weight: 700;
   animation: wobble 600ms ease-in-out 2;
 }
 
-.message.cue {
+.message .cue {
   color: var(--seat);
   font-size: 1.2rem;
   font-weight: 700;

@@ -9,7 +9,7 @@ test.each([
   [["", "Bob"], strings.menu.nameLength],
   [["   ", "Bob"], strings.menu.nameLength],
   [["a".repeat(21), "Bob"], strings.menu.nameLength],
-  [["Ann", " ann"], strings.menu.nameDuplicate],
+  [["Ann", " Ann"], null],
 ])("%j gives %j", (names, problem) => {
   expect(nameProblem(names)).toBe(problem);
 });
