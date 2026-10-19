@@ -39,6 +39,9 @@ uv run pre-commit install
 # Start the backend on http://127.0.0.1:8000
 uv run opaprikkie serve
 
+# Play 1000 games of random versus random and print win rates, turns, continuations, and dead turns
+uv run opaprikkie simulate random random --games 1000 --seed 42
+
 # Show all commands
 uv run opaprikkie --help
 ```
