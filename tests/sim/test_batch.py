@@ -33,7 +33,7 @@ class RejectingDriver:
     ruleset = CLASSIC
 
     def play(self, seed: str, first_player: int, choose: Chooser) -> PlayedGame:
-        raise IllegalAction(Rejection.INVALID_NAMES, "names must differ", rule="duplicate")
+        raise IllegalAction(Rejection.INVALID_NAMES, "names can't be blank", rule="blank")
 
 
 class Cheater(LowestTarget):

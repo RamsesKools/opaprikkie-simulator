@@ -58,8 +58,9 @@ def test_a_seed_and_the_choices_replay_a_game_exactly():
     assert play("replay")[1] != play("other")[1]
 
 
-def test_duplicate_names_play_the_same_game():
-    states, entries = play("replay", names=("Ada", "ada"))
+@pytest.mark.parametrize("names", [("Ada", "Ada"), ("Ada", "ada")])
+def test_duplicate_names_play_the_same_game(names):
+    states, entries = play("replay", names=names)
 
     assert entries == play("replay")[1]
     assert states[-1].phase is Phase.FINISHED

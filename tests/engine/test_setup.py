@@ -111,12 +111,16 @@ def test_names_are_stripped():
     assert state.names == ("Ada", "Bob")
 
 
-def test_duplicate_names_are_accepted():
+@pytest.mark.parametrize(
+    ("names", "stored"),
+    [(["Ada", "Ada"], ("Ada", "Ada")), (["Ada", " ada "], ("Ada", "ada"))],
+)
+def test_duplicate_names_are_accepted(names, stored):
     state, _ = new_game(CLASSIC, "seed")
 
-    state, _ = name_players(state, ["Ada", " ada "])
+    state, _ = name_players(state, names)
 
-    assert state.names == ("Ada", "ada")
+    assert state.names == stored
 
 
 @pytest.mark.parametrize("player", [-1, 2])
