@@ -37,6 +37,16 @@ def test_opening_roll_matches_count_and_peg_moves_by_matches():
     assert after.pegs[0][3] == sequence.movement >= 2
 
 
+def test_each_roll_counts_its_own_matches():
+    state = choosing_target((1, 6, 2, 5, 3, 3))
+
+    _, log = choose_target(state, 7)
+
+    sequence = sequence_of(log)
+    assert sequence.rolls[0].matches == 2
+    assert sum(r.matches for r in sequence.rolls) == sequence.matches
+
+
 def test_all_six_dice_are_rolled_again_once_every_die_is_set_aside():
     state = choosing_target((1,) * 6, ruleset=TALL)
 

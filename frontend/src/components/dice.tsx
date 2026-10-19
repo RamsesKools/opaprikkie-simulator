@@ -10,14 +10,20 @@ const pips: Record<number, number[]> = {
   6: [0, 2, 3, 5, 6, 8],
 };
 
-type Props = { values: number[]; player: number; setAside?: number[]; rollKey?: string };
+type Props = {
+  values: number[];
+  player: number;
+  setAside?: number[];
+  rollKey?: string;
+  label?: string;
+};
 
-export function Dice({ values, player, setAside = [], rollKey = "" }: Props) {
+export function Dice({ values, player, setAside = [], rollKey = "", label }: Props) {
   return (
     <div
       className="dice"
       role="img"
-      aria-label={strings.game.dice(values)}
+      aria-label={label ?? strings.game.dice(values)}
       style={seatStyle(player)}
     >
       {values.map((value, index) => (

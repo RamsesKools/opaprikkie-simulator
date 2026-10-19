@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { GameError, type Game, type GameClient, type LogEntry } from "../game/model.ts";
+import { timing } from "../game/timing.ts";
 import { strings } from "../lib/strings.ts";
 import { GameScreen } from "./game_screen.tsx";
 
@@ -13,8 +14,8 @@ afterEach(() => {
 });
 
 const pegs = [
-  { 1: 0, 2: 0 },
-  { 1: 0, 2: 0 },
+  { 1: 0, 2: 0, 3: 4 },
+  { 1: 0, 2: 0, 3: 4 },
 ];
 
 const game: Game = {
@@ -28,7 +29,10 @@ const game: Game = {
     seat: 1,
     pegs,
     opening_roll: [1, 3, 3, 4, 5, 6],
-    legal_targets: [{ target: 1, matches: 1, guaranteed_moves: 1 }],
+    legal_targets: [
+      { target: 1, matches: 1, guaranteed_moves: 1, set_aside: [0] },
+      { target: 3, matches: 2, guaranteed_moves: 1, set_aside: [1, 2] },
+    ],
     turn: 1,
     continuation: 0,
   },
@@ -58,8 +62,62 @@ test("offers the opening roll and only legal targets to the current player", () 
   ).toBeInTheDocument();
   const bob = screen.getByRole("region", { name: strings.game.board("Bob") });
   const ann = screen.getByRole("region", { name: strings.game.board("Ann") });
-  expect(bob.querySelectorAll("button:enabled")).toHaveLength(1);
+  expect(bob.querySelectorAll("button:enabled")).toHaveLength(2);
   expect(ann.querySelectorAll("button:enabled")).toHaveLength(0);
+});
+
+test("previews a target's dice and landing row on hover", () => {
+  show(vi.fn<GameClient["chooseTarget"]>());
+  const bob = screen.getByRole("region", { name: strings.game.board("Bob") });
+  const column = (target: number, row: number) =>
+    within(bob).getByRole("button", { name: strings.game.column(target, row) });
+  const raised = () =>
+    [...screen.getByRole("img", { name: strings.game.dice([1, 3, 3, 4, 5, 6]) }).children]
+      .map((die, index) => (die.classList.contains("set-aside") ? index : -1))
+      .filter((index) => index >= 0);
+  const ghost = () => bob.querySelector<HTMLElement>(".ghost");
+
+  fireEvent.mouseEnter(column(1, 0));
+  expect(raised()).toEqual([0]);
+  expect(ghost()?.style.getPropertyValue("--row")).toBe("1");
+  expect(ghost()).not.toHaveClass("finishing");
+
+  fireEvent.mouseEnter(column(3, 4));
+  expect(raised()).toEqual([1, 2]);
+  expect(ghost()?.style.getPropertyValue("--row")).toBe("5");
+  expect(ghost()).toHaveClass("finishing");
+
+  fireEvent.mouseLeave(column(3, 4));
+  expect(raised()).toEqual([]);
+  expect(ghost()).toBeNull();
+
+  fireEvent.mouseEnter(column(2, 0));
+  expect(ghost()).toBeNull();
+});
+
+test("keeps set-aside dice in the bowl with the running count", async () => {
+  show(vi.fn<GameClient["chooseTarget"]>(), [
+    {
+      kind: "roll_sequence",
+      player: 0,
+      turn: 1,
+      continuation: 0,
+      target: 1,
+      rolls: [
+        { dice: [1, 2, 3, 4, 5, 1], set_aside: [0, 5], reset: false, matches: 2 },
+        { dice: [2, 3, 4, 5], set_aside: [], reset: false, matches: 0 },
+      ],
+      matches: 2,
+      movement: 2,
+    },
+  ]);
+
+  expect(screen.getByRole("img", { name: strings.game.kept([]) })).toBeInTheDocument();
+  expect(screen.queryByText(strings.game.saved(2, 1))).not.toBeInTheDocument();
+  await act(() => vi.advanceTimersByTimeAsync(timing.roll));
+  expect(screen.getByText(strings.game.saved(2, 1))).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: strings.game.kept([1, 1]) })).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: strings.game.dice([2, 3, 4, 5]) })).toBeInTheDocument();
 });
 
 test("plays a dead turn before handing over", async () => {

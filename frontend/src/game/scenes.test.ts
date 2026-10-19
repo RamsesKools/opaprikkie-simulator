@@ -32,8 +32,8 @@ const sequence = (overrides: Partial<RollSequence> = {}): RollSequence => ({
   continuation: 0,
   target: 1,
   rolls: [
-    { dice: [1, 2, 3, 4, 5, 1], set_aside: [0, 5], reset: false },
-    { dice: [2, 3, 4, 5], set_aside: [], reset: false },
+    { dice: [1, 2, 3, 4, 5, 1], set_aside: [0, 5], reset: false, matches: 2 },
+    { dice: [2, 3, 4, 5], set_aside: [], reset: false, matches: 0 },
   ],
   matches: 2,
   movement: 2,
@@ -48,6 +48,7 @@ test("shows every roll, then moves the peg", () => {
     [2, 3, 4, 5],
     [2, 3, 4, 5],
   ]);
+  expect(scenes[1]?.setAside).toEqual([]);
   expect(scenes[0]).toMatchObject({
     setAside: [0, 5],
     target: 1,
@@ -60,17 +61,32 @@ test("shows every roll, then moves the peg", () => {
   });
 });
 
+test("moves set-aside dice to the bowl and counts the matches", () => {
+  const scenes = buildScenes([board(), board()], [sequence()], game({ seat: 1 }));
+
+  expect(scenes.map(({ kept, count }) => ({ kept, count }))).toEqual([
+    { kept: [], count: 0 },
+    { kept: [1, 1], count: 2 },
+    { kept: [1, 1], count: 2 },
+  ]);
+  expect(scenes[2]).toMatchObject({ dice: [2, 3, 4, 5], setAside: [] });
+});
+
 test("skips dice-off entries", () => {
   const diceOff: LogEntry = { kind: "dice_off", rolls: [{ player: 0, dice: [1, 2] }] };
 
   expect(buildScenes([board(), board()], [diceOff], game({ seat: 1 }))).toEqual([]);
 });
 
-test("announces a six-dice reset", () => {
-  const rolls = [{ dice: [1, 1, 1, 1, 1, 1], set_aside: [0, 1, 2, 3, 4, 5], reset: true }];
+test("announces a six-dice reset and empties the bowl", () => {
+  const rolls = [
+    { dice: [1, 1, 1, 1, 1, 1], set_aside: [0, 1, 2, 3, 4, 5], reset: false, matches: 6 },
+    { dice: [1, 2, 3, 4, 5, 6], set_aside: [0], reset: true, matches: 1 },
+  ];
   const scenes = buildScenes([board(), board()], [sequence({ rolls })], game({ seat: 1 }));
 
-  expect(scenes[0]?.message).toBe(strings.game.reset);
+  expect(scenes[1]?.message).toBe(strings.game.reset);
+  expect(scenes[1]).toMatchObject({ kept: [], count: 6 });
 });
 
 test("cues a continuation when the same player rolls again", () => {

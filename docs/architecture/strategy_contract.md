@@ -10,7 +10,7 @@ The rules behind each choice are in [game rules](../game_rules.md).
 - the ruleset (its name over HTTP) and the observing seat
 - every player's peg positions
 - the opening roll
-- legal targets, each with `matches` (raw count in the opening roll) and `guaranteed_moves` (clamped to the remaining distance)
+- legal targets, each with `matches` (raw count in the opening roll), `guaranteed_moves` (clamped to the remaining distance), and `set_aside` (the indices of the opening-roll dice it keeps)
 - turn number and continuation index
 
 The observing seat is the player choosing next: the dice-off winner, then the player on turn.

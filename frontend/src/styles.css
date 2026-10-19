@@ -8,7 +8,6 @@
   --cell: 22px;
   font-family: system-ui, sans-serif;
   color: var(--ink);
-  background: var(--paper);
 }
 
 * {
@@ -18,6 +17,82 @@
 body {
   margin: 0;
   min-height: 100vh;
+  background: var(--paper);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: url("./assets/felt.svg") 0 0 / 48px;
+  image-rendering: pixelated;
+  opacity: 0.4;
+}
+
+.felt {
+  background: url("./assets/felt.svg") 0 0 / 48px;
+  image-rendering: pixelated;
+}
+
+.table {
+  display: flex;
+  width: 100%;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 16px;
+}
+
+.throw-area {
+  display: grid;
+  place-items: center;
+  width: min(380px, 100%);
+  min-height: 120px;
+  padding: 12px;
+  border: 10px solid var(--wood);
+  border-radius: 16px;
+  box-shadow:
+    inset 0 0 20px rgb(0 0 0 / 50%),
+    0 0 0 2px var(--wood-dark),
+    0 4px 8px rgb(0 0 0 / 25%);
+}
+
+.saved {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.bowl {
+  display: grid;
+  place-items: center;
+  width: 150px;
+  height: 120px;
+  padding: 14px;
+  border: 8px solid var(--wood-dark);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 6px 16px rgb(0 0 0 / 55%),
+    0 4px 8px rgb(0 0 0 / 25%);
+}
+
+.bowl .dice {
+  gap: 4px;
+}
+
+.bowl .die {
+  width: 26px;
+  height: 26px;
+  padding: 3px;
+  border-radius: 5px;
+}
+
+.saved-count {
+  min-height: 1.4em;
+  margin: 0;
+  font-weight: 700;
 }
 
 header {
@@ -131,18 +206,20 @@ button.primary:disabled {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  min-width: 200px;
-  min-height: 140px;
-  padding: 12px;
-  border: 4px solid var(--seat);
-  border-radius: 12px;
-  background: var(--wood);
 }
 
 .thrower h2 {
   margin: 0;
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: var(--seat);
   color: white;
   font-size: 1.1rem;
+}
+
+.thrower .throw-area {
+  width: 220px;
+  min-height: 100px;
 }
 
 .throw {
@@ -178,6 +255,7 @@ button.primary:disabled {
 
 .status {
   display: flex;
+  width: 100%;
   flex-direction: column;
   align-items: center;
   gap: 8px;
@@ -190,11 +268,6 @@ button.primary:disabled {
   background: var(--seat);
   color: white;
   font-weight: 600;
-}
-
-.tray {
-  min-height: 64px;
-  padding-top: 10px;
 }
 
 .message {
@@ -343,6 +416,30 @@ button.primary:disabled {
   transition: bottom 600ms cubic-bezier(0.3, 1.4, 0.6, 1);
 }
 
+.ghost {
+  position: absolute;
+  left: 50%;
+  bottom: calc(24px + var(--row) * (var(--cell) + 2px));
+  width: calc(var(--cell) - 4px);
+  height: calc(var(--cell) - 4px);
+  margin-left: calc((var(--cell) - 4px) / -2);
+  border: 2px dashed var(--seat);
+  border-radius: 50%;
+  background: var(--seat-soft);
+  box-shadow: 0 0 8px 2px var(--seat-soft);
+  opacity: 0.9;
+  animation: breathe 1s ease-in-out infinite alternate;
+}
+
+.ghost.finishing {
+  border-style: solid;
+  border-color: gold;
+  opacity: 0.85;
+  box-shadow:
+    0 0 0 3px rgb(255 215 0 / 60%),
+    0 0 14px 6px rgb(255 215 0 / 70%);
+}
+
 .column.topped .peg {
   box-shadow: 0 0 0 3px gold;
 }
@@ -445,6 +542,12 @@ button.primary:disabled {
   }
   75% {
     transform: rotate(4deg);
+  }
+}
+
+@keyframes breathe {
+  to {
+    transform: scale(1.15);
   }
 }
 

@@ -6,7 +6,12 @@ export type Mode = "hot_seat" | "versus_ai";
 
 export type Pegs = Record<number, number>;
 
-export type LegalTarget = { target: number; matches: number; guaranteed_moves: number };
+export type LegalTarget = {
+  target: number;
+  matches: number;
+  guaranteed_moves: number;
+  set_aside: number[];
+};
 
 export type Observation = {
   ruleset: string;
@@ -35,7 +40,7 @@ export type DiceOffRound = {
   rolls: { player: number; dice: number[] }[];
 };
 
-export type Roll = { dice: number[]; set_aside: number[]; reset: boolean };
+export type Roll = { dice: number[]; set_aside: number[]; reset: boolean; matches: number };
 
 export type RollSequence = {
   kind: "roll_sequence";

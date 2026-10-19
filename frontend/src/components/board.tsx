@@ -10,7 +10,9 @@ type Props = {
   active?: boolean;
   legal?: number[];
   highlight?: number | null;
+  preview?: { target: number; row: number } | null;
   onPick?: (target: number) => void;
+  onHover?: (target: number | null) => void;
 };
 
 const rows = Array.from({ length: TOP_ROW + 1 }, (_, row) => TOP_ROW - row);
@@ -22,7 +24,9 @@ export function Board({
   active = false,
   legal = [],
   highlight,
+  preview,
   onPick,
+  onHover,
 }: Props) {
   const targets = Object.keys(pegs)
     .map(Number)
@@ -50,10 +54,20 @@ export function Board({
               disabled={!pickable}
               aria-label={strings.game.column(target, row)}
               onClick={() => onPick?.(target)}
+              onMouseEnter={() => pickable && onHover?.(target)}
+              onMouseLeave={() => onHover?.(null)}
+              onFocus={() => pickable && onHover?.(target)}
+              onBlur={() => onHover?.(null)}
             >
               {rows.map((cell) => (
                 <span key={cell} className="hole" />
               ))}
+              {preview?.target === target && (
+                <span
+                  className={preview.row === TOP_ROW ? "ghost finishing" : "ghost"}
+                  style={{ "--row": preview.row } as CSSProperties}
+                />
+              )}
               <span className="peg" style={{ "--row": row } as CSSProperties} />
               <span className="label">{target}</span>
             </button>

@@ -31,6 +31,9 @@ export const strings = {
     reset: "Every die is set aside, so all six roll again!",
     moves: (target: number, movement: number) =>
       `Peg ${target} moves up ${movement} ${movement === 1 ? "row" : "rows"}.`,
+    saved: (count: number, target: number) =>
+      `${count} ${count === 1 ? "match" : "matches"} for ${target}`,
+    kept: (values: number[]) => (values.length ? `Kept: ${values.join(", ")}` : "Nothing kept"),
     continuation: (target: number) => `Peg ${target} is at the top, roll again!`,
     ohNo: (name: string, human: boolean) =>
       human

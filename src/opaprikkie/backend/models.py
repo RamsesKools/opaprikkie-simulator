@@ -10,6 +10,7 @@ class LegalTarget(BaseModel):
     target: int
     matches: int
     guaranteed_moves: int
+    set_aside: list[int]
 
 
 class Observation(BaseModel):
@@ -48,6 +49,7 @@ class Roll(BaseModel):
     dice: list[int]
     set_aside: list[int]
     reset: bool
+    matches: int
 
 
 class RollSequence(BaseModel):

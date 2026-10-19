@@ -24,12 +24,12 @@ def test_observation_shows_the_choice_point_to_the_current_seat():
     assert observation.pegs == state.pegs
     assert observation.opening_roll == (4, 6, 1, 1, 3, 3)
     assert observation.legal_targets == (
-        LegalTarget(target=1, matches=2, guaranteed_moves=1),
-        LegalTarget(target=3, matches=2, guaranteed_moves=2),
-        LegalTarget(target=6, matches=1, guaranteed_moves=1),
-        LegalTarget(target=7, matches=2, guaranteed_moves=2),
-        LegalTarget(target=9, matches=1, guaranteed_moves=1),
-        LegalTarget(target=10, matches=1, guaranteed_moves=1),
+        LegalTarget(target=1, matches=2, guaranteed_moves=1, set_aside=(2, 3)),
+        LegalTarget(target=3, matches=2, guaranteed_moves=2, set_aside=(4, 5)),
+        LegalTarget(target=6, matches=1, guaranteed_moves=1, set_aside=(1,)),
+        LegalTarget(target=7, matches=2, guaranteed_moves=2, set_aside=(0, 1, 2, 4)),
+        LegalTarget(target=9, matches=1, guaranteed_moves=1, set_aside=(1, 4)),
+        LegalTarget(target=10, matches=1, guaranteed_moves=1, set_aside=(0, 1)),
     )
     assert observation.turn == 1
     assert observation.continuation == 0

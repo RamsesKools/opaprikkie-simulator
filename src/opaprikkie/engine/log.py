@@ -19,6 +19,7 @@ class Roll:
     dice: tuple[int, ...]
     set_aside: tuple[int, ...]
     reset: bool
+    matches: int
 
 
 @dataclass(frozen=True)

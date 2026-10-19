@@ -29,21 +29,23 @@ function Thrower({ player, name, human, dice, onThrow }: ThrowerProps) {
   return (
     <section className="thrower" style={seatStyle(player)}>
       <h2>{name}</h2>
-      {dice ? (
-        <Dice values={dice} player={player} />
-      ) : (
-        human && (
-          <button
-            type="button"
-            className="throw"
-            style={{ "--auto-press": `${delay}ms` } as CSSProperties}
-            onClick={() => onThrow(player)}
-          >
-            <span className="fill" />
-            {strings.diceOff.throw}
-          </button>
-        )
-      )}
+      <div className="throw-area felt">
+        {dice ? (
+          <Dice values={dice} player={player} />
+        ) : (
+          human && (
+            <button
+              type="button"
+              className="throw"
+              style={{ "--auto-press": `${delay}ms` } as CSSProperties}
+              onClick={() => onThrow(player)}
+            >
+              <span className="fill" />
+              {strings.diceOff.throw}
+            </button>
+          )
+        )}
+      </div>
     </section>
   );
 }

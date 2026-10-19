@@ -20,8 +20,13 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 3. Game: boards, the current player, the opening roll, and only legal targets to choose from.
    - A pill above the dice shows the turn number and the player in their colour; their board gets a border in that colour.
    - Dice show in the current player's colour.
+   - Dice are thrown into a throw area: green velvet inside a wooden frame.
    - The player picks a target by clicking its column on their own board; only legal columns are clickable and glow.
+   - Hovering or focusing a legal column raises the dice that form its matches, and shows a ghost peg on the row it's guaranteed to reach from the opening roll alone.
+     When that row is the top, the ghost gets a gold halo.
    - Each roll of the sequence shows in turn, with set-aside dice raised and outlined, then the peg slides up.
+   - Set-aside dice move to a saved bowl next to the throw area, with the number of matches so far underneath, like "3 matches for 7".
+     The bowl stays filled until the turn passes or the peg reaches the top; a six-dice reset empties it back onto the table, but the count carries on.
    - A six-dice reset gets its own message.
    - No legal target: an animated "Oh no, you didn't roll any legal targets", then the turn passes.
    - Continuation: a cue like "Peg 7 is at the top, roll again".
@@ -39,7 +44,8 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 
 - Seat 1 is red, seat 2 is blue.
 - Colours come from one palette in the frontend (`frontend/src/lib/palette.ts`); the engine doesn't know about them.
-- The boards are wood-coloured with dark holes, on a warm off-white page.
+- The boards are wood-coloured with dark holes.
+- The page is a green pixel velvet (`frontend/src/assets/felt.svg`), dimmed to 40% over the off-white paper colour so it stays calm; the throw area and the bowl use the same velvet at full strength.
 
 ## Rules booklet
 

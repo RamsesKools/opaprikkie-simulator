@@ -73,7 +73,7 @@ Any invalid action raises `IllegalAction` and leaves the state unchanged.
 ### Logs
 
 - Dice-off: each player's two dice per round.
-- Roll sequence: the target, then each roll in order (opening roll first) with dice values, set-aside indices, and whether it was a six-dice reset, plus total matches and applied movement.
+- Roll sequence: the target, then each roll in order (opening roll first) with dice values, set-aside indices, its matches, and whether it was a six-dice reset, plus total matches and applied movement.
 - Dead turn: the opening roll and `no_move`, with the turn and continuation index.
 - Roll sequences and `no_move` entries also carry the player, turn, and continuation index.
 - HTTP and in-process callers get the same shape.

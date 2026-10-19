@@ -10,6 +10,8 @@ export type Scene = {
   turn: number;
   dice: number[];
   setAside: number[];
+  kept: number[];
+  count: number;
   target: number | null;
   message: string;
   tone: Tone;
@@ -37,7 +39,7 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
     const human = next.controllers[entry.player] === "human";
     const base = { player: entry.player, turn: entry.turn, tone: "info" as Tone };
     const opening = entry.kind === "no_move" ? entry.opening_roll : entry.rolls[0]!.dice;
-    const still = { ...base, pegs, dice: opening, setAside: [], target: null };
+    const still = { ...base, pegs, dice: opening, setAside: [], kept: [], count: 0, target: null };
     if (!human) {
       scenes.push({ ...still, message: strings.game.aiThinking(name), ms: timing.aiThink });
     }
@@ -47,23 +49,32 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
       return;
     }
     const { target, rolls, movement } = entry;
+    let kept: number[] = [];
+    let count = 0;
     for (const roll of rolls) {
+      // A reset rolls all six again, so the bowl empties back onto the table.
+      if (roll.reset) kept = [];
       const message = roll.reset ? strings.game.reset : strings.game.goesFor(name, target);
       scenes.push({
         ...base,
         pegs,
         dice: roll.dice,
         setAside: roll.set_aside,
+        kept,
+        count,
         target,
         message,
         ms: timing.roll,
       });
+      kept = [...kept, ...roll.set_aside.map((index) => roll.dice[index]!)];
+      count += roll.matches;
     }
     const last = rolls.at(-1)!;
+    const leftover = last.dice.filter((_, index) => !last.set_aside.includes(index));
     pegs = pegs.map((board, seat) =>
       seat === entry.player ? { ...board, [target]: board[target]! + movement } : board,
     );
-    const shown = { ...base, pegs, dice: last.dice, setAside: last.set_aside, target };
+    const shown = { ...base, pegs, dice: leftover, setAside: [], kept, count, target };
     scenes.push({ ...shown, message: strings.game.moves(target, movement), ms: timing.move });
     const following = turnLog[index + 1] ?? nextPosition;
     if (isContinuation(entry, following)) {
@@ -71,7 +82,6 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
       scenes.push({
         ...shown,
         dice: [],
-        setAside: [],
         message,
         tone: "cue",
         ms: timing.continuation,

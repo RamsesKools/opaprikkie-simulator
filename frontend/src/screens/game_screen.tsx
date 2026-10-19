@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Board } from "../components/board.tsx";
-import { Dice } from "../components/dice.tsx";
+import { Table } from "../components/table.tsx";
 import type { Game, GameClient, GameUpdate, Pegs } from "../game/model.ts";
 import { buildScenes, type Scene } from "../game/scenes.ts";
 import { seatStyle } from "../lib/palette.ts";
@@ -25,6 +25,7 @@ export function GameScreen({ client, initial, onFinished }: Props) {
   }));
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [hovered, setHovered] = useState<number | null>(null);
   const { game, scenes, index } = playback;
   const scene = scenes[index];
   const observation = game.observation;
@@ -42,6 +43,7 @@ export function GameScreen({ client, initial, onFinished }: Props) {
   }, [scene, game, onFinished]);
 
   const pick = (target: number) => {
+    setHovered(null);
     setBusy(true);
     setFailed(false);
     client.chooseTarget(target).then(
@@ -62,6 +64,9 @@ export function GameScreen({ client, initial, onFinished }: Props) {
   const choosing = !scene && game.phase === "choosing_target" && observation !== null;
   const humanChoice = choosing && !busy && game.controllers[player] === "human";
   const pegs = scene?.pegs ?? game.pegs;
+  const hint = humanChoice
+    ? observation.legal_targets.find(({ target }) => target === hovered)
+    : undefined;
   let message = scene?.message ?? "";
   if (humanChoice) message = strings.game.pick(name);
   if (failed) message = strings.game.error;
@@ -70,24 +75,27 @@ export function GameScreen({ client, initial, onFinished }: Props) {
     <div className="game">
       <div className="status" style={seatStyle(player)}>
         <p className="turn">{strings.game.turn(scene?.turn ?? observation?.turn ?? 0, name)}</p>
-        <div className="tray">
-          {scene ? (
-            <Dice
-              values={scene.dice}
-              player={player}
-              setAside={scene.setAside}
-              rollKey={`${index}`}
-            />
-          ) : (
-            choosing && (
-              <Dice
-                values={observation.opening_roll}
-                player={player}
-                rollKey={`${observation.turn}:${observation.continuation}`}
-              />
-            )
-          )}
-        </div>
+        {scene ? (
+          <Table
+            player={player}
+            dice={scene.dice}
+            setAside={scene.setAside}
+            rollKey={`${index}`}
+            kept={scene.kept}
+            count={scene.count}
+            target={scene.target}
+          />
+        ) : (
+          <Table
+            player={player}
+            dice={choosing ? observation.opening_roll : []}
+            setAside={hint?.set_aside ?? []}
+            rollKey={`${observation?.turn}:${observation?.continuation}`}
+            kept={[]}
+            count={0}
+            target={null}
+          />
+        )}
         <p className="message" aria-live="polite">
           <span className={scene?.tone ?? "info"} key={message}>
             {message}
@@ -104,7 +112,15 @@ export function GameScreen({ client, initial, onFinished }: Props) {
             active={seat === player}
             highlight={seat === player ? (scene?.target ?? null) : null}
             {...(humanChoice && seat === player
-              ? { legal: observation!.legal_targets.map(({ target }) => target), onPick: pick }
+              ? {
+                  legal: observation.legal_targets.map(({ target }) => target),
+                  onPick: pick,
+                  onHover: setHovered,
+                  preview: hint && {
+                    target: hint.target,
+                    row: board[hint.target]! + hint.guaranteed_moves,
+                  },
+                }
               : {})}
           />
         ))}
