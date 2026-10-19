@@ -13,6 +13,10 @@ _Try to consider the Github Pull-Request as a part of the documentation of your 
 
 - _Provide a short description of your solution._
 
+## Proof
+
+- _Show evidence the change works: the commands a reviewer would run with their real output (trim long output with `...`), screenshots for UI, or why no proof applies._
+
 ## Checklist
 
 - [ ] Descriptive PR title & useful description
@@ -23,4 +27,5 @@ _Try to consider the Github Pull-Request as a part of the documentation of your 
   - READMEs
   - `docs/*.md`
 - [ ] `uv run task check` passes
+- [ ] Proof shows the change works
 - [ ] I have performed a self-review of the _files changed_ in GitHub before clicking `Create pull request`.
