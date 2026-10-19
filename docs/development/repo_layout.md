@@ -26,6 +26,8 @@ docs/
   development/     layout and conventions (this folder)
   research/        cited research notes
   roadmap/         MVP plan
+  game_rules.md      rules the engine implements
+  design_choices.md  frontend design choices
 notebooks/         exploration only, opt-in `notebook` dependency group
 scripts/           Python helper scripts
 .agents/           agent instructions and skills, see below

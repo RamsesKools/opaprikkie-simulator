@@ -117,4 +117,6 @@ taskipy is the single command surface for Python and frontend: `uv run task <nam
 - `docs/adr/`: why a decision was made.
   Never rewrite an accepted ADR; add a new one that supersedes it and note the supersession in the old one.
 - `docs/architecture/` and `docs/development/`: how things are now; update them when structure changes.
+- `docs/game_rules.md`: the single source for game rules; rule decisions update it.
+- `docs/design_choices.md`: every frontend design choice.
 - Markdown: one sentence per line, `#` sections for structure, lists for enumerations, no horizontal rules.
