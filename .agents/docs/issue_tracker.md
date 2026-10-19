@@ -15,3 +15,5 @@ Issues live in GitHub Issues for `RamsesKools/opaprikkie-simulator`; use the `gh
 - The browser MVP planning map is issue #14, its tickets are sub-issues labelled `wayfinder:<type>`.
   `.plan/` is a read-only cache of it, refreshed with `uv run task wayfinder_pull`.
 - Implementation parts are sub-issues of #30, one branch and PR each, with native blockers.
+- Implementation issues include an `## Expected proof` section saying what evidence the PR must show, such as commands and their output or screenshots.
+  The PR shows it in its `## Proof` section.

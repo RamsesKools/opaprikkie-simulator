@@ -49,6 +49,9 @@ test = { cmd = "pytest && npm --prefix frontend test", help = "run Python and fr
 check = { cmd = "task lint && task typecheck && task lint_imports && task test", help = "run every check" }
 dev = { cmd = "python scripts/dev.py", help = "run the backend with reload and Vite with its /api proxy" }
 bump = { cmd = "python scripts/version.py bump", help = "bump the app version: major, minor, or patch" }
+image_build = { cmd = "docker build --build-arg VERSION=$(uv version --short) --build-arg COMMIT=$(git rev-parse HEAD) --tag ghcr.io/ramseskools/opaprikkie:latest .", help = "build the image for this machine" }
+image_build_multiarch = { cmd = "docker buildx build --platform linux/amd64,linux/arm64 --build-arg VERSION=$(uv version --short) --build-arg COMMIT=$(git rev-parse HEAD) .", help = "check that the image builds for amd64 and arm64" }
+test_container = { cmd = "pytest -m container --no-cov tests/container", help = "run the container tests against the built image" }
 wayfinder_pull = { cmd = "wayfinder-pull RamsesKools/opaprikkie-simulator 14 .plan/opa-prikkie-browser-mvp", help = "refresh the planning map cache" }
 
 [tool.pytest.ini_options]

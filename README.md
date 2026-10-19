@@ -48,6 +48,18 @@ uv run opaprikkie --help
 
 Settings are `OPAPRIKKIE_*` environment variables, listed in [.env.example](.env.example).
 
+### Docker
+
+The app ships as one image on GHCR; Compose serves it on http://localhost:8000 (set `PORT` to change it).
+
+```bash
+# Laptop: build from source
+docker compose up --build
+
+# Homeserver: run the published image
+docker compose pull && docker compose up -d
+```
+
 ## Development
 
 taskipy runs every common command; `uv run task --list` shows them all.

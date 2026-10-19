@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 from opaprikkie import __version__
 from opaprikkie.backend.settings import Settings
+from opaprikkie.backend.spa import mount_spa
 
 
 class Health(BaseModel):
@@ -27,4 +28,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return Health(version=__version__, dev_mode=settings.dev_mode)
 
     app.include_router(api)
+    # Keep last: the `/` mount shadows any route added after it.
+    mount_spa(app, settings.static_dir)
     return app
