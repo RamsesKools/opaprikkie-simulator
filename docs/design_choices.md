@@ -8,17 +8,26 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 1. Menu: pick hot-seat or versus AI, and enter names.
    - Names are trimmed, 1 to 20 characters, and stored in the session so they're prefilled next time.
    - Defaults: "Player 1", "Player 2", and "Opa" for the AI; all editable.
-   - Duplicate names are fine; seat colours tell players apart.
+   - Names must differ, compared trimmed and case-insensitively, because the engine rejects duplicates; Start stays disabled until they do.
+   - Versus AI, the human is seat 1 and the AI seat 2.
 2. Dice-off, animated and explained on screen.
    - Each player throws two dice in their colour onto the board; the winner is shown once all dice have landed.
-   - Each player has a "Throw" button that auto-presses after 3 to 5 seconds; the AI throws by itself.
-   - The winner chooses who starts.
+   - Each player has a "Throw" button that auto-presses after 3 to 5 seconds, with a fill showing the countdown; the AI throws by itself after about a second.
+   - On a tie, a message names the tied players, and only they throw again.
+   - A human winner chooses who starts with one button per player.
+   - An AI winner starts by itself, and the game screen follows after a short pause.
 3. Game: boards, the current player, the opening roll, and only legal targets to choose from.
+   - A pill above the dice shows the turn number and the player in their colour; their board gets a border in that colour.
    - Dice show in the current player's colour.
+   - The player picks a target by clicking its column on their own board; only legal columns are clickable and glow.
+   - Each roll of the sequence shows in turn, with set-aside dice raised and outlined, then the peg slides up.
+   - A six-dice reset gets its own message.
    - No legal target: an animated "Oh no, you didn't roll any legal targets", then the turn passes.
    - Continuation: a cue like "Peg 7 is at the top, roll again".
-   - AI turns animate from the returned logs.
-4. Victory screen when the last peg is topped.
+   - AI turns animate from the returned logs, each starting with "Opa is thinking..." over its opening roll.
+   - Topped pegs get a gold ring.
+4. Victory screen when the last peg is topped: the winner's name in their colour, both final boards, and "Play again".
+   - "Play again" returns to the menu with the last mode and names kept.
 
 ## Board
 
@@ -28,21 +37,41 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 ## Colours
 
 - Seat 1 is red, seat 2 is blue.
-- Colours come from one palette in the frontend; the engine doesn't know about them.
+- Colours come from one palette in the frontend (`frontend/src/lib/palette.ts`); the engine doesn't know about them.
+- The boards are wood-coloured with dark holes, on a warm off-white page.
 
 ## Rules booklet
 
-- A "Rules" button opens a small booklet in the centre of the screen.
+- A "Rules" button in the header opens a small booklet in the centre of the screen, on every screen.
+- It closes with its "Close" button, Escape, or a click outside it.
 - Short, player-facing text in `frontend/`, written separately from the engine-facing [game rules](game_rules.md).
 
 ## Animations
 
 - Use whatever works best per feature: CSS, or a library when it gives a clearly better result.
+- For now everything is CSS: dice tumble in, pegs slide with a slight overshoot, legal columns glow, "Oh no" wobbles, and cues pop.
+- Reduced motion shortens every animation to almost nothing.
+- Timings live in `frontend/src/game/timing.ts`:
+
+| Step | Duration |
+| -- | -- |
+| Each roll in a sequence | 0.9 s |
+| Peg move | 0.8 s |
+| AI thinking | 0.9 s |
+| "Oh no" | 2.4 s |
+| Continuation cue | 1.8 s |
+| AI dice-off throw | 1.2 s |
+| Dice-off result | 1.8 s |
 
 ## Language
 
 - English only for the MVP.
-- Keep UI strings in one module, so adding a language is easy.
+- Keep UI strings in one module, `frontend/src/lib/strings.ts`, so adding a language is easy.
+
+## View model
+
+- Screens talk to a `GameClient` (`frontend/src/game/model.ts`) that returns the state and the logs of each action, shaped like the engine's.
+- Until the API is connected, a fixture client replays a game recorded from the engine; each choice point offers only the recorded target.
 
 ## Dev mode
 
