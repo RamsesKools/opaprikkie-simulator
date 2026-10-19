@@ -2,86 +2,32 @@ name: CI
 
 on:
   pull_request:
-  workflow_dispatch:  # to allow manual triggering
-  schedule:
-    - cron: '0 0 * * 6'  # every saturday morning at midnight UTC
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
-  CI:
+  pre-commit:
+    runs-on: ubuntu-latest
     timeout-minutes: 10
-    name: Python CI pipeline
-    runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+      - run: uv run pre-commit run --all-files --show-diff-on-failure
+        env:
+          SKIP: no-commit-to-branch
 
-    - name: Configure Poetry
-      run: pipx install poetry
-
-    - name: Configure Python
-      uses: actions/setup-python@v5 # uses .python-version file by default to determine version
-      with:
-        cache: 'poetry'
-
-    - name: Confirm Python and Poetry version
-      run: |
-        python --version
-        poetry --version
-
-    - name: Poetry install
-      run: poetry install
-
-    - name: Poetry lock check
-      run: poetry check --lock
-
-    - name: Check ruff
-      run: make check_ruff
-
-    - name: Check mypy
-      run: make check_mypy
-
-    - name: Run pytests
-      run: make pytest
-
-    - name: Upload Test Artifacts
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-          name: test_report
-          path: python_test_report.xml
-
-  publish-pytest-results:
-    needs: [CI]
-    timeout-minutes: 5
+  python:
     runs-on: ubuntu-latest
-    permissions:
-      checks: write
-      # not needed with comment_mode: off
-      pull-requests: write
-      # only needed for private repository
-      contents: read
-      # only needed for private repository
-      issues: read
-    if: always()
-
+    timeout-minutes: 10
     steps:
-    - name: Download Test Artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: test_report
-        path: artifacts
-
-    - name: Publish Test Results
-      id: test-results
-      uses: EnricoMi/publish-unit-test-result-action@v2
-      if: always()
-      with:
-        files: "artifacts/**/*.xml"
-
-    - name: Test Report Conclusion
-      run: echo "The tests conclusion is ${{ fromJSON( steps.test-results.outputs.json ).conclusion }}"
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+      - run: uv sync --locked
+      - run: uv run task check

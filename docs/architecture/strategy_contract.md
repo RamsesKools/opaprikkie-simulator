@@ -18,6 +18,7 @@ The rules behind each choice are in [game rules](../game_rules.md).
 ```python
 class Strategy(Protocol):
     name: str
+
     def choose_first_player(self, observation: Observation) -> int: ...
     def choose_target(self, observation: Observation, rng: Random) -> int: ...
 ```
@@ -29,7 +30,7 @@ class Strategy(Protocol):
 ## Built-in strategies
 
 | Name | Picks |
-| --- | --- |
+| -- | -- |
 | `random` | uniformly among legal targets |
 | `greedy` | most `guaranteed_moves`; ties go to the peg closest to the top, then the lower number |
 | `smart` | highest expected movement over the whole roll sequence, computed exactly from the remaining dice and clamped, plus a bonus for topping out (it earns a continuation) |

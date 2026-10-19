@@ -1,39 +1,39 @@
+# The old engine and the prototypes, until #39 removes them.
+exclude: ^(apps/|src/opaprikkie_sim/|tests/(unit|integration)/|tests/test_[^/]*\.py$|tests/__init__\.py$)
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
-      - id: check-ast
       - id: check-added-large-files
-      - id: check-case-conflict
-      # - id: check-json # we use check-json5 until this check-json allows comments
-      - id: check-toml
-      - id: check-xml
-      - id: check-yaml
-        args: ["--allow-multiple-documents"]
       - id: check-merge-conflict
-      # - id: check-shebang-scripts-are-executable # not yet sure if we want to use this hook
+      - id: check-toml
+      - id: check-yaml
       - id: end-of-file-fixer
       - id: mixed-line-ending
       - id: trailing-whitespace
-      - id: check-docstring-first
       - id: debug-statements
-      # - id: no-commit-to-branch
-      #   args: [--branch, main]
-  - repo: https://gitlab.com/bmares/check-json5
-    rev: v1.0.0
+      - id: check-ast
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: no-commit-to-branch
+        args: [--branch, main]
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.13.1
     hooks:
-      - id: check-json5
+      - id: uv-lock
+  - repo: https://github.com/abravalheri/validate-pyproject
+    rev: v0.25
+    hooks:
+      - id: validate-pyproject
+  - repo: https://github.com/hukkin/mdformat
+    rev: 1.0.0
+    hooks:
+      - id: mdformat
+        args: [--number]
+        additional_dependencies: [mdformat-gfm, mdformat-frontmatter]
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.13  # latest as of Jun 5, 2025
+    rev: v0.17.1
     hooks:
-      - id: ruff
-        name: ruff check
+      - id: ruff-check
         args: [--fix]
-        types_or: [python, pyi]
       - id: ruff-format
-        name: ruff format
-        types_or: [python, pyi]
-  - repo: https://gitlab.com/schmieder.matthias/python-kacl
-    rev: 'v0.7.3'
-    hooks:
-      - id: kacl-verify

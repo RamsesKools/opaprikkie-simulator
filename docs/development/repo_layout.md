@@ -18,6 +18,7 @@ tests/
   engine/          unit and integration tests per module
   backend/
   sim/
+  cli/
   cross_module/    e.g. HTTP versus in-process parity
   container/       against the built image, marker `container`, skipped by default
 docs/

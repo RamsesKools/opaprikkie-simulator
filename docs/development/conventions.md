@@ -15,7 +15,7 @@ Where things live is in [repository layout](repo_layout.md).
 taskipy is the single command surface for Python and frontend: `uv run task <name>`, list them with `uv run task --list`.
 
 | Task | Does |
-| --- | --- |
+| -- | -- |
 | `format` | Ruff format and oxfmt |
 | `lint` | Ruff check and oxlint |
 | `typecheck` | ty and `tsc -b` |
@@ -31,19 +31,7 @@ taskipy is the single command surface for Python and frontend: `uv run task <nam
 
 ## Linting and type checking
 
-- Ruff with a minimal explicit rule set; extend it when a real need shows up:
-
-  ```toml
-  line-length = 100
-  target-version = "py313"
-
-  [lint]
-  select = ["E", "W", "F", "I", "N", "UP", "B", "C4", "SIM", "PT", "RUF", "ANN"]
-
-  [lint.per-file-ignores]
-  "tests/**" = ["ANN"]
-  ```
-
+- Ruff with the minimal explicit rule set in `ruff.toml`; extend it when a real need shows up.
 - Avoid `select = ["ALL"]` with long ignore lists: every Ruff upgrade silently enables new rules.
 - ty is the Python type checker.
 - Frontend: oxlint with type-aware rules (`oxlint-tsgolint`), React Compiler rules, and snake_case filenames; oxfmt formats; `tsc -b` type-checks separately from the build ([research](../research/frontend_lint_format.md)).
@@ -61,7 +49,7 @@ taskipy is the single command surface for Python and frontend: `uv run task <nam
 ## Pre-commit
 
 - pre-commit-hooks: large files, merge conflicts, TOML and YAML, end of file, line endings, whitespace, `debug-statements`, `check-ast`, shebang checks, and `no-commit-to-branch` on `main`.
-- `uv-lock`, `validate-pyproject`, mdformat (gfm, frontmatter, tables), and Ruff format and check.
+- `uv-lock`, `validate-pyproject`, mdformat with `--number` and compact tables in `.mdformat.toml` (gfm, which includes tables, and frontmatter), and Ruff format and check.
 - Local frontend hooks scoped to `^frontend/`: oxfmt, oxlint, `tsc`, and `vitest related --run`.
 - A version-sync check between `pyproject.toml` and `frontend/package.json`.
 - Not on commit: ty (CI and `task check` only). Not yet: gitleaks, and shellcheck (helper scripts are Python).
@@ -102,6 +90,7 @@ taskipy is the single command surface for Python and frontend: `uv run task <nam
 ## Settings
 
 - Read by a pydantic-settings model with the `OPAPRIKKIE_` prefix and documented in `.env.example`:
+  - `HOST` (127.0.0.1; `0.0.0.0` in the image)
   - `PORT` (8000)
   - `DEV_MODE` (false; enables `/docs` and `/openapi.json`)
   - `MAX_SESSIONS` (50)
