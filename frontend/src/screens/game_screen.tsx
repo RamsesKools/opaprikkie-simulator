@@ -23,7 +23,7 @@ export function GameScreen({ client, initial, autoPlay, onFinished }: Props) {
     game: initial.game,
     scenes: buildScenes(emptyPegs(initial.game.pegs), initial.logs, initial.game),
     index: 0,
-    thrown: false,
+    thrown: autoPlay,
   }));
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -44,11 +44,11 @@ export function GameScreen({ client, initial, autoPlay, onFinished }: Props) {
     }
     if (waiting) return;
     const timer = setTimeout(
-      () => setPlayback((current) => ({ ...current, index: current.index + 1, thrown: false })),
+      () => setPlayback((current) => ({ ...current, index: current.index + 1, thrown: autoPlay })),
       scene.ms,
     );
     return () => clearTimeout(timer);
-  }, [scene, waiting, game, onFinished]);
+  }, [scene, waiting, autoPlay, game, onFinished]);
 
   const pick = (target: number) => {
     setHovered(null);
@@ -57,7 +57,7 @@ export function GameScreen({ client, initial, autoPlay, onFinished }: Props) {
     client.chooseTarget(target).then(
       (update) => {
         const next = buildScenes(game.pegs, update.logs, update.game);
-        setPlayback({ game: update.game, scenes: next, index: 0, thrown: false });
+        setPlayback({ game: update.game, scenes: next, index: 0, thrown: autoPlay });
         setBusy(false);
       },
       () => {

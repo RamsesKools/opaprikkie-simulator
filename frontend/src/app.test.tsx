@@ -90,18 +90,24 @@ test("lets an AI dice-off winner start by itself", async () => {
   expect(await until(() => screen.queryByText(strings.game.aiThinking("Opa")))).toBeInTheDocument();
 });
 
-test("waits for the player's throw when turns don't play automatically", async () => {
+test("toggles automatic turns from the header during the game", async () => {
   render(<App />);
-  fireEvent.click(screen.getByRole("checkbox", { name: strings.menu.autoPlay }));
+  const toggle = () => screen.queryByRole("checkbox", { name: strings.autoPlay });
+  expect(toggle()).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
   fireEvent.click(
     await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") })),
   );
 
-  await until(() => screen.queryByText(strings.game.throwPrompt("Player 1")));
-  expect(legalTarget()).toBeUndefined();
-  fireEvent.click(screen.getByRole("button", { name: strings.game.throw }));
+  await until(() => screen.queryByText(strings.game.pick("Player 1")));
+  expect(toggle()).toBeChecked();
+  fireEvent.click(toggle()!);
   expect(screen.getByText(strings.game.pick("Player 1"))).toBeInTheDocument();
+  fireEvent.click(legalTarget()!);
+
+  await until(() => screen.queryByRole("button", { name: strings.game.throw }));
+  fireEvent.click(toggle()!);
+  expect(screen.queryByRole("button", { name: strings.game.throw })).not.toBeInTheDocument();
 }, 60_000);
 
 test("opens and closes the rules booklet", () => {

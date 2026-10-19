@@ -18,13 +18,11 @@ const modeLabels: Record<Mode, string> = {
 
 type Props = {
   initial: GameSetup | null;
-  autoPlay: boolean;
   pending: boolean;
-  onAutoPlay: (on: boolean) => void;
   onStart: (setup: GameSetup) => void;
 };
 
-export function Menu({ initial, autoPlay, pending, onAutoPlay, onStart }: Props) {
+export function Menu({ initial, pending, onStart }: Props) {
   const [mode, setMode] = useState<Mode>(initial?.mode ?? "versus_ai");
   const [names, setNames] = useState<Record<Mode, Names>>(() =>
     initial ? { ...defaults, [initial.mode]: initial.names } : defaults,
@@ -71,14 +69,6 @@ export function Menu({ initial, autoPlay, pending, onAutoPlay, onStart }: Props)
           <input value={name} onChange={(event) => rename(seat, event.target.value)} />
         </label>
       ))}
-      <label className="auto-play">
-        <input
-          type="checkbox"
-          checked={autoPlay}
-          onChange={(event) => onAutoPlay(event.target.checked)}
-        />
-        {strings.menu.autoPlay}
-      </label>
       {problem && (
         <p className="problem" role="alert">
           {problem}

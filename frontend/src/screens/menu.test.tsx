@@ -4,21 +4,12 @@ import type { GameSetup } from "../game/model.ts";
 import { strings } from "../lib/strings.ts";
 import { Menu } from "./menu.tsx";
 
-type Shown = { initial?: GameSetup | null; autoPlay?: boolean; pending?: boolean };
+type Shown = { initial?: GameSetup | null; pending?: boolean };
 
-function show({ initial = null, autoPlay = true, pending = false }: Shown = {}) {
+function show({ initial = null, pending = false }: Shown = {}) {
   const onStart = vi.fn<(setup: GameSetup) => void>();
-  const onAutoPlay = vi.fn<(on: boolean) => void>();
-  render(
-    <Menu
-      initial={initial}
-      autoPlay={autoPlay}
-      pending={pending}
-      onAutoPlay={onAutoPlay}
-      onStart={onStart}
-    />,
-  );
-  return { onStart, onAutoPlay };
+  render(<Menu initial={initial} pending={pending} onStart={onStart} />);
+  return { onStart };
 }
 
 const switchMode = (from: string) =>
@@ -86,13 +77,4 @@ test("keeps the previous setup", () => {
   expect(screen.getByLabelText(strings.menu.player(1))).toHaveValue("Oma");
   switchMode(strings.menu.hotSeat);
   expect(screen.getByLabelText(strings.menu.opponent)).toHaveValue("Opa");
-});
-
-test("toggles playing turns automatically", () => {
-  const { onAutoPlay } = show({ autoPlay: false });
-  const toggle = screen.getByRole("checkbox", { name: strings.menu.autoPlay });
-
-  expect(toggle).not.toBeChecked();
-  fireEvent.click(toggle);
-  expect(onAutoPlay).toHaveBeenCalledWith(true);
 });

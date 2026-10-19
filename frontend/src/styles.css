@@ -130,6 +130,8 @@ header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 20px;
   padding: 10px 16px;
   border-bottom: 4px solid var(--wood-dark);
@@ -142,6 +144,22 @@ header h1 {
   font-size: 1.6rem;
   letter-spacing: 0.04em;
   text-shadow: 2px 2px 0 var(--hole);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+header .auto-play {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 30%);
+  color: white;
+  text-shadow: 1px 1px 0 var(--hole);
 }
 
 header button {
@@ -243,7 +261,7 @@ button.primary:disabled {
   width: 18px;
   height: 18px;
   margin: 0;
-  accent-color: var(--wood-dark);
+  accent-color: #2f6b4a;
 }
 
 .name {

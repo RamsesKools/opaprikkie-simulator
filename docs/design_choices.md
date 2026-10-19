@@ -5,9 +5,8 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 
 ## Flow
 
-1. Menu: pick the mode, enter names, and choose whether turns play automatically.
+1. Menu: pick the mode and enter names.
    - A big wooden switch flips between "Player vs AI", the default, and "Player vs Player" (hot-seat).
-   - "Play turns automatically" is on by default; it's kept for the next game.
    - Names are trimmed, 1 to 20 characters, and stored in the session so they're prefilled next time.
    - Defaults: "Player 1", "Player 2", and "Opa" for the AI; all editable.
    - Duplicate names are fine; seat colours tell players apart.
@@ -25,6 +24,7 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
    - Dice are thrown into a throw area: green velvet inside a wooden frame, with the dice in rows of three.
    - With "Play turns automatically" off, a human player presses "Throw" for every throw: the opening roll, each roll after it, and a fresh roll after topping a peg.
      The AI always throws by itself.
+     Switching it off mid-game never hides dice already on the table; the next throw waits.
    - The player picks a target by clicking its column on their own board; only legal columns are clickable and glow.
    - Hovering or focusing a legal column raises the dice that form its matches, and shows a ghost peg on the row it's guaranteed to reach from the opening roll alone.
      When that row is the top, the ghost gets a gold halo.
@@ -55,6 +55,7 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 ## Header
 
 - A wooden bar across the top with the title and the "Rules" button, on every screen.
+- During the game it also holds the "Play turns automatically" toggle, on by default and kept for the next game.
 
 ## Rules booklet
 

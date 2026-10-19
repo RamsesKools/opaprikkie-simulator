@@ -58,21 +58,25 @@ export function App({ createClient = createFixtureClient }: Props) {
     <>
       <header className="wood">
         <h1>{strings.title}</h1>
-        <button type="button" onClick={() => setRules(true)}>
-          {strings.rules}
-        </button>
+        <div className="controls">
+          {screen.kind === "game" && (
+            <label className="auto-play">
+              <input
+                type="checkbox"
+                checked={autoPlay}
+                onChange={(event) => setAutoPlay(event.target.checked)}
+              />
+              {strings.autoPlay}
+            </label>
+          )}
+          <button type="button" onClick={() => setRules(true)}>
+            {strings.rules}
+          </button>
+        </div>
       </header>
       <main>
         {failed && <p role="alert">{strings.game.error}</p>}
-        {screen.kind === "menu" && (
-          <Menu
-            initial={setup}
-            autoPlay={autoPlay}
-            pending={starting}
-            onAutoPlay={setAutoPlay}
-            onStart={start}
-          />
-        )}
+        {screen.kind === "menu" && <Menu initial={setup} pending={starting} onStart={start} />}
         {screen.kind === "dice_off" && (
           <DiceOff update={screen.update} onChooseFirst={chooseFirst} onAiStarts={play} />
         )}

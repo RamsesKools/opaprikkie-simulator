@@ -1,12 +1,12 @@
 export const strings = {
   title: "Opa Prikkie",
   rules: "Rules",
+  autoPlay: "Play turns automatically",
   close: "Close",
   menu: {
     mode: (label: string) => `Mode: ${label}`,
     hotSeat: "Player vs Player",
     versusAi: "Player vs AI",
-    autoPlay: "Play turns automatically",
     player: (seat: number) => `Player ${seat + 1}`,
     you: "Your name",
     opponent: "Opponent",
