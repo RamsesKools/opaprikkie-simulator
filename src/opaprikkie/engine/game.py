@@ -154,8 +154,6 @@ def _validate_names(ruleset: Ruleset, names: Sequence[str]) -> tuple[str, ...]:
         )
     if not all(stripped):
         raise IllegalAction(Rejection.INVALID_NAMES, "names can't be blank", rule="blank")
-    if len({name.casefold() for name in stripped}) != len(stripped):
-        raise IllegalAction(Rejection.INVALID_NAMES, "names must differ", rule="duplicate")
     return stripped
 
 
