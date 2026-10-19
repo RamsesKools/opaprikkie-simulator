@@ -24,7 +24,7 @@ taskipy is the single command surface for Python and frontend: `uv run task <nam
 | `test_contract` | starts uvicorn and runs the frontend contract suite |
 | `check` | everything above except `format` |
 | `dev` | uvicorn `--reload` on the settings' host and port, and Vite with its `/api` proxy |
-| `gen_api` | dumps the OpenAPI schema and regenerates `frontend/src/lib/api.d.ts` |
+| `gen_api` | dumps the OpenAPI schema to `frontend/openapi.json` |
 | `bump <part>` | sets the version in `pyproject.toml` and `frontend/package.json` |
 | `wayfinder_pull` | refreshes the `.plan/` cache of the planning map |
 | `image_build`, `image_build_multiarch` | local Docker builds |

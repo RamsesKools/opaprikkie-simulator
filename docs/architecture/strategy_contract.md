@@ -46,10 +46,10 @@ class Strategy(Protocol):
 
 ## Seat controllers
 
-- Session settings give each seat a `controller`: `human` (the caller decides) or a built-in strategy.
+- Each game gives each seat a `controller`: `human` (the caller decides) or `ai` (a built-in strategy).
   A simulator over HTTP plays its seats as `human`.
 - The engine knows nothing about controllers.
-- After any caller action, the backend plays every following built-in seat within the same request (first-player pick, targets, continuations) until the next human choice point or the game end, and returns all logs.
+- After any caller action, the backend plays every following `ai` seat within the same request (first-player pick, targets, continuations) until the next human choice point or the game end, and returns all logs ([HTTP API](http_api.md#ai-seats)).
 - Outside dev mode the backend picks the AI's strategy uniformly among the built-ins using the game seed, and never reveals it.
   In dev mode the caller may pick it, and the state shows it.
 

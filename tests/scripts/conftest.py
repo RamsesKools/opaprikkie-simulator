@@ -24,3 +24,8 @@ def dev() -> ModuleType:
 @pytest.fixture
 def version() -> ModuleType:
     return load("version")
+
+
+@pytest.fixture
+def gen_api() -> ModuleType:
+    return load("gen_api")

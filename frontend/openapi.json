@@ -1,0 +1,1149 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Opa Prikkie",
+    "version": "0.4.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions": {
+      "post": {
+        "summary": "Create Session",
+        "operationId": "create_session_api_sessions_post",
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/session": {
+      "get": {
+        "summary": "Read Session",
+        "operationId": "read_session_api_session_get",
+        "parameters": [
+          {
+            "name": "opaprikkie_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Opaprikkie Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        }
+      }
+    },
+    "/api/game": {
+      "post": {
+        "summary": "Create Game",
+        "operationId": "create_game_api_game_post",
+        "parameters": [
+          {
+            "name": "opaprikkie_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Opaprikkie Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewGame"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameUpdate"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        }
+      },
+      "get": {
+        "summary": "Read Game",
+        "operationId": "read_game_api_game_get",
+        "parameters": [
+          {
+            "name": "opaprikkie_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Opaprikkie Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Game"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        }
+      }
+    },
+    "/api/game/names": {
+      "post": {
+        "summary": "Name Players",
+        "operationId": "name_players_api_game_names_post",
+        "parameters": [
+          {
+            "name": "opaprikkie_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Opaprikkie Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Names"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameUpdate"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        }
+      }
+    },
+    "/api/game/first_player": {
+      "post": {
+        "summary": "Choose First Player",
+        "operationId": "choose_first_player_api_game_first_player_post",
+        "parameters": [
+          {
+            "name": "opaprikkie_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Opaprikkie Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FirstPlayer"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameUpdate"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        }
+      }
+    },
+    "/api/game/target": {
+      "post": {
+        "summary": "Choose Target",
+        "operationId": "choose_target_api_game_target_post",
+        "parameters": [
+          {
+            "name": "opaprikkie_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Opaprikkie Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Target"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameUpdate"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Controller": {
+        "type": "string",
+        "enum": [
+          "human",
+          "ai"
+        ],
+        "title": "Controller"
+      },
+      "DiceOffRoll": {
+        "properties": {
+          "player": {
+            "type": "integer",
+            "title": "Player"
+          },
+          "dice": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Dice"
+          }
+        },
+        "type": "object",
+        "required": [
+          "player",
+          "dice"
+        ],
+        "title": "DiceOffRoll"
+      },
+      "DiceOffRound": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "dice_off",
+            "title": "Kind"
+          },
+          "rolls": {
+            "items": {
+              "$ref": "#/components/schemas/DiceOffRoll"
+            },
+            "type": "array",
+            "title": "Rolls"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "rolls"
+        ],
+        "title": "DiceOffRound"
+      },
+      "Error": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "Error",
+        "description": "Every error body: a `code`, a `message`, and hints that depend on the code."
+      },
+      "FirstPlayer": {
+        "properties": {
+          "player": {
+            "type": "integer",
+            "title": "Player"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "player"
+        ],
+        "title": "FirstPlayer"
+      },
+      "Game": {
+        "properties": {
+          "ruleset": {
+            "type": "string",
+            "title": "Ruleset"
+          },
+          "phase": {
+            "$ref": "#/components/schemas/Phase"
+          },
+          "names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Names"
+          },
+          "controllers": {
+            "items": {
+              "$ref": "#/components/schemas/Controller"
+            },
+            "type": "array",
+            "title": "Controllers"
+          },
+          "pegs": {
+            "items": {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Pegs"
+          },
+          "observation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Observation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "winner": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Winner"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "strategy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strategy"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ruleset",
+          "phase",
+          "names",
+          "controllers",
+          "pegs",
+          "observation",
+          "winner",
+          "seed",
+          "strategy"
+        ],
+        "title": "Game",
+        "description": "The game state; `seed` and `strategy` are shown in dev mode only."
+      },
+      "GameUpdate": {
+        "properties": {
+          "game": {
+            "$ref": "#/components/schemas/Game"
+          },
+          "logs": {
+            "items": {
+              "$ref": "#/components/schemas/LogEntry"
+            },
+            "type": "array",
+            "title": "Logs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "game",
+          "logs"
+        ],
+        "title": "GameUpdate",
+        "description": "The game after an action, with every log entry it produced."
+      },
+      "Health": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "dev_mode": {
+            "type": "boolean",
+            "title": "Dev Mode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "dev_mode"
+        ],
+        "title": "Health"
+      },
+      "LegalTarget": {
+        "properties": {
+          "target": {
+            "type": "integer",
+            "title": "Target"
+          },
+          "matches": {
+            "type": "integer",
+            "title": "Matches"
+          },
+          "guaranteed_moves": {
+            "type": "integer",
+            "title": "Guaranteed Moves"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target",
+          "matches",
+          "guaranteed_moves"
+        ],
+        "title": "LegalTarget"
+      },
+      "LogEntry": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/DiceOffRound"
+          },
+          {
+            "$ref": "#/components/schemas/RollSequence"
+          },
+          {
+            "$ref": "#/components/schemas/NoMove"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "dice_off": "#/components/schemas/DiceOffRound",
+            "no_move": "#/components/schemas/NoMove",
+            "roll_sequence": "#/components/schemas/RollSequence"
+          }
+        }
+      },
+      "Names": {
+        "properties": {
+          "names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Names"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "names"
+        ],
+        "title": "Names"
+      },
+      "NewGame": {
+        "properties": {
+          "controllers": {
+            "items": {
+              "$ref": "#/components/schemas/Controller"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Controllers"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "first_player": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Player"
+          },
+          "strategy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strategy"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "controllers"
+        ],
+        "title": "NewGame"
+      },
+      "NoMove": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "no_move",
+            "title": "Kind"
+          },
+          "player": {
+            "type": "integer",
+            "title": "Player"
+          },
+          "turn": {
+            "type": "integer",
+            "title": "Turn"
+          },
+          "continuation": {
+            "type": "integer",
+            "title": "Continuation"
+          },
+          "opening_roll": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Opening Roll"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "player",
+          "turn",
+          "continuation",
+          "opening_roll"
+        ],
+        "title": "NoMove"
+      },
+      "Observation": {
+        "properties": {
+          "ruleset": {
+            "type": "string",
+            "title": "Ruleset"
+          },
+          "seat": {
+            "type": "integer",
+            "title": "Seat"
+          },
+          "pegs": {
+            "items": {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Pegs"
+          },
+          "opening_roll": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Opening Roll"
+          },
+          "legal_targets": {
+            "items": {
+              "$ref": "#/components/schemas/LegalTarget"
+            },
+            "type": "array",
+            "title": "Legal Targets"
+          },
+          "turn": {
+            "type": "integer",
+            "title": "Turn"
+          },
+          "continuation": {
+            "type": "integer",
+            "title": "Continuation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ruleset",
+          "seat",
+          "pegs",
+          "opening_roll",
+          "legal_targets",
+          "turn",
+          "continuation"
+        ],
+        "title": "Observation"
+      },
+      "Phase": {
+        "type": "string",
+        "enum": [
+          "naming",
+          "choosing_first_player",
+          "choosing_target",
+          "finished"
+        ],
+        "title": "Phase"
+      },
+      "Roll": {
+        "properties": {
+          "dice": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Dice"
+          },
+          "set_aside": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Set Aside"
+          },
+          "reset": {
+            "type": "boolean",
+            "title": "Reset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "dice",
+          "set_aside",
+          "reset"
+        ],
+        "title": "Roll"
+      },
+      "RollSequence": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "roll_sequence",
+            "title": "Kind"
+          },
+          "player": {
+            "type": "integer",
+            "title": "Player"
+          },
+          "turn": {
+            "type": "integer",
+            "title": "Turn"
+          },
+          "continuation": {
+            "type": "integer",
+            "title": "Continuation"
+          },
+          "target": {
+            "type": "integer",
+            "title": "Target"
+          },
+          "rolls": {
+            "items": {
+              "$ref": "#/components/schemas/Roll"
+            },
+            "type": "array",
+            "title": "Rolls"
+          },
+          "matches": {
+            "type": "integer",
+            "title": "Matches"
+          },
+          "movement": {
+            "type": "integer",
+            "title": "Movement"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "player",
+          "turn",
+          "continuation",
+          "target",
+          "rolls",
+          "matches",
+          "movement"
+        ],
+        "title": "RollSequence"
+      },
+      "Session": {
+        "properties": {
+          "names": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Names"
+          },
+          "game": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Game"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "names",
+          "game"
+        ],
+        "title": "Session"
+      },
+      "Target": {
+        "properties": {
+          "target": {
+            "type": "integer",
+            "title": "Target"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "target"
+        ],
+        "title": "Target"
+      }
+    }
+  }
+}
