@@ -19,6 +19,7 @@ tests/
   backend/
   sim/
   cli/
+  scripts/         the helper scripts
   cross_module/    e.g. HTTP versus in-process parity
   container/       against the built image, marker `container`, skipped by default
 docs/
@@ -30,9 +31,9 @@ docs/
   game_rules.md      rules the engine implements
   design_choices.md  frontend design choices
 notebooks/         exploration only, opt-in `notebook` dependency group
-scripts/           Python helper scripts
+scripts/           Python helper scripts: `dev.py`, `version.py`
 .agents/           agent instructions and skills, see below
-pyproject.toml  uv.lock  ruff.toml  .python-version
+pyproject.toml  uv.lock  ruff.toml  .python-version  .nvmrc
 Dockerfile  compose.yaml  .env.example
 AGENTS.md  CLAUDE.md  GLOSSARY.md  README.md
 ```

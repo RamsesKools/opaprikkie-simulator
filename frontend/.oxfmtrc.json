@@ -1,0 +1,4 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "ignorePatterns": ["src/lib/api.d.ts", "package-lock.json", "*.md"]
+}

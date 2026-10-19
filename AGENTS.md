@@ -6,18 +6,19 @@ Opa Prikkie, the Dutch dice game, as a browser game with an authoritative Python
 The browser MVP is being built; see [the roadmap](docs/roadmap/monorepo_mvp.md) and the implementation parts under issue #30.
 
 - `src/opaprikkie/`: one distribution with the `engine`, `backend`, and `sim` subpackages, plus `cli.py`.
-- `frontend/`: the React SPA (arrives with #32).
+- `frontend/`: the React SPA, currently a placeholder page.
 - `tests/`: one folder per module, plus `cross_module/` and `container/`.
 - `src/opaprikkie_sim/`, its tests, and `apps/` are the old engine and prototypes.
   They're excluded from every check and removed by #39; don't build on them, and don't port them: the rules changed.
 
 ## Commands
 
-- Install: `uv sync`, then `uv run pre-commit install`.
+- Install: `uv sync`, `npm --prefix frontend ci` with Node 24 from `.nvmrc`, then `uv run pre-commit install`.
 - List tasks: `uv run task --list`.
 - Format: `uv run task format`.
 - Run every check (lint, types, module boundaries, tests with the 90% coverage gate): `uv run task check`.
-- Run the backend with reload: `uv run task dev`.
+- Run the backend and Vite with reload: `uv run task dev`.
+- Bump the app version: `uv run task bump <major|minor|patch>`.
 - Serve: `uv run opaprikkie serve`.
 - Add or remove dependencies with `uv add` and `uv remove`, never by editing `pyproject.toml`.
 

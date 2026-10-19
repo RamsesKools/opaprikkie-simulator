@@ -37,3 +37,38 @@ repos:
       - id: ruff-check
         args: [--fix]
       - id: ruff-format
+  - repo: local
+    hooks:
+      - id: version-sync
+        name: version sync
+        entry: python scripts/version.py check
+        language: python
+        files: ^(pyproject\.toml|frontend/package\.json)$
+        pass_filenames: false
+      - id: oxfmt
+        name: oxfmt
+        entry: npm --prefix frontend exec -- oxfmt --no-error-on-unmatched-pattern
+        language: system
+        files: ^frontend/.*\.(js|jsx|ts|tsx|json|css|html)$
+      - id: oxlint
+        name: oxlint
+        entry: npm --prefix frontend exec -- oxlint -c frontend/.oxlintrc.json --fix --deny-warnings --no-error-on-unmatched-pattern
+        language: system
+        files: ^frontend/.*\.(js|jsx|ts|tsx)$
+      - id: tsc
+        name: tsc
+        entry: npm --prefix frontend run typecheck
+        language: system
+        files: ^frontend/.*\.(ts|tsx|json)$
+        pass_filenames: false
+      - id: vitest
+        name: vitest related
+        entry: bash -c 'cd frontend && npm exec -- vitest related --run "${@#frontend/}"' --
+        language: system
+        files: ^frontend/src/.*\.(ts|tsx)$
+      - id: vitest-all
+        name: vitest all
+        entry: npm --prefix frontend exec -- vitest run --root frontend
+        language: system
+        files: ^frontend/(vite\.config\.ts|src/test_setup\.ts|package-lock\.json)$
+        pass_filenames: false
