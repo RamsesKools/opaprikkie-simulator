@@ -1,7 +1,8 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
-from types import MappingProxyType
+
+from opaprikkie.engine.frozen_map import FrozenMap
 
 
 class StartRule(StrEnum):
@@ -29,7 +30,7 @@ class Ruleset:
     end_rule: EndRule
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "targets", MappingProxyType(dict(self.targets)))
+        object.__setattr__(self, "targets", FrozenMap(self.targets))
         _validate(self)
 
 
@@ -38,6 +39,8 @@ def _validate(ruleset: Ruleset) -> None:
         raise ValueError("a ruleset needs a name")
     if ruleset.players < 2:
         raise ValueError("a game needs at least 2 players")
+    if ruleset.dice_count < 1:
+        raise ValueError("a game needs at least 1 die")
     if ruleset.dice_faces < 2:
         raise ValueError("dice need at least 2 faces")
     if ruleset.rows < 1:

@@ -1,6 +1,5 @@
 from collections.abc import Sequence
 from dataclasses import replace
-from types import MappingProxyType
 
 from opaprikkie.engine.dice import roll, set_aside
 from opaprikkie.engine.errors import IllegalAction, Rejection
@@ -21,7 +20,7 @@ _DICE_OFF_DICE = 2
 
 
 def new_game(ruleset: Ruleset, seed: int | str) -> tuple[GameState, Log]:
-    board = MappingProxyType(dict.fromkeys(ruleset.targets, 0))
+    board = dict.fromkeys(ruleset.targets, 0)
     return GameState(ruleset, seed, Phase.NAMING, (board,) * ruleset.players), ()
 
 
@@ -51,9 +50,7 @@ def choose_target(state: GameState, target: int) -> tuple[GameState, Log]:
     sequence, roll_index = _roll_sequence(state, player, target)
     board = dict(state.pegs[player])
     board[target] += sequence.movement
-    pegs = tuple(
-        MappingProxyType(board) if seat == player else rows for seat, rows in enumerate(state.pegs)
-    )
+    pegs = tuple(board if seat == player else rows for seat, rows in enumerate(state.pegs))
     state = replace(state, pegs=pegs, roll_index=roll_index)
     log = (sequence,)
     if all(row == state.ruleset.rows for row in board.values()):
@@ -148,6 +145,8 @@ def _roll_sequence(state: GameState, player: int, target: int) -> tuple[RollSequ
 
 
 def _validate_names(ruleset: Ruleset, names: Sequence[str]) -> tuple[str, ...]:
+    if isinstance(names, str) or not all(isinstance(name, str) for name in names):
+        raise IllegalAction(Rejection.INVALID_NAMES, "names must be a list of strings", rule="type")
     stripped = tuple(name.strip() for name in names)
     if len(stripped) != ruleset.players:
         raise IllegalAction(
@@ -170,7 +169,7 @@ def _require_phase(state: GameState, phase: Phase) -> None:
 
 
 def _require_player(state: GameState, player: int) -> None:
-    if not 0 <= player < state.ruleset.players:
+    if not _is_int(player) or not 0 <= player < state.ruleset.players:
         raise IllegalAction(
             Rejection.INVALID_PLAYER,
             f"player {player} isn't in the game",
@@ -181,9 +180,9 @@ def _require_player(state: GameState, player: int) -> None:
 def _require_legal_target(state: GameState, player: int, target: int) -> None:
     pegs = state.pegs[player]
     legal = [t.target for t in legal_targets(state.ruleset, pegs, state.opening_roll)]
-    if target in legal:
+    if _is_int(target) and target in legal:
         return
-    if target not in pegs:
+    if not _is_int(target) or target not in pegs:
         reason = "not_a_target"
     elif pegs[target] == state.ruleset.rows:
         reason = "topped"
@@ -195,6 +194,10 @@ def _require_legal_target(state: GameState, player: int, target: int) -> None:
         legal_targets=tuple(legal),
         reason=reason,
     )
+
+
+def _is_int(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool)
 
 
 def _current_player(state: GameState) -> int:

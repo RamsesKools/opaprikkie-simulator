@@ -31,6 +31,11 @@ def test_targets_are_copied_from_the_caller():
     assert dict(ruleset.targets) == {1: 1, 7: 2}
 
 
+def test_validation_checks_the_dice_count_directly():
+    with pytest.raises(ValueError, match="at least 1 die"):
+        dataclasses.replace(CLASSIC, dice_count=0, targets={1: 1})
+
+
 @pytest.mark.parametrize(
     "changes",
     [

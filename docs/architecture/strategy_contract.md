@@ -56,9 +56,9 @@ class Strategy(Protocol):
 - The engine is the only validation point: `IllegalAction` carries a `code`, a `message`, and `hints`, with the state unchanged and no turn used.
 - HTTP returns 422 with `{code, message, ...hints}`:
   - `wrong_phase` with the current `phase`
-  - `illegal_target` with `legal_targets` and a reason: `topped`, `no_match`, or `not_a_target`
-  - `invalid_names` with the failing `rule`: `count`, `blank`, or `duplicate` (names are compared stripped and case-insensitively)
-  - `invalid_player` for a first player outside the game, with the number of `players`
+  - `illegal_target` with `legal_targets` and a reason: `topped`, `no_match`, or `not_a_target` (which includes anything that isn't an int)
+  - `invalid_names` with the failing `rule`: `type`, `count`, `blank`, or `duplicate` (names are compared stripped and case-insensitively)
+  - `invalid_player` for a first player that isn't an int in the game, with the number of `players`
 - The UI only offers legal choices, so it never sees these.
 - The simulator treats a rejection as a strategy bug and fails fast: no retry, no fallback.
 

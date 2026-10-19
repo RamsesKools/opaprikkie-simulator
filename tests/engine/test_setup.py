@@ -6,9 +6,11 @@ from opaprikkie.engine import (
     CLASSIC,
     DiceOffRound,
     IllegalAction,
+    NoMove,
     Phase,
     choose_first_player,
     choose_target,
+    count_matches,
     name_players,
     new_game,
 )
@@ -139,3 +141,75 @@ def test_actions_in_the_wrong_phase_are_rejected():
         assert raised.value.code == "wrong_phase"
     assert raised.value.hints == {"phase": "choosing_first_player"}
     assert str(raised.value)
+
+
+@pytest.mark.parametrize("names", ["AB", ["Ada", 7], [None, "Bob"]])
+def test_names_must_be_a_list_of_strings(names):
+    state, _ = new_game(CLASSIC, "seed")
+
+    with pytest.raises(IllegalAction) as raised:
+        name_players(state, names)
+
+    assert raised.value.code == "invalid_names"
+    assert raised.value.hints == {"rule": "type"}
+
+
+@pytest.mark.parametrize("player", [True, "0", 0.0, 1.5])
+def test_first_player_must_be_an_int(player):
+    state, _ = new_game(CLASSIC, "seed")
+    named, _ = name_players(state, ["Ada", "Bob"])
+
+    for action in (
+        lambda: name_players(state, ["Ada", "Bob"], first_player=player),
+        lambda: choose_first_player(named, player),
+    ):
+        with pytest.raises(IllegalAction) as raised:
+            action()
+        assert raised.value.code == "invalid_player"
+
+
+TWELVES = dataclasses.replace(CLASSIC, name="twelves", targets={12: 2})
+
+
+def dead_first_turn(start) -> tuple:
+    for seed in range(200):
+        state, _ = new_game(TWELVES, seed)
+        after, log = start(state)
+        if log and isinstance(log[0], NoMove):
+            return after, log
+    pytest.fail("no seed with a dead first turn")
+
+
+@pytest.mark.parametrize(
+    "start",
+    [
+        lambda state: name_players(state, ["Ada", "Bob"], first_player=0),
+        lambda state: choose_first_player(name_players(state, ["Ada", "Bob"])[0], 0),
+    ],
+    ids=["explicit", "chosen"],
+)
+def test_a_dead_first_opening_roll_passes_play_to_the_next_player(start):
+    after, log = dead_first_turn(start)
+
+    assert log[0] == NoMove(player=0, turn=1, continuation=0, opening_roll=log[0].opening_roll)
+    assert count_matches(TWELVES, 12, log[0].opening_roll) == 0
+    assert after.phase is Phase.CHOOSING_TARGET
+    assert after.turn == len(log) + 1
+    assert after.current_player == len(log) % 2
+    assert all(isinstance(entry, NoMove) for entry in log)
+
+
+def test_a_two_player_tie_has_both_players_roll_the_dice_off_again():
+    for seed in range(200):
+        state, _ = new_game(CLASSIC, seed)
+        _, log = name_players(state, ["Ada", "Bob"])
+        if len(log) > 1:
+            break
+    else:
+        pytest.fail("no seed with a dice-off tie")
+
+    first, second = log[0], log[1]
+    assert isinstance(first, DiceOffRound)
+    assert isinstance(second, DiceOffRound)
+    assert sum(first.rolls[0].dice) == sum(first.rolls[1].dice)
+    assert [roll.player for roll in second.rolls] == [0, 1]

@@ -156,9 +156,35 @@ def test_game_ends_the_moment_the_last_peg_is_topped():
         choose_target(after, 2)
 
 
+def test_game_can_end_on_a_continuation():
+    for seed in range(200):
+        state = choosing_target((2, 1, 1, 1, 1, 1), rows=topped_except(2, 4) | {3: 4}, seed=seed)
+        continued, _ = choose_target(state, 2)
+        if continued.current_player == 0 and 3 in continued.opening_roll:
+            break
+    else:
+        pytest.fail("no seed with a continuation that can top the last peg")
+
+    after, log = choose_target(continued, 3)
+
+    assert continued.continuation == 1
+    assert after.phase is Phase.FINISHED
+    assert after.winner == 0
+    assert sequence_of(log).continuation == 1
+    assert log == (sequence_of(log),)
+
+
 @pytest.mark.parametrize(
     ("target", "reason"),
-    [(13, "not_a_target"), (0, "not_a_target"), (4, "topped"), (5, "no_match")],
+    [
+        (13, "not_a_target"),
+        (0, "not_a_target"),
+        (True, "not_a_target"),
+        ([1], "not_a_target"),
+        ("1", "not_a_target"),
+        (4, "topped"),
+        (5, "no_match"),
+    ],
 )
 def test_illegal_targets_are_rejected_with_the_legal_ones_and_a_reason(target, reason):
     state = choosing_target((4, 6, 1, 1, 3, 3), rows={4: CLASSIC.rows})

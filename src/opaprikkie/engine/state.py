@@ -2,6 +2,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 
+from opaprikkie.engine.frozen_map import FrozenMap
 from opaprikkie.engine.ruleset import Ruleset
 
 
@@ -27,3 +28,7 @@ class GameState:
     continuation: int = 0
     opening_roll: tuple[int, ...] = ()
     winner: int | None = None
+
+    def __post_init__(self) -> None:
+        pegs = tuple(rows if isinstance(rows, FrozenMap) else FrozenMap(rows) for rows in self.pegs)
+        object.__setattr__(self, "pegs", pegs)
