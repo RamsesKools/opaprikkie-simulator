@@ -55,7 +55,7 @@ class SmartStrategy:
 
     name = "smart"
 
-    def __init__(self, topping_bonus: Fraction = Fraction(1)) -> None:
+    def __init__(self, topping_bonus: Fraction = Fraction(0)) -> None:
         self.topping_bonus = topping_bonus
 
     def choose_first_player(self, observation: Observation) -> int:
@@ -74,34 +74,37 @@ class SmartStrategy:
         matches = count_matches(ruleset, target, opening_roll)
         remaining = len(opening_roll) - matches * ruleset.targets[target]
         distance = ruleset.rows - observation.pegs[observation.seat][target]
-        return _after_roll(ruleset, target, matches, distance, remaining, self.topping_bonus)
+        rows, topping = _after_roll(ruleset, target, matches, distance, remaining)
+        return rows + self.topping_bonus * topping
 
 
 def _after_roll(
-    ruleset: Ruleset, target: int, matches: int, needed: int, remaining: int, bonus: Fraction
-) -> Fraction:
+    ruleset: Ruleset, target: int, matches: int, needed: int, remaining: int
+) -> tuple[Fraction, Fraction]:
+    """Expected rows moved and chance of topping out, once a roll found `matches`."""
     if matches >= needed:
-        return needed + bonus
+        return Fraction(needed), Fraction(1)
     dice = remaining or ruleset.dice_count
     if dice < ruleset.targets[target]:
-        return Fraction(matches)
-    return matches + _expected_rest(ruleset, target, needed - matches, dice, bonus)
+        return Fraction(matches), Fraction(0)
+    rows, topping = _expected_rest(ruleset, target, needed - matches, dice)
+    return matches + rows, topping
 
 
 @cache
 def _expected_rest(
-    ruleset: Ruleset, target: int, needed: int, dice: int, bonus: Fraction
-) -> Fraction:
+    ruleset: Ruleset, target: int, needed: int, dice: int
+) -> tuple[Fraction, Fraction]:
     combo_size = ruleset.targets[target]
-    return sum(
-        (
-            chance
-            * _after_roll(ruleset, target, matches, needed, dice - matches * combo_size, bonus)
-            for matches, chance in _match_odds(ruleset, target, dice).items()
-            if matches
-        ),
-        Fraction(0),
-    )
+    rows, topping = Fraction(0), Fraction(0)
+    for matches, chance in _match_odds(ruleset, target, dice).items():
+        if matches:
+            more_rows, more_topping = _after_roll(
+                ruleset, target, matches, needed, dice - matches * combo_size
+            )
+            rows += chance * more_rows
+            topping += chance * more_topping
+    return rows, topping
 
 
 @cache

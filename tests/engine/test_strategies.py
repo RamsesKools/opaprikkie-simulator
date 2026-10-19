@@ -9,11 +9,16 @@ from opaprikkie.engine import (
     CLASSIC,
     EndRule,
     GreedyStrategy,
+    Phase,
     RandomStrategy,
     Ruleset,
     SmartStrategy,
     StartRule,
     Strategy,
+    choose_first_player,
+    choose_target,
+    name_players,
+    new_game,
     observe,
 )
 
@@ -64,8 +69,10 @@ def test_greedy_picks_the_most_guaranteed_moves(opening_roll, rows, expected):
     assert GreedyStrategy().choose_target(observation, Random(0)) == expected
 
 
-def tiny(dice_count: int, rows: int, targets: dict[int, int]) -> Ruleset:
-    return Ruleset("tiny", 2, dice_count, 2, rows, targets, StartRule.DICE_OFF, EndRule.IMMEDIATE)
+def tiny(dice_count: int, rows: int, targets: dict[int, int], faces: int = 2) -> Ruleset:
+    return Ruleset(
+        "tiny", 2, dice_count, faces, rows, targets, StartRule.DICE_OFF, EndRule.IMMEDIATE
+    )
 
 
 COIN = {1: 1, 2: 1}
@@ -87,6 +94,13 @@ COIN = {1: 1, 2: 1}
             Fraction(0),
             Fraction(7, 4),
             id="over several rolls",
+        ),
+        pytest.param(
+            choosing_target((1,), ruleset=tiny(1, 2, COIN)),
+            1,
+            Fraction(1),
+            Fraction(2),
+            id="topping out earns the bonus",
         ),
         pytest.param(
             choosing_target((1, 2, 1), ruleset=tiny(3, 5, {2: 1, 3: 2})),
@@ -124,16 +138,50 @@ def test_smart_knows_the_exact_expected_movement(state, target, bonus, expected)
     assert smart.expected_value(observe(state), target) == expected
 
 
-def test_smart_adds_one_row_for_topping_out_by_default():
+def test_smart_has_no_topping_bonus_by_default():
     observation = observe(choosing_target((1,), ruleset=tiny(1, 2, COIN)))
 
-    assert SmartStrategy().expected_value(observation, 1) == 2
+    assert SmartStrategy().expected_value(observation, 1) == Fraction(3, 2)
 
 
-def test_smart_breaks_ties_to_the_lower_number():
-    observation = observe(choosing_target((1, 2, 4, 4, 4, 4), only_open({1: 0, 2: 0})))
+@pytest.mark.parametrize(
+    ("state", "expected"),
+    [
+        pytest.param(
+            choosing_target((1, 2, 4, 4, 4, 4), only_open({1: 0, 2: 0})),
+            1,
+            id="same rows",
+        ),
+        pytest.param(
+            choosing_target((1, 2, 4), {3: 0, 4: 4}, tiny(3, 5, {3: 2, 4: 1}, faces=4)),
+            3,
+            id="different rows",
+        ),
+    ],
+)
+def test_smart_breaks_ties_to_the_lower_number(state, expected):
+    observation = observe(state)
+    values = {
+        t.target: SmartStrategy().expected_value(observation, t.target)
+        for t in observation.legal_targets
+    }
 
-    assert SmartStrategy().choose_target(observation, Random(0)) == 1
+    assert len(set(values.values())) == 1
+    assert SmartStrategy().choose_target(observation, Random(0)) == expected
+
+
+def test_smart_picks_the_highest_expected_value():
+    rng = Random("boards")
+    smart = SmartStrategy()
+    for _ in range(200):
+        rows = {target: rng.randint(0, CLASSIC.rows - 1) for target in CLASSIC.targets}
+        opening_roll = tuple(rng.randint(1, 6) for _ in range(CLASSIC.dice_count))
+        observation = observe(choosing_target(opening_roll, rows))
+        values = {
+            t.target: smart.expected_value(observation, t.target) for t in observation.legal_targets
+        }
+
+        assert values[smart.choose_target(observation, rng)] == max(values.values())
 
 
 def test_smart_values_the_six_dice_reset_that_greedy_ignores():
@@ -141,3 +189,16 @@ def test_smart_values_the_six_dice_reset_that_greedy_ignores():
 
     assert GreedyStrategy().choose_target(observation, Random(0)) == 1
     assert SmartStrategy().choose_target(observation, Random(0)) == 7
+
+
+@pytest.mark.parametrize("name", ["random", "greedy", "smart"])
+def test_builtins_finish_a_classic_game_in_both_seats(name):
+    strategy = BUILTIN_STRATEGIES[name]
+    rng = Random(name)
+    state, _ = new_game(CLASSIC, name)
+    state, _ = name_players(state, ["Ada", "Bob"])
+    state, _ = choose_first_player(state, strategy.choose_first_player(observe(state)))
+    while state.phase is not Phase.FINISHED:
+        state, _ = choose_target(state, strategy.choose_target(observe(state), rng))
+
+    assert state.winner is not None
