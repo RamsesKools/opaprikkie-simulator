@@ -39,8 +39,7 @@ def run_batch(
         try:
             played = driver.play(game_seed, first_player, chooser)
         except IllegalAction as error:
-            strategy = seats[chooser.seat]
-            error.add_note(f"{strategy.name} in seat {chooser.seat} of game {game_seed!r}")
+            error.add_note(chooser.blame(game_seed))
             raise
         results.append(game_result(game_seed, first_player, played.winner, played.log, len(seats)))
     return BatchResult(tuple(s.name for s in seats), seed, tuple(results))
@@ -61,8 +60,13 @@ class _Chooser:
     def __init__(self, seats: tuple[Strategy, ...], game_seed: str) -> None:
         self.seats = seats
         self.rngs = [Random(f"{game_seed}:strategy:{seat}") for seat in range(len(seats))]
-        self.seat = 0
+        self.seat: int | None = None
 
     def __call__(self, observation: Observation) -> int:
         self.seat = observation.seat
         return self.seats[self.seat].choose_target(observation, self.rngs[self.seat])
+
+    def blame(self, game_seed: str) -> str:
+        if self.seat is None:
+            return f"game {game_seed!r}"
+        return f"{self.seats[self.seat].name} in seat {self.seat} of game {game_seed!r}"

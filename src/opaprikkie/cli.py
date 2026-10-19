@@ -42,6 +42,7 @@ def _summary(stats: BatchStats) -> str:
         for seat, s in enumerate(stats.seats, start=1)
     ]
     lines.append(
-        f"Turns per game: mean {stats.mean_turns:.1f}, min {stats.min_turns}, max {stats.max_turns}"
+        f"Turns per game (both players): mean {stats.mean_turns:.1f},"
+        f" min {stats.min_turns}, max {stats.max_turns}"
     )
     return "\n".join(lines)

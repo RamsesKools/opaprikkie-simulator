@@ -22,7 +22,7 @@ def test_simulate_prints_a_summary():
     assert lines[0] == "10 games of random vs random, seed s"
     assert lines[1].startswith("Seat 1  random  ")
     assert lines[2].startswith("Seat 2  random  ")
-    assert lines[3].startswith("Turns per game: mean ")
+    assert lines[3].startswith("Turns per game (both players): mean ")
 
 
 def test_simulate_repeats_a_seeded_batch_exactly():
@@ -48,3 +48,10 @@ def test_simulate_rejects_unknown_strategies():
 
 def test_version():
     assert __version__ in CliRunner().invoke(cli.main, ["--version"]).output
+
+
+def test_simulate_needs_a_strategy_per_seat():
+    result = CliRunner().invoke(cli.main, ["simulate", "random"])
+
+    assert result.exit_code == 2
+    assert "takes 2 values" in result.output

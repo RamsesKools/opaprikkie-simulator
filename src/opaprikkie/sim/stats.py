@@ -7,7 +7,7 @@ from opaprikkie.engine import Log, NoMove, RollSequence
 
 @dataclass(frozen=True)
 class GameResult:
-    """One game's outcome; `continuations` and `dead_turns` are per seat."""
+    """One game's outcome; `turns` counts both players' turns, the others are per seat."""
 
     seed: str
     first_player: int
@@ -19,6 +19,8 @@ class GameResult:
 
 def game_result(seed: str, first_player: int, winner: int, log: Log, players: int) -> GameResult:
     choices = [entry for entry in log if isinstance(entry, RollSequence | NoMove)]
+    if not choices:
+        raise ValueError(f"game {seed!r} has no turns in its log")
     continuations = [0] * players
     dead_turns = [0] * players
     for entry in choices:

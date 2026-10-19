@@ -40,6 +40,7 @@ flowchart LR
 - `run_batch` plays a matchup through a `GameDriver`; `InProcessDriver` is the in-process one.
 - Game `i` of a batch gets the seed `<batch seed>:<i>` and first player `i % players`, skipping the dice-off, so a batch seed replays the whole batch.
 - Each seat's strategy gets its own `Random`, seeded from the game seed and the seat.
+- A game's turns count both players' turns, the engine's turn number at the end.
 - An `IllegalAction` from a strategy's choice ends the batch, with a note naming the strategy, seat, and game.
 - Depends on `engine` and httpx2; never imports `backend` (tests may use it to exercise the HTTP path in-process).
 

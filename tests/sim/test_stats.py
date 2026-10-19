@@ -32,8 +32,11 @@ GAMES: dict[int, tuple[int, Log]] = {
 class ScriptedDriver:
     ruleset = CLASSIC
 
+    def __init__(self, games: dict[int, tuple[int, Log]] = GAMES) -> None:
+        self.games = games
+
     def play(self, seed: str, first_player: int, choose: Chooser) -> PlayedGame:
-        winner, log = GAMES[first_player]
+        winner, log = self.games[first_player]
         return PlayedGame(winner, log)
 
 
@@ -59,3 +62,18 @@ def test_stats_aggregate_wins_turns_continuations_and_dead_turns():
 def test_a_batch_needs_at_least_one_game():
     with pytest.raises(ValueError, match="at least 1 game"):
         run_batch(["random", "random"], games=0, seed="s")
+
+
+def test_a_dead_opening_roll_counts_as_a_dead_turn():
+    driver = ScriptedDriver({0: (1, (dead(0, 1), moved(1, 2)))})
+
+    game = run_batch(["random", "random"], games=1, seed="s", driver=driver).games[0]
+
+    assert (game.turns, game.dead_turns) == (2, (1, 0))
+
+
+def test_a_log_without_turns_is_rejected():
+    driver = ScriptedDriver({0: (0, ())})
+
+    with pytest.raises(ValueError, match="game 's:0' has no turns in its log"):
+        run_batch(["random", "random"], games=1, seed="s", driver=driver)
