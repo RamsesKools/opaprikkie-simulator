@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 import time
@@ -35,3 +36,8 @@ def base_url() -> Iterator[str]:
         yield url
     finally:
         docker("rm", "--force", container)
+
+
+@pytest.fixture(scope="session")
+def image_config() -> dict:
+    return json.loads(docker("image", "inspect", "--format", "{{json .Config}}", IMAGE))

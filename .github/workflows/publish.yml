@@ -1,7 +1,9 @@
 name: Publish
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -11,9 +13,14 @@ concurrency:
 
 env:
   IMAGE: ghcr.io/ramseskools/opaprikkie
+  SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
 
 jobs:
   image:
+    # workflow_run also fires for pull requests from a fork's main, so require a push.
+    if: >-
+      github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'))
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -21,6 +28,8 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.SHA }}
       - uses: astral-sh/setup-uv@v10.3.0
       - id: version
         run: |
@@ -35,7 +44,6 @@ jobs:
       - id: build
         uses: docker/build-push-action@v7.4.0
         env:
-          # Reproducible timestamps, so a rebuild of the same commit can match the pushed digest.
           SOURCE_DATE_EPOCH: ${{ steps.version.outputs.epoch }}
         with:
           context: .
@@ -43,8 +51,8 @@ jobs:
           provenance: false
           build-args: |
             VERSION=${{ steps.version.outputs.version }}
-            COMMIT=${{ github.sha }}
-          outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
+            COMMIT=${{ env.SHA }}
+          outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true,rewrite-timestamp=true
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Tag the next version
@@ -52,9 +60,26 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
-          digest_of() { docker buildx imagetools inspect "$IMAGE:$1" --format '{{.Manifest.Digest}}' 2>/dev/null; }
+          # Exit 1 only when the tag doesn't exist, so a registry error can't overwrite a tag.
+          digest_of() {
+            local out
+            if out=$(docker buildx imagetools inspect "$IMAGE:$1" --format '{{.Manifest.Digest}}' 2>&1); then
+              echo "$out"
+            elif grep -qiE ': not found$|manifest unknown' <<< "$out"; then
+              return 1
+            else
+              echo "$out" >&2
+              return 2
+            fi
+          }
           tag=$VERSION n=0 previous=
-          while current=$(digest_of "$tag"); do previous=$current n=$((n + 1)) tag=$VERSION.post$n; done
+          while true; do
+            status=0
+            current=$(digest_of "$tag") || status=$?
+            [ "$status" -eq 1 ] && break
+            [ "$status" -eq 0 ] || exit 1
+            previous=$current n=$((n + 1)) tag=$VERSION.post$n
+          done
           if [ "$previous" = "$DIGEST" ]; then
             echo "Unchanged since the last $VERSION tag; nothing to push."
             exit 0

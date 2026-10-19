@@ -23,10 +23,12 @@ def test_docs_are_served_in_dev_mode_only(dev_mode, status):
 
 @pytest.fixture
 def spa(tmp_path):
-    (tmp_path / "assets").mkdir()
-    (tmp_path / "index.html").write_text("<div id=root></div>")
-    (tmp_path / "assets" / "app.js").write_text("console.log(1)")
-    return tmp_path
+    dist = tmp_path / "dist"
+    (dist / "assets").mkdir(parents=True)
+    (dist / "index.html").write_text("<div id=root></div>")
+    (dist / "assets" / "app.js").write_text("console.log(1)")
+    (tmp_path / "secret.txt").write_text("secret")
+    return dist
 
 
 def test_serves_the_spa_next_to_the_api(spa):
@@ -35,6 +37,20 @@ def test_serves_the_spa_next_to_the_api(spa):
     assert client.get("/").text == "<div id=root></div>"
     assert client.get("/assets/app.js").text == "console.log(1)"
     assert client.get("/api/health").status_code == 200
+
+
+def test_unknown_api_paths_stay_json_404s(spa):
+    response = TestClient(create_app(Settings(static_dir=spa))).get("/api/nope")
+
+    assert response.status_code == 404
+    assert response.headers["content-type"] == "application/json"
+
+
+def test_does_not_serve_files_outside_the_spa(spa):
+    client = TestClient(create_app(Settings(static_dir=spa)))
+
+    assert client.get("/%2e%2e/secret.txt").status_code == 404
+    assert client.get("/assets/%2e%2e/%2e%2e/secret.txt").status_code == 404
 
 
 def test_runs_without_a_built_spa(tmp_path):
