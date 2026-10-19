@@ -91,7 +91,6 @@ def test_choose_first_player_makes_the_first_opening_roll():
         (["Ada"], "count"),
         (["Ada", "Bob", "Cy"], "count"),
         (["Ada", "  "], "blank"),
-        (["Ada", " ada "], "duplicate"),
     ],
 )
 def test_invalid_names_are_rejected_with_the_failing_rule(names, rule):
@@ -110,6 +109,18 @@ def test_names_are_stripped():
     state, _ = name_players(state, [" Ada ", "Bob"])
 
     assert state.names == ("Ada", "Bob")
+
+
+@pytest.mark.parametrize(
+    ("names", "stored"),
+    [(["Ada", "Ada"], ("Ada", "Ada")), (["Ada", " ada "], ("Ada", "ada"))],
+)
+def test_duplicate_names_are_accepted(names, stored):
+    state, _ = new_game(CLASSIC, "seed")
+
+    state, _ = name_players(state, names)
+
+    assert state.names == stored
 
 
 @pytest.mark.parametrize("player", [-1, 2])

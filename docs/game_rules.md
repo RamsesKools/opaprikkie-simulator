@@ -12,7 +12,7 @@ Vocabulary lives in the [glossary](../GLOSSARY.md); this document is the single 
 
 ## Starting player
 
-1. Every player enters a name.
+1. Every player enters a name; names may repeat, since seats tell players apart.
 2. Dice-off: each player rolls two dice; the highest sum wins.
    On a tie for highest, only the tied players roll again.
 3. The dice-off winner chooses who starts.

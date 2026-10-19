@@ -22,12 +22,14 @@ from opaprikkie.engine import (
 SEEDS = range(40)
 
 
-def play(seed: int | str) -> tuple[list[GameState], list[LogEntry]]:
+def play(
+    seed: int | str, names: tuple[str, str] = ("Ada", "Bob")
+) -> tuple[list[GameState], list[LogEntry]]:
     """Plays a whole game with the random strategy, keeping every state and log entry."""
     strategy = BUILTIN_STRATEGIES["random"]
     rng = Random(f"strategy:{seed}")
     state, log = new_game(CLASSIC, seed)
-    state, log = name_players(state, ["Ada", "Bob"])
+    state, log = name_players(state, names)
     states, entries = [state], list(log)
     state, log = choose_first_player(state, strategy.choose_first_player(observe(state)))
     states.append(state)
@@ -54,6 +56,14 @@ def rolls(entries: list[LogEntry]) -> list[tuple[int, ...]]:
 def test_a_seed_and_the_choices_replay_a_game_exactly():
     assert play("replay") == play("replay")
     assert play("replay")[1] != play("other")[1]
+
+
+@pytest.mark.parametrize("names", [("Ada", "Ada"), ("Ada", "ada")])
+def test_duplicate_names_play_the_same_game(names):
+    states, entries = play("replay", names=names)
+
+    assert entries == play("replay")[1]
+    assert states[-1].phase is Phase.FINISHED
 
 
 @pytest.mark.parametrize("seed", SEEDS)
