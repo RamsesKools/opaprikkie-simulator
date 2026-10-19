@@ -7,11 +7,14 @@ The rules behind each choice are in [game rules](../game_rules.md).
 
 `observe(state)` returns a frozen dataclass in the engine, mirrored as a Pydantic model in the HTTP state:
 
-- ruleset name and the observing seat
+- the ruleset (its name over HTTP) and the observing seat
 - every player's peg positions
 - the opening roll
 - legal targets, each with `matches` (raw count in the opening roll) and `guaranteed_moves` (clamped to the remaining distance)
 - turn number and continuation index
+
+The observing seat is the player choosing next: the dice-off winner, then the player on turn.
+Outside those choice points `observe` raises `wrong_phase`.
 
 ## Strategy protocol
 
@@ -50,11 +53,12 @@ class Strategy(Protocol):
 
 ## Rejections
 
-- The engine is the only validation point: `IllegalAction` for a wrong phase or an illegal choice, state unchanged, no turn used.
+- The engine is the only validation point: `IllegalAction` carries a `code`, a `message`, and `hints`, with the state unchanged and no turn used.
 - HTTP returns 422 with `{code, message, ...hints}`:
   - `wrong_phase` with the current `phase`
   - `illegal_target` with `legal_targets` and a reason: `topped`, `no_match`, or `not_a_target`
-  - `invalid_names` with the failing rule
+  - `invalid_names` with the failing `rule`: `count`, `blank`, or `duplicate` (names are compared stripped and case-insensitively)
+  - `invalid_player` for a first player outside the game, with the number of `players`
 - The UI only offers legal choices, so it never sees these.
 - The simulator treats a rejection as a strategy bug and fails fast: no retry, no fallback.
 

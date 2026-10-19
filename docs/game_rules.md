@@ -50,7 +50,7 @@ The target can't change during a roll sequence.
 
 ### Ruleset
 
-- Dimensions live in a named, frozen `Ruleset`: dice count and faces, row height, the target table (target to combo size), the start rule, and the end rule.
+- Dimensions live in a named, frozen `Ruleset`: player count, dice count and faces, row height, the target table (target to combo size), the start rule, and the end rule.
 - The engine reads only the ruleset, never module constants.
 - `CLASSIC` is the only ruleset: the rules above.
 - Validation rejects values the engine can't play yet, such as combo size 3.
@@ -67,19 +67,20 @@ Every action checks the phase and returns `(state, log)`:
 - `choose_target(state, target)`: resolves one roll sequence, then a continuation, the next turn, or the game end.
 
 After every action the state rests at a real choice point or at `finished`.
-Dead turns in between are resolved automatically and logged with outcome `no_move`.
+Dead turns in between are resolved automatically and logged with outcome `no_move`, as are continuation opening rolls without a legal target.
 Any invalid action raises `IllegalAction` and leaves the state unchanged.
 
 ### Logs
 
 - Dice-off: each player's two dice per round.
 - Roll sequence: the target, then each roll in order (opening roll first) with dice values, set-aside indices, and whether it was a six-dice reset, plus total matches and applied movement.
-- Dead turn: the opening roll and `no_move`.
+- Dead turn: the opening roll and `no_move`, with the turn and continuation index.
+- Roll sequences and `no_move` entries also carry the player, turn, and continuation index.
 - HTTP and in-process callers get the same shape.
 
 ### Randomness
 
-- `GameState` holds the `seed` and a `roll_index`; each roll uses `random.Random(f"{seed}:{roll_index}")`.
+- `GameState` holds the `seed` and a `roll_index`; each roll uses `random.Random(f"{seed}:{roll_index}")` and draws one `randint(1, faces)` per die.
   String seeds are stable across runs and Python versions, so a seed and the choices replay a game exactly.
 - The dice-off uses the same stream.
 - The backend generates the seed and never exposes it outside dev mode; see the [strategy contract](architecture/strategy_contract.md#seeds).
