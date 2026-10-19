@@ -31,31 +31,34 @@ The backend owns the authoritative rules, random rolls, game state, legal choice
 
 A turn presents the current board, the initial dice roll, and legal target counts. A player or strategy chooses one target; the backend resolves the remaining rolls and returns the updated state. The backend provides built-in strategies by name, while a caller may supply its own strategy through the same choice contract.
 
-The existing Python engine is a behavior reference. Compare it with the published rules, then decide each discrepancy individually. Keep the engine and simulator in Python. The browser frontend is a React single-page app that uses the backend over HTTP ([ADR 0001](../adr/0001-react-spa-frontend.md)).
+The existing Python engine is a behavior reference. Compare it with the published rules, then decide each discrepancy individually. Keep the engine and simulator in Python. The browser frontend is a React single-page app that uses the backend over HTTP ([ADR 0001](../adr/0001_react_spa_frontend.md)).
 
 ## Decisions and research
 
 - The turn action is choosing one legal target from the backend's initial observation; the backend resolves the rest of the turn. The game session is ephemeral.
 - Built-in and caller-owned strategies use the same engine choice operation through HTTP or the in-process Python interface. The exact strategy payload and rejection behavior still need a decision.
-- The frontend is a React SPA (Vite, TypeScript), chosen over SvelteKit and NiceGUI after comparing playable prototypes of the same flow ([#6](https://github.com/RamsesKools/opaprikkie-simulator/issues/6), [ADR 0001](../adr/0001-react-spa-frontend.md)).
+- The frontend is a React SPA (Vite, TypeScript), chosen over SvelteKit and NiceGUI after comparing playable prototypes of the same flow ([#6](https://github.com/RamsesKools/opaprikkie-simulator/issues/6), [ADR 0001](../adr/0001_react_spa_frontend.md)).
 - Rule research found four gameplay questions for individual decisions: [starting player](https://github.com/RamsesKools/opaprikkie-simulator/issues/15), [opening roll reuse](https://github.com/RamsesKools/opaprikkie-simulator/issues/16), [continuing after a peg reaches the top](https://github.com/RamsesKools/opaprikkie-simulator/issues/17), and [no movable target](https://github.com/RamsesKools/opaprikkie-simulator/issues/18). The physical peg-count difference is setup inventory. The board display's top/bottom indexing is an implementation bug to include in the later work breakdown.
+- The stack is one `opaprikkie` Python package (FastAPI backend, stateless engine, simulator) plus the React SPA, shipped as one Docker image ([#7](https://github.com/RamsesKools/opaprikkie-simulator/issues/7), [#8](https://github.com/RamsesKools/opaprikkie-simulator/issues/8), [#26](https://github.com/RamsesKools/opaprikkie-simulator/issues/26), [#27](https://github.com/RamsesKools/opaprikkie-simulator/issues/27), ADRs [0002](../adr/0002_single_package_over_uv_workspace.md) to [0005](../adr/0005_single_version_with_post_image_tags.md)).
 - Research reports: [rules](https://github.com/RamsesKools/opaprikkie-simulator/issues/4) and [frontend candidates](https://github.com/RamsesKools/opaprikkie-simulator/issues/5).
 
-## Monorepo shape to validate
+## Repository shape
 
 ```text
-apps/
-  backend/       HTTP API and authoritative Python game engine
-  web/           browser game (React SPA)
-  simulator/     batch runner, strategy callers, and backend clients
+src/opaprikkie/
+  engine/        authoritative game engine
+  backend/       HTTP API and sessions
+  sim/           batch runner, strategy callers, and backend clients
+frontend/        browser game (React SPA)
 ```
 
-The backend may be used over HTTP or through its Python interface. The simulator should support both paths. The browser uses the backend API for the MVP.
+The simulator drives the engine in-process or the backend over HTTP; the browser uses the backend API.
+Details are in [module dependencies](../architecture/module_dependencies.md), [repository layout](../development/repo_layout.md), and [conventions](../development/conventions.md).
 
 ## Route to implementation
 
 1. Resolve the rule decisions from the published-rules comparison.
-2. Select the stack and workspace layout around the React frontend.
+2. Select the stack and repository layout around the React frontend.
 3. Define the backend package boundary, game-session contract, and built-in and external strategy interfaces.
 4. Benchmark HTTP and in-process simulation, then choose a default while retaining both modes.
 5. Break the settled architecture into implementation issues for engine extraction, API, simulator, browser flows, and local development.

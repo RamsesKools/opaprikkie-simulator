@@ -31,5 +31,9 @@ A game where two human players take turns using the same browser.
 **Game engine**:
 The authoritative model of Opa Prikkie rules, random rolls, game state, and state transitions.
 
+**Session**:
+A backend record, identified by a browser cookie, holding one player's settings and their active game.
+_Avoid_: Game, when referring to the stored record.
+
 **Simulator**:
 A separate program that runs games and evaluates strategies by driving the game engine through HTTP or its in-process Python interface.
