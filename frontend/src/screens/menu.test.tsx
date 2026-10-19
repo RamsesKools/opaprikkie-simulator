@@ -4,20 +4,49 @@ import type { GameSetup } from "../game/model.ts";
 import { strings } from "../lib/strings.ts";
 import { Menu } from "./menu.tsx";
 
-test("starts a hot-seat game with the default names", () => {
-  const onStart = vi.fn<(setup: GameSetup) => void>();
-  render(<Menu initial={null} pending={false} onStart={onStart} />);
+type Shown = { initial?: GameSetup | null; autoPlay?: boolean; pending?: boolean };
 
+function show({ initial = null, autoPlay = true, pending = false }: Shown = {}) {
+  const onStart = vi.fn<(setup: GameSetup) => void>();
+  const onAutoPlay = vi.fn<(on: boolean) => void>();
+  render(
+    <Menu
+      initial={initial}
+      autoPlay={autoPlay}
+      pending={pending}
+      onAutoPlay={onAutoPlay}
+      onStart={onStart}
+    />,
+  );
+  return { onStart, onAutoPlay };
+}
+
+const switchMode = (from: string) =>
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.mode(from) }));
+
+test("starts a game versus the AI by default", () => {
+  const { onStart } = show();
+
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+
+  expect(onStart).toHaveBeenCalledWith({ mode: "versus_ai", names: ["Player 1", "Opa"] });
+});
+
+test("switches to a hot-seat game with the default names", () => {
+  const { onStart } = show();
+
+  switchMode(strings.menu.versusAi);
+  expect(
+    screen.getByRole("button", { name: strings.menu.mode(strings.menu.hotSeat) }),
+  ).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
 
   expect(onStart).toHaveBeenCalledWith({ mode: "hot_seat", names: ["Player 1", "Player 2"] });
 });
 
 test("defaults the AI's name to Opa and trims names", () => {
-  const onStart = vi.fn<(setup: GameSetup) => void>();
-  render(<Menu initial={null} pending={false} onStart={onStart} />);
+  const { onStart } = show();
 
-  fireEvent.click(screen.getByLabelText(strings.menu.versusAi));
   expect(screen.getByLabelText(strings.menu.opponent)).toHaveValue("Opa");
   fireEvent.change(screen.getByLabelText(strings.menu.you), { target: { value: "  Ann  " } });
   fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
@@ -26,8 +55,8 @@ test("defaults the AI's name to Opa and trims names", () => {
 });
 
 test("blocks blank names but allows duplicates", () => {
-  const onStart = vi.fn<(setup: GameSetup) => void>();
-  render(<Menu initial={null} pending={false} onStart={onStart} />);
+  const { onStart } = show();
+  switchMode(strings.menu.versusAi);
   const start = screen.getByRole("button", { name: strings.menu.start });
 
   fireEvent.change(screen.getByLabelText(strings.menu.player(0)), { target: { value: " " } });
@@ -43,8 +72,7 @@ test("blocks blank names but allows duplicates", () => {
 });
 
 test("blocks a second start while one is pending", () => {
-  const onStart = vi.fn<(setup: GameSetup) => void>();
-  render(<Menu initial={null} pending onStart={onStart} />);
+  const { onStart } = show({ pending: true });
   const start = screen.getByRole("button", { name: strings.menu.start });
 
   expect(start).toBeDisabled();
@@ -53,15 +81,18 @@ test("blocks a second start while one is pending", () => {
 });
 
 test("keeps the previous setup", () => {
-  render(
-    <Menu
-      pending={false}
-      initial={{ mode: "versus_ai", names: ["Ann", "Oma"] }}
-      onStart={vi.fn<(setup: GameSetup) => void>()}
-    />,
-  );
+  show({ initial: { mode: "hot_seat", names: ["Ann", "Oma"] } });
 
-  expect(screen.getByLabelText(strings.menu.opponent)).toHaveValue("Oma");
-  fireEvent.click(screen.getByLabelText(strings.menu.hotSeat));
-  expect(screen.getByLabelText(strings.menu.player(1))).toHaveValue("Player 2");
+  expect(screen.getByLabelText(strings.menu.player(1))).toHaveValue("Oma");
+  switchMode(strings.menu.hotSeat);
+  expect(screen.getByLabelText(strings.menu.opponent)).toHaveValue("Opa");
+});
+
+test("toggles playing turns automatically", () => {
+  const { onAutoPlay } = show({ autoPlay: false });
+  const toggle = screen.getByRole("checkbox", { name: strings.menu.autoPlay });
+
+  expect(toggle).not.toBeChecked();
+  fireEvent.click(toggle);
+  expect(onAutoPlay).toHaveBeenCalledWith(true);
 });

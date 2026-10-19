@@ -9,13 +9,20 @@ type Props = {
   kept: number[];
   count: number;
   target: number | null;
+  onThrow?: () => void;
 };
 
-export function Table({ player, dice, setAside, rollKey, kept, count, target }: Props) {
+export function Table({ player, dice, setAside, rollKey, kept, count, target, onThrow }: Props) {
   return (
     <div className="table">
       <div className="throw-area felt">
-        <Dice values={dice} player={player} setAside={setAside} rollKey={rollKey} />
+        {onThrow ? (
+          <button type="button" className="throw" onClick={onThrow}>
+            {strings.game.throw}
+          </button>
+        ) : (
+          <Dice values={dice} player={player} setAside={setAside} rollKey={rollKey} />
+        )}
       </div>
       <div className="saved">
         <div className="bowl felt">

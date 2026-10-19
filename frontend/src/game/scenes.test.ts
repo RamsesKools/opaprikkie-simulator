@@ -155,3 +155,21 @@ test("lets the AI think before its dead turn, told in the third person", () => {
     dice: [6],
   });
 });
+
+test("marks the throws after the opening roll as fresh", () => {
+  const deadTurn: LogEntry = {
+    kind: "no_move",
+    player: 0,
+    turn: 2,
+    continuation: 0,
+    opening_roll: [2, 2, 2, 2, 2, 2],
+  };
+  const scenes = buildScenes([board(), board()], [sequence(), deadTurn], game(null));
+
+  expect(scenes.map(({ fresh, message }) => ({ fresh, message }))).toEqual([
+    { fresh: false, message: strings.game.goesFor("Ann", 1) },
+    { fresh: true, message: strings.game.goesFor("Ann", 1) },
+    { fresh: false, message: strings.game.moves(1, 2) },
+    { fresh: true, message: strings.game.ohNo("Ann", true) },
+  ]);
+});

@@ -37,8 +37,12 @@ async function playToVictory(winner: string) {
   }
 }
 
+const hotSeat = () =>
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.mode(strings.menu.versusAi) }));
+
 test("clicks a hot-seat game through from the menu to the victory screen", async () => {
   render(<App />);
+  hotSeat();
   fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
 
   fireEvent.click(
@@ -61,7 +65,6 @@ test("clicks a hot-seat game through from the menu to the victory screen", async
 
 test("clicks a game versus AI through with the AI starting", async () => {
   render(<App />);
-  fireEvent.click(screen.getByLabelText(strings.menu.versusAi));
   fireEvent.change(screen.getByLabelText(strings.menu.you), { target: { value: " Ann " } });
   fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
 
@@ -80,13 +83,26 @@ test("lets an AI dice-off winner start by itself", async () => {
     first_player_choice: { ...choice, observation: { ...choice.observation!, seat: 1 } },
   };
   render(<App createClient={() => createFixtureClient(script)} />);
-  fireEvent.click(screen.getByLabelText(strings.menu.versusAi));
   fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
 
   await until(() => screen.queryByText(strings.diceOff.aiStarts("Opa")));
   expect(screen.queryByText(strings.diceOff.whoStarts)).not.toBeInTheDocument();
   expect(await until(() => screen.queryByText(strings.game.aiThinking("Opa")))).toBeInTheDocument();
 });
+
+test("waits for the player's throw when turns don't play automatically", async () => {
+  render(<App />);
+  fireEvent.click(screen.getByRole("checkbox", { name: strings.menu.autoPlay }));
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") })),
+  );
+
+  await until(() => screen.queryByText(strings.game.throwPrompt("Player 1")));
+  expect(legalTarget()).toBeUndefined();
+  fireEvent.click(screen.getByRole("button", { name: strings.game.throw }));
+  expect(screen.getByText(strings.game.pick("Player 1"))).toBeInTheDocument();
+}, 60_000);
 
 test("opens and closes the rules booklet", () => {
   render(<App />);

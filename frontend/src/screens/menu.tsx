@@ -11,10 +11,21 @@ const defaults: Record<Mode, Names> = {
   versus_ai: [strings.menu.player(0), strings.menu.defaultAiName],
 };
 
-type Props = { initial: GameSetup | null; pending: boolean; onStart: (setup: GameSetup) => void };
+const modeLabels: Record<Mode, string> = {
+  versus_ai: strings.menu.versusAi,
+  hot_seat: strings.menu.hotSeat,
+};
 
-export function Menu({ initial, pending, onStart }: Props) {
-  const [mode, setMode] = useState<Mode>(initial?.mode ?? "hot_seat");
+type Props = {
+  initial: GameSetup | null;
+  autoPlay: boolean;
+  pending: boolean;
+  onAutoPlay: (on: boolean) => void;
+  onStart: (setup: GameSetup) => void;
+};
+
+export function Menu({ initial, autoPlay, pending, onAutoPlay, onStart }: Props) {
+  const [mode, setMode] = useState<Mode>(initial?.mode ?? "versus_ai");
   const [names, setNames] = useState<Record<Mode, Names>>(() =>
     initial ? { ...defaults, [initial.mode]: initial.names } : defaults,
   );
@@ -41,20 +52,18 @@ export function Menu({ initial, pending, onStart }: Props) {
         }
       }}
     >
-      <fieldset className="modes">
-        <legend>{strings.menu.mode}</legend>
-        {(["hot_seat", "versus_ai"] as const).map((option) => (
-          <label key={option}>
-            <input
-              type="radio"
-              name="mode"
-              checked={mode === option}
-              onChange={() => setMode(option)}
-            />
-            {option === "hot_seat" ? strings.menu.hotSeat : strings.menu.versusAi}
-          </label>
+      <button
+        type="button"
+        className="mode-switch wood"
+        aria-label={strings.menu.mode(modeLabels[mode])}
+        onClick={() => setMode(mode === "versus_ai" ? "hot_seat" : "versus_ai")}
+      >
+        {(["versus_ai", "hot_seat"] as const).map((option) => (
+          <span key={option} className={option === mode ? "option on" : "option"}>
+            {modeLabels[option]}
+          </span>
         ))}
-      </fieldset>
+      </button>
       {current.map((name, seat) => (
         <label key={`${mode}:${seat}`} className="name" style={seatStyle(seat)}>
           <span className="swatch" />
@@ -62,6 +71,14 @@ export function Menu({ initial, pending, onStart }: Props) {
           <input value={name} onChange={(event) => rename(seat, event.target.value)} />
         </label>
       ))}
+      <label className="auto-play">
+        <input
+          type="checkbox"
+          checked={autoPlay}
+          onChange={(event) => onAutoPlay(event.target.checked)}
+        />
+        {strings.menu.autoPlay}
+      </label>
       {problem && (
         <p className="problem" role="alert">
           {problem}

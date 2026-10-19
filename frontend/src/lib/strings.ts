@@ -3,9 +3,10 @@ export const strings = {
   rules: "Rules",
   close: "Close",
   menu: {
-    mode: "Mode",
-    hotSeat: "Hot-seat",
-    versusAi: "Versus AI",
+    mode: (label: string) => `Mode: ${label}`,
+    hotSeat: "Player vs Player",
+    versusAi: "Player vs AI",
+    autoPlay: "Play turns automatically",
     player: (seat: number) => `Player ${seat + 1}`,
     you: "Your name",
     opponent: "Opponent",
@@ -26,6 +27,8 @@ export const strings = {
   game: {
     turn: (turn: number, name: string) => `Turn ${turn}: ${name}`,
     pick: (name: string) => `${name}, pick a target.`,
+    throw: "Throw",
+    throwPrompt: (name: string) => `${name}, throw the dice!`,
     aiThinking: (name: string) => `${name} is thinking...`,
     goesFor: (name: string, target: number) => `${name} goes for ${target}.`,
     reset: "Every die is set aside, so all six roll again!",
@@ -61,7 +64,7 @@ export const strings = {
       },
       {
         heading: "Your turn",
-        text: "You roll all six dice and pick one peg that matches. The game keeps rolling for that peg by itself.",
+        text: "You roll all six dice and pick one peg that matches. Then you keep rolling for that peg, or the game does it for you when turns play automatically.",
       },
       {
         heading: "Matching",

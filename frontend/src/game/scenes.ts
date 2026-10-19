@@ -15,6 +15,7 @@ export type Scene = {
   target: number | null;
   message: string;
   tone: Tone;
+  fresh: boolean;
   ms: number;
 };
 
@@ -37,7 +38,7 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
   turnLog.forEach((entry, index) => {
     const name = next.names[entry.player]!;
     const human = next.controllers[entry.player] === "human";
-    const base = { player: entry.player, turn: entry.turn, tone: "info" as Tone };
+    const base = { player: entry.player, turn: entry.turn, tone: "info" as Tone, fresh: false };
     const opening = entry.kind === "no_move" ? entry.opening_roll : entry.rolls[0]!.dice;
     const still = { ...base, pegs, dice: opening, setAside: [], kept: [], count: 0, target: null };
     if (!human) {
@@ -45,13 +46,13 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
     }
     if (entry.kind === "no_move") {
       const message = strings.game.ohNo(name, human);
-      scenes.push({ ...still, message, tone: "oh_no", ms: timing.ohNo });
+      scenes.push({ ...still, message, tone: "oh_no", fresh: true, ms: timing.ohNo });
       return;
     }
     const { target, rolls, movement } = entry;
     let kept: number[] = [];
     let count = 0;
-    for (const roll of rolls) {
+    for (const [throwIndex, roll] of rolls.entries()) {
       // A reset rolls all six again, so the bowl empties back onto the table.
       if (roll.reset) kept = [];
       const message = roll.reset ? strings.game.reset : strings.game.goesFor(name, target);
@@ -64,6 +65,7 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
         count,
         target,
         message,
+        fresh: throwIndex > 0,
         ms: timing.roll,
       });
       kept = [...kept, ...roll.set_aside.map((index) => roll.dice[index]!)];

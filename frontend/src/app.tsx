@@ -23,6 +23,7 @@ export function App({ createClient = createFixtureClient }: Props) {
   const [rules, setRules] = useState(false);
   const [failed, setFailed] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [autoPlay, setAutoPlay] = useState(true);
 
   const start = (chosen: GameSetup) => {
     const fresh = createClient();
@@ -55,7 +56,7 @@ export function App({ createClient = createFixtureClient }: Props) {
 
   return (
     <>
-      <header>
+      <header className="wood">
         <h1>{strings.title}</h1>
         <button type="button" onClick={() => setRules(true)}>
           {strings.rules}
@@ -63,12 +64,25 @@ export function App({ createClient = createFixtureClient }: Props) {
       </header>
       <main>
         {failed && <p role="alert">{strings.game.error}</p>}
-        {screen.kind === "menu" && <Menu initial={setup} pending={starting} onStart={start} />}
+        {screen.kind === "menu" && (
+          <Menu
+            initial={setup}
+            autoPlay={autoPlay}
+            pending={starting}
+            onAutoPlay={setAutoPlay}
+            onStart={start}
+          />
+        )}
         {screen.kind === "dice_off" && (
           <DiceOff update={screen.update} onChooseFirst={chooseFirst} onAiStarts={play} />
         )}
         {screen.kind === "game" && client && (
-          <GameScreen client={client} initial={screen.update} onFinished={finished} />
+          <GameScreen
+            client={client}
+            initial={screen.update}
+            autoPlay={autoPlay}
+            onFinished={finished}
+          />
         )}
         {screen.kind === "victory" && (
           <Victory game={screen.game} onAgain={() => setScreen({ kind: "menu" })} />

@@ -9,19 +9,21 @@ import { strings } from "../lib/strings.ts";
 const emptyPegs = (pegs: Pegs[]): Pegs[] =>
   pegs.map((board) => Object.fromEntries(Object.keys(board).map((target) => [target, 0])));
 
-type Playback = { game: Game; scenes: Scene[]; index: number };
+type Playback = { game: Game; scenes: Scene[]; index: number; thrown: boolean };
 
 type Props = {
   client: GameClient;
   initial: GameUpdate;
+  autoPlay: boolean;
   onFinished: (game: Game) => void;
 };
 
-export function GameScreen({ client, initial, onFinished }: Props) {
+export function GameScreen({ client, initial, autoPlay, onFinished }: Props) {
   const [playback, setPlayback] = useState<Playback>(() => ({
     game: initial.game,
     scenes: buildScenes(emptyPegs(initial.game.pegs), initial.logs, initial.game),
     index: 0,
+    thrown: false,
   }));
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -29,18 +31,24 @@ export function GameScreen({ client, initial, onFinished }: Props) {
   const { game, scenes, index } = playback;
   const scene = scenes[index];
   const observation = game.observation;
+  const player = scene?.player ?? observation?.seat ?? 0;
+  const name = game.names[player]!;
+  const human = game.controllers[player] === "human";
+  const choosing = !scene && game.phase === "choosing_target" && observation !== null;
+  const waiting = !autoPlay && human && !playback.thrown && (scene ? scene.fresh : choosing);
 
   useEffect(() => {
     if (!scene) {
       if (game.phase === "finished") onFinished(game);
       return;
     }
+    if (waiting) return;
     const timer = setTimeout(
-      () => setPlayback((current) => ({ ...current, index: current.index + 1 })),
+      () => setPlayback((current) => ({ ...current, index: current.index + 1, thrown: false })),
       scene.ms,
     );
     return () => clearTimeout(timer);
-  }, [scene, game, onFinished]);
+  }, [scene, waiting, game, onFinished]);
 
   const pick = (target: number) => {
     setHovered(null);
@@ -49,7 +57,7 @@ export function GameScreen({ client, initial, onFinished }: Props) {
     client.chooseTarget(target).then(
       (update) => {
         const next = buildScenes(game.pegs, update.logs, update.game);
-        setPlayback({ game: update.game, scenes: next, index: 0 });
+        setPlayback({ game: update.game, scenes: next, index: 0, thrown: false });
         setBusy(false);
       },
       () => {
@@ -59,23 +67,32 @@ export function GameScreen({ client, initial, onFinished }: Props) {
     );
   };
 
-  const player = scene?.player ?? observation?.seat ?? 0;
-  const name = game.names[player]!;
-  const choosing = !scene && game.phase === "choosing_target" && observation !== null;
-  const humanChoice = choosing && !busy && game.controllers[player] === "human";
+  const humanChoice = choosing && !busy && human && !waiting;
   const pegs = scene?.pegs ?? game.pegs;
   const hint = humanChoice
     ? observation.legal_targets.find(({ target }) => target === hovered)
     : undefined;
   let message = scene?.message ?? "";
   if (humanChoice) message = strings.game.pick(name);
+  if (waiting) message = strings.game.throwPrompt(name);
   if (failed) message = strings.game.error;
 
   return (
     <div className="game">
       <div className="status" style={seatStyle(player)}>
         <p className="turn">{strings.game.turn(scene?.turn ?? observation?.turn ?? 0, name)}</p>
-        {scene ? (
+        {waiting ? (
+          <Table
+            player={player}
+            dice={[]}
+            setAside={[]}
+            rollKey=""
+            kept={scene?.kept ?? []}
+            count={scene?.count ?? 0}
+            target={scene?.target ?? null}
+            onThrow={() => setPlayback((current) => ({ ...current, thrown: true }))}
+          />
+        ) : scene ? (
           <Table
             player={player}
             dice={scene.dice}
@@ -97,7 +114,7 @@ export function GameScreen({ client, initial, onFinished }: Props) {
           />
         )}
         <p className="message" aria-live="polite">
-          <span className={scene?.tone ?? "info"} key={message}>
+          <span className={waiting ? "info" : (scene?.tone ?? "info")} key={message}>
             {message}
           </span>
         </p>

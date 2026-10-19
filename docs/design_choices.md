@@ -5,7 +5,9 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 
 ## Flow
 
-1. Menu: pick hot-seat or versus AI, and enter names.
+1. Menu: pick the mode, enter names, and choose whether turns play automatically.
+   - A big wooden switch flips between "Player vs AI", the default, and "Player vs Player" (hot-seat).
+   - "Play turns automatically" is on by default; it's kept for the next game.
    - Names are trimmed, 1 to 20 characters, and stored in the session so they're prefilled next time.
    - Defaults: "Player 1", "Player 2", and "Opa" for the AI; all editable.
    - Duplicate names are fine; seat colours tell players apart.
@@ -20,7 +22,9 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 3. Game: boards, the current player, the opening roll, and only legal targets to choose from.
    - A pill above the dice shows the turn number and the player in their colour; their board gets a border in that colour.
    - Dice show in the current player's colour.
-   - Dice are thrown into a throw area: green velvet inside a wooden frame.
+   - Dice are thrown into a throw area: green velvet inside a wooden frame, with the dice in rows of three.
+   - With "Play turns automatically" off, a human player presses "Throw" for every throw: the opening roll, each roll after it, and a fresh roll after topping a peg.
+     The AI always throws by itself.
    - The player picks a target by clicking its column on their own board; only legal columns are clickable and glow.
    - Hovering or focusing a legal column raises the dice that form its matches, and shows a ghost peg on the row it's guaranteed to reach from the opening roll alone.
      When that row is the top, the ghost gets a gold halo.
@@ -45,11 +49,16 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 - Seat 1 is red, seat 2 is blue.
 - Colours come from one palette in the frontend (`frontend/src/lib/palette.ts`); the engine doesn't know about them.
 - The boards are wood-coloured with dark holes.
+- The header and the mode switch use a pixel wood texture (`frontend/src/assets/wood.svg`).
 - The page is a green pixel velvet (`frontend/src/assets/felt.svg`), dimmed to 40% over the off-white paper colour so it stays calm; the throw area and the bowl use the same velvet at full strength.
+
+## Header
+
+- A wooden bar across the top with the title and the "Rules" button, on every screen.
 
 ## Rules booklet
 
-- A "Rules" button in the header opens a small booklet in the centre of the screen, on every screen.
+- The "Rules" button opens a small booklet in the centre of the screen, on every screen.
 - It closes with its "Close" button, Escape, or a click outside it.
 - Focus moves to "Close" while it's open and returns to the "Rules" button afterwards.
 - Short, player-facing text in `frontend/`, written separately from the engine-facing [game rules](game_rules.md).
