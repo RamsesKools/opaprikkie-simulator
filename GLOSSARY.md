@@ -46,7 +46,7 @@ What a player or strategy sees at a choice point: boards, the opening roll, and 
 A decision-maker that selects one legal target from a game observation.
 
 **Controller**:
-Who decides for a seat: `human` (the caller) or a built-in strategy played by the backend.
+Who decides for a seat: `human` (the caller) or `ai` (a built-in strategy played by the backend).
 
 **Hot-seat game**:
 A game where two human players take turns using the same browser.

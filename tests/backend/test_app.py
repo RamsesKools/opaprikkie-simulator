@@ -1,5 +1,8 @@
+from unittest.mock import ANY
+
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 from opaprikkie import __version__
 from opaprikkie.backend.app import create_app
@@ -58,3 +61,36 @@ def test_runs_without_a_built_spa(tmp_path):
 
     assert client.get("/").status_code == 404
     assert client.get("/api/health").status_code == 200
+
+
+@pytest.mark.parametrize(
+    ("method", "path", "status", "code"),
+    [("GET", "/api/nope", 404, "not_found"), ("PUT", "/api/game", 405, "method_not_allowed")],
+)
+def test_routing_errors_have_the_error_shape(method, path, status, code):
+    client = TestClient(create_app(Settings()))
+
+    response = client.request(method, path)
+
+    assert response.status_code == status
+    assert response.json() == {"code": code, "message": ANY}
+
+
+def test_server_errors_have_the_error_shape(tmp_path):
+    app = create_app(Settings(static_dir=tmp_path / "missing"))
+
+    @app.get("/api/broken")
+    def broken() -> None:
+        raise RuntimeError("secret detail")
+
+    response = TestClient(app, raise_server_exceptions=False).get("/api/broken")
+
+    assert response.status_code == 500
+    assert response.json() == {"code": "internal_error", "message": ANY}
+    assert "secret" not in response.text
+
+
+@pytest.mark.parametrize("field", ["max_sessions", "session_ttl_days"])
+def test_session_limits_must_be_positive(field):
+    with pytest.raises(ValidationError):
+        Settings.model_validate({field: 0})

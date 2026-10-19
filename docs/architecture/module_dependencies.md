@@ -29,7 +29,7 @@ flowchart LR
 
 ### `opaprikkie.backend`
 
-- Owns the HTTP API, the in-memory session store, the cookie, settings, and serving the built SPA.
+- Owns the [HTTP API](http_api.md), the in-memory session store, the cookie, settings, and serving the built SPA.
 - Wraps the engine: every state change is an engine call.
 - Depends on `engine`, FastAPI, uvicorn, and pydantic-settings; doesn't import `sim`.
 
