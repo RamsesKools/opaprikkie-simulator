@@ -62,3 +62,9 @@ _Avoid_: Game, when referring to the stored record.
 
 **Simulator**:
 A separate program that runs games and evaluates strategies by driving the game engine through HTTP or its in-process Python interface.
+
+**Batch**:
+A run of seeded games between the same strategies, one per seat, with the first player alternating; its batch seed replays it exactly.
+
+**Game driver**:
+How the simulator plays one game: in-process through the engine, or over HTTP against the backend.

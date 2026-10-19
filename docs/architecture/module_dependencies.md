@@ -37,6 +37,10 @@ flowchart LR
 
 - Owns batch runs, strategy matchups, the HTTP client, and aggregate statistics.
 - Drives games either in-process through `engine` or over HTTP against a running backend.
+- `run_batch` plays a matchup through a `GameDriver`; `InProcessDriver` is the in-process one.
+- Game `i` of a batch gets the seed `<batch seed>:<i>` and first player `i % players`, skipping the dice-off, so a batch seed replays the whole batch.
+- Each seat's strategy gets its own `Random`, seeded from the game seed and the seat.
+- An `IllegalAction` from a strategy's choice ends the batch, with a note naming the strategy, seat, and game.
 - Depends on `engine` and httpx2; never imports `backend` (tests may use it to exercise the HTTP path in-process).
 
 ### `opaprikkie.cli`
