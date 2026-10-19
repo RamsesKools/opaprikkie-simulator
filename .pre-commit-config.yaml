@@ -66,3 +66,9 @@ repos:
         entry: bash -c 'cd frontend && npm exec -- vitest related --run "${@#frontend/}"' --
         language: system
         files: ^frontend/src/.*\.(ts|tsx)$
+      - id: vitest-all
+        name: vitest all
+        entry: npm --prefix frontend exec -- vitest run --root frontend
+        language: system
+        files: ^frontend/(vite\.config\.ts|src/test_setup\.ts|package-lock\.json)$
+        pass_filenames: false

@@ -23,7 +23,7 @@ taskipy is the single command surface for Python and frontend: `uv run task <nam
 | `test` | pytest with the 90% coverage gate, and Vitest |
 | `test_contract` | starts uvicorn and runs the frontend contract suite |
 | `check` | everything above except `format` |
-| `dev` | uvicorn `--reload` and Vite with its `/api` proxy |
+| `dev` | uvicorn `--reload` on the settings' host and port, and Vite with its `/api` proxy |
 | `gen_api` | dumps the OpenAPI schema and regenerates `frontend/src/lib/api.d.ts` |
 | `bump <part>` | sets the version in `pyproject.toml` and `frontend/package.json` |
 | `wayfinder_pull` | refreshes the `.plan/` cache of the planning map |
@@ -52,7 +52,7 @@ taskipy is the single command surface for Python and frontend: `uv run task <nam
 
 - pre-commit-hooks: large files, merge conflicts, TOML and YAML, end of file, line endings, whitespace, `debug-statements`, `check-ast`, shebang checks, and `no-commit-to-branch` on `main`.
 - `uv-lock`, `validate-pyproject`, mdformat with `--number` and compact tables in `.mdformat.toml` (gfm, which includes tables, and frontmatter), and Ruff format and check.
-- Local frontend hooks scoped to `^frontend/`: oxfmt, oxlint, `tsc`, and `vitest related --run`; they need `npm ci` in `frontend/`.
+- Local frontend hooks scoped to `^frontend/`: oxfmt, oxlint, `tsc`, and `vitest related --run`, plus the whole Vitest suite when the Vite config, test setup, or lockfile changes; they need `npm ci` in `frontend/`.
 - A version-sync check between `pyproject.toml` and `frontend/package.json` (`scripts/version.py`).
 - Not on commit: ty (CI and `task check` only). Not yet: gitleaks, and shellcheck (helper scripts are Python).
 
