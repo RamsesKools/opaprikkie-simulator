@@ -2,49 +2,45 @@
 
 ## Project
 
-This repository is a Python package and CLI for simulating the two-player Dutch dice game Opa Prikkie. Package code lives in `src/opaprikkie_sim/`; tests live in `tests/`, `tests/unit/`, and `tests/integration/`.
+Opa Prikkie, the Dutch dice game, as a browser game with an authoritative Python backend and a simulator for strategies.
+The browser MVP is being built; see [the roadmap](docs/roadmap/monorepo_mvp.md) and the implementation parts under issue #30.
+
+- `src/opaprikkie/`: one distribution with the `engine`, `backend`, and `sim` subpackages, plus `cli.py`.
+- `frontend/`: the React SPA (arrives with #32).
+- `tests/`: one folder per module, plus `cross_module/` and `container/`.
+- `src/opaprikkie_sim/`, its tests, and `apps/` are the old engine and prototypes.
+  They're excluded from every check and removed by #39; don't build on them, and don't port them: the rules changed.
 
 ## Commands
 
-- Install dependencies: `poetry install`
-- Format Python: `make format`
-- Lint: `make check_ruff`
-- Type check: `make check_mypy`
-- Run tests with coverage: `make pytest`
-- Run all checks and tests: `make all_check_test`
-- Start an interactive game: `poetry run python -m opaprikkie_sim.cli interactive`
-- Run simulations: `poetry run python -m opaprikkie_sim.cli simulation --games 1000 --strategy1 greedy --strategy2 smart`
+- Install: `uv sync`, then `uv run pre-commit install`.
+- List tasks: `uv run task --list`.
+- Format: `uv run task format`.
+- Run every check (lint, types, module boundaries, tests with the 90% coverage gate): `uv run task check`.
+- Run the backend with reload: `uv run task dev`.
+- Serve: `uv run opaprikkie serve`.
+- Add or remove dependencies with `uv add` and `uv remove`, never by editing `pyproject.toml`.
 
-Ruff uses a 100-character line limit and targets Python 3.12. The package supports Python 3.11 and later. MyPy is configured in strict mode, and coverage is configured to require 90%.
+## Read first
 
-## Architecture
-
-- `game.py` coordinates players, turns, strategy selection, and game statistics.
-- `board.py` models the board and peg positions.
-- `dice.py` implements dice rolls, target combinations, and turn simulation.
-- `strategy.py` defines the strategy interface and built-in strategies.
-- `game_stats.py` records game and player statistics.
-- `display.py` formats game output; `cli.py` provides the Click command-line interface.
-- `constants.py` holds game dimensions and player-count limits. Use these constants instead of duplicating game-rule values, and keep relevant behavior configurable where practical.
-
-## Game model
-
-The default game has two players, six dice, and pegs for targets 1 through 12. Targets 1 through 6 use single dice; targets 7 through 12 use pairs. A peg advances up to the configured row height, currently five positions. The CLI exposes `random`, `greedy`, and `smart` strategies.
+- [GLOSSARY.md](GLOSSARY.md) for the vocabulary and [docs/game_rules.md](docs/game_rules.md) for the rules.
+- [Module dependencies](docs/architecture/module_dependencies.md) and the [strategy contract](docs/architecture/strategy_contract.md) for how the parts fit.
+- [Repository layout](docs/development/repo_layout.md) and [conventions](docs/development/conventions.md) for where things go and how they're checked.
+- [Design choices](docs/design_choices.md) for anything in the browser.
+- [ADRs](docs/adr/) for why.
+- [.agents/](.agents/README.md) for the issue tracker and domain-docs conventions.
 
 ## Implementation guidance
 
-- Keep type annotations consistent with the existing code and strict MyPy configuration.
-- Add or update tests alongside behavior changes, following the existing test layout.
-- Keep formatting and lint rules in `pyproject.toml` authoritative; use Ruff rather than introducing another formatter or linter.
-- Keep package implementation under `src/opaprikkie_sim/` and preserve the existing Poetry project layout.
+- The engine is the only place for game rules; it's pure, immutable, and uses the standard library only.
+- `import-linter` enforces the module boundaries; change the contracts and the module dependencies doc together.
+- Keep runtime settings in the backend settings model, and game dimensions in the ruleset.
+- Add or update tests with every behavior change.
+- Update the docs in the same PR when behavior or structure changes.
 
 ## Wayfinder planning
 
 The browser MVP map lives in GitHub: map issue #14, with its tickets as sub-issues.
 Read and write the map there with `gh`, following the GitHub mapping in the global wayfinder docs.
 `.plan/` is a gitignored, read-only cache for `wayfinder-maps status`, `lint`, and the viewer; never hand-edit it.
-Refresh it after every map change:
-
-```sh
-wayfinder-pull RamsesKools/opaprikkie-simulator 14 .plan/opa-prikkie-browser-mvp
-```
+Refresh it after every map change with `uv run task wayfinder_pull`.

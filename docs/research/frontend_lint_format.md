@@ -18,7 +18,7 @@ Release facts come from the npm registry (`npm view <pkg> time`), everything els
 ## Comparison
 
 | Criterion | 1. Biome | 2. oxlint + oxfmt | 3. oxlint + Prettier | 4. ESLint + tseslint + Prettier |
-| --- | --- | --- | --- | --- |
+| -- | -- | -- | -- | -- |
 | Latest | 2.5.15 (2026-09-30) | oxlint 1.88.0, oxfmt 0.73.0 (2026-10-13) | oxlint 1.88.0, Prettier 3.9.10 | ESLint 10.13.0, tseslint 8.71.2 |
 | Releases, last ~6 mo | 20 | 29 and 28 | 29 and 13 | 15 and 23 |
 | Formatter status | stable | oxfmt beta | stable | stable |
@@ -40,7 +40,7 @@ Release facts come from the npm registry (`npm view <pkg> time`), everything els
 - Type-aware linting went stable on 2026-07-22 ([post](https://oxc.rs/blog/2026-07-22-type-aware-linting-stable)).
 - JS plugins are still alpha ([docs](https://oxc.rs/docs/guide/usage/linter/js-plugins.html)).
 - ESLint 10.0.0 landed 2026-02-06, flat config only ([release post](https://eslint.org/blog/2026/02/eslint-v10.0.0-released/)), latest is 10.13.0 ([npm](https://www.npmjs.com/package/eslint)).
-- typescript-eslint 8.71.2 ([npm](https://www.npmjs.com/package/typescript-eslint)) supports TypeScript >=4.8.4 <6.1.0, so not TS 7 ([docs](https://typescript-eslint.io/users/dependency-versions/)).
+- typescript-eslint 8.71.2 ([npm](https://www.npmjs.com/package/typescript-eslint)) supports TypeScript >=4.8.4 \<6.1.0, so not TS 7 ([docs](https://typescript-eslint.io/users/dependency-versions/)).
 - eslint-plugin-react-hooks 7.1.1 was published 2026-04-17, nothing since ([npm](https://www.npmjs.com/package/eslint-plugin-react-hooks)).
 - Prettier 3.9.10 is stable, 4.0 is still alpha ([npm](https://www.npmjs.com/package/prettier)).
 

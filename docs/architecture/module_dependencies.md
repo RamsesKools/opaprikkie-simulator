@@ -37,7 +37,7 @@ flowchart LR
 
 - Owns batch runs, strategy matchups, the HTTP client, and aggregate statistics.
 - Drives games either in-process through `engine` or over HTTP against a running backend.
-- Depends on `engine` and httpx; never imports `backend` (tests may use it to exercise the HTTP path in-process).
+- Depends on `engine` and httpx2; never imports `backend` (tests may use it to exercise the HTTP path in-process).
 
 ### `opaprikkie.cli`
 
@@ -53,7 +53,7 @@ flowchart LR
 ## Communication paths
 
 | From | To | Through | Contract |
-| --- | --- | --- | --- |
+| -- | -- | -- | -- |
 | frontend | backend | HTTP `/api`, same origin | generated `api.d.ts`, contract suite |
 | sim | backend | HTTP `/api` | version handshake on `/api/health` |
 | sim | engine | Python import | `engine.__all__` |

@@ -22,5 +22,5 @@ _Try to consider the Github Pull-Request as a part of the documentation of your 
 - [ ] Documentation created or updated
   - READMEs
   - `docs/*.md`
-- [ ] I have updated the `CHANGELOG.md` and `pyproject.toml` version number.
+- [ ] `uv run task check` passes
 - [ ] I have performed a self-review of the _files changed_ in GitHub before clicking `Create pull request`.
