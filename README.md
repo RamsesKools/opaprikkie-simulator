@@ -11,13 +11,14 @@ A Python project to simulate and solve the famous Dutch game: Opa Prikkie.
 Opa Prikkie is a traditional Dutch dice game where players compete to move all their pegs (prikkies) to the top of their board first. The game involves:
 
 - **2 wooden boards** (one per player)
-- **24 pegs** (prikkies) - 12 per player
-  - *The physical game comes with 2 spare pegs.*
+- **12 pegs** (prikkies) per player
 - **6 dice**
 
 **Buy the real game from the official website: <https://opaprikkie.nl/>.**
 
 ### Game Rules
+
+The rules the engine implements are in [docs/game_rules.md](docs/game_rules.md).
 
 1. **Setup**: Each player places 12 pegs on the bottom row of their board (one peg per number 1-12)
 2. **Goal**: Move all pegs to the top of the board first
