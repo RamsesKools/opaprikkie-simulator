@@ -13,7 +13,13 @@ from opaprikkie.engine.log import (
 from opaprikkie.engine.observation import LegalTarget, Observation, observe
 from opaprikkie.engine.ruleset import CLASSIC, EndRule, Ruleset, StartRule
 from opaprikkie.engine.state import GameState, Phase
-from opaprikkie.engine.strategies import BUILTIN_STRATEGIES, RandomStrategy, Strategy
+from opaprikkie.engine.strategies import (
+    BUILTIN_STRATEGIES,
+    GreedyStrategy,
+    RandomStrategy,
+    SmartStrategy,
+    Strategy,
+)
 
 __all__ = [
     "BUILTIN_STRATEGIES",
@@ -22,6 +28,7 @@ __all__ = [
     "DiceOffRound",
     "EndRule",
     "GameState",
+    "GreedyStrategy",
     "IllegalAction",
     "LegalTarget",
     "Log",
@@ -34,6 +41,7 @@ __all__ = [
     "Roll",
     "RollSequence",
     "Ruleset",
+    "SmartStrategy",
     "StartRule",
     "Strategy",
     "choose_first_player",
