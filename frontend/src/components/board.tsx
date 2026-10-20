@@ -46,7 +46,7 @@ export function Board({
           const row = pegs[target]!;
           const enabled = pickable.includes(target) && onPick !== undefined;
           const classes = ["column"];
-          if (enabled && legal.includes(target)) classes.push("legal");
+          if (legal.includes(target)) classes.push("legal");
           if (highlight === target) classes.push("highlight");
           if (row === TOP_ROW) classes.push("topped");
           return (

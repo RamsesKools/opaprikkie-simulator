@@ -122,3 +122,24 @@ def test_manual_routes_need_a_game(client, path, body):
 
     assert response.status_code == 404
     assert response.json()["code"] == "no_game"
+
+
+def test_the_observation_lists_the_takes_for_the_dice_on_the_table(dev_client):
+    game, update = in_sequence(dev_client)
+    legal = single(game)
+    target = legal["target"]
+
+    option = {"target": target, "dice": legal["set_aside"][:1], "matches": 1, "row": 1}
+    assert option in game["observation"]["takes"]
+    assert {t["target"] for t in update["game"]["observation"]["takes"]} == {target}
+    assert all(t["row"] == 1 + t["matches"] for t in update["game"]["observation"]["takes"])
+
+
+def test_a_die_chosen_twice_is_not_dice(dev_client):
+    game = opened(dev_client, HOT_SEAT, "manual")
+    legal = single(game)
+    dice = legal["set_aside"][:1] * 2
+
+    response = dev_client.post("/api/game/take", json={"target": legal["target"], "dice": dice})
+
+    assert response.json()["reason"] == "not_dice"

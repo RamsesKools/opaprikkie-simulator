@@ -26,6 +26,7 @@ type Props = {
   label?: string;
   /** Makes each die a toggle button; the raised `setAside` dice are the selected ones. */
   onToggle?: (index: number) => void;
+  disabled?: boolean | undefined;
 };
 
 export function Dice({
@@ -36,6 +37,7 @@ export function Dice({
   slots,
   label,
   onToggle,
+  disabled = false,
 }: Props) {
   return (
     <div
@@ -57,6 +59,7 @@ export function Dice({
             {...props}
             aria-label={strings.game.die(value)}
             aria-pressed={setAside.includes(index)}
+            disabled={disabled}
             onClick={() => onToggle(index)}
           >
             <Pips value={value} />

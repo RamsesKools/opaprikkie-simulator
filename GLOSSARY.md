@@ -27,6 +27,9 @@ The rolls for one chosen target, from the opening roll until no match, too few d
 Setting aside chosen dice from the roll on the table for the target, each part of a match; the first take, from the opening roll, chooses the target.
 A player may take fewer matches than they rolled, but must take at least one from an opening roll with a legal target.
 
+**Take option**:
+One valid take for the roll on the table: a target, the dice, its matches, and the row the peg would reach; the observation lists them all.
+
 **Stop**:
 Ending a roll sequence played by hand before it ends by itself; the peg moves by the matches taken so far.
 

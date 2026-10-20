@@ -14,6 +14,7 @@ type Props = {
   target: number | null;
   onThrow?: () => void;
   onToggle?: (index: number) => void;
+  disabled?: boolean;
 };
 
 export function Table({
@@ -28,6 +29,7 @@ export function Table({
   target,
   onThrow,
   onToggle,
+  disabled,
 }: Props) {
   return (
     <div className="table">
@@ -42,7 +44,7 @@ export function Table({
             setAside={setAside}
             rollKey={rollKey}
             slots={slots}
-            {...(onToggle && { onToggle })}
+            {...(onToggle && { onToggle, disabled })}
           />
         </div>
       </div>

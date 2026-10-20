@@ -35,6 +35,7 @@ function update(phase: Phase, seat: number): GameUpdate {
         turn: 1,
         continuation: 0,
         sequence: null,
+        takes: [],
       },
       winner: null,
       seed: null,

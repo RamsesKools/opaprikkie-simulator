@@ -1189,6 +1189,13 @@
                 "type": "null"
               }
             ]
+          },
+          "takes": {
+            "items": {
+              "$ref": "#/components/schemas/TakeOption"
+            },
+            "type": "array",
+            "title": "Takes"
           }
         },
         "type": "object",
@@ -1200,7 +1207,8 @@
           "legal_targets",
           "turn",
           "continuation",
-          "sequence"
+          "sequence",
+          "takes"
         ],
         "title": "Observation"
       },
@@ -1397,6 +1405,38 @@
         ],
         "title": "Take",
         "description": "The dice to set aside for `target`, by their place in the throw."
+      },
+      "TakeOption": {
+        "properties": {
+          "target": {
+            "type": "integer",
+            "title": "Target"
+          },
+          "dice": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Dice"
+          },
+          "matches": {
+            "type": "integer",
+            "title": "Matches"
+          },
+          "row": {
+            "type": "integer",
+            "title": "Row"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target",
+          "dice",
+          "matches",
+          "row"
+        ],
+        "title": "TakeOption",
+        "description": "Dice that may be taken for `target`, by their place in the roll, and the row reached."
       },
       "Target": {
         "properties": {

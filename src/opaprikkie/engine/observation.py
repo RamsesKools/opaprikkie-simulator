@@ -1,5 +1,7 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
+from functools import cached_property
+from itertools import combinations
 
 from opaprikkie.engine.dice import set_aside
 from opaprikkie.engine.errors import IllegalAction, Rejection
@@ -33,6 +35,17 @@ def _legal_target(
 
 
 @dataclass(frozen=True)
+class TakeOption:
+    """Dice the player may take for `target`, as places in the roll on the table, and the row
+    the peg would then reach."""
+
+    target: int
+    dice: tuple[int, ...]
+    matches: int
+    row: int
+
+
+@dataclass(frozen=True)
 class Observation:
     ruleset: Ruleset
     seat: int
@@ -42,6 +55,28 @@ class Observation:
     turn: int
     continuation: int
     sequence: SequenceInProgress | None = None
+
+    @cached_property
+    def takes(self) -> tuple[TakeOption, ...]:
+        """Every valid take for the roll on the table, by target, then by fewest dice.
+
+        Computed on first use, so strategies, which only choose targets, don't pay for it.
+        """
+        sequence = self.sequence
+        dice = self.opening_roll if sequence is None else sequence.dice
+        taken = 0 if sequence is None else sequence.matches
+        found = []
+        for legal in self.legal_targets:
+            combo_size = self.ruleset.targets[legal.target]
+            start = self.pegs[self.seat][legal.target] + taken
+            for count in range(combo_size, len(legal.set_aside) + 1, combo_size):
+                for chosen in combinations(range(len(dice)), count):
+                    values = [dice[i] for i in chosen]
+                    if len(set_aside(self.ruleset, legal.target, values)) == count:
+                        matches = count // combo_size
+                        row = min(start + matches, self.ruleset.rows)
+                        found.append(TakeOption(legal.target, chosen, matches, row))
+        return tuple(found)
 
 
 def observe(state: GameState) -> Observation:

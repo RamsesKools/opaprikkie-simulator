@@ -41,6 +41,9 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
        There's no stop before the first take, since a turn with a legal target can't pass.
      - Once dice are selected, hovering a column they can be taken for shows the ghost peg where taking them would land; without a selection there's no preview.
      - Switching automatic turns on mid-sequence takes every match from then on.
+       If such an automatic take fails, it isn't retried: the error shows and the player finishes the sequence by hand.
+     - While a take or stop is on its way, the selection, lit lanes, options, and Stop stay on screen, disabled.
+     - Changing the selection clears an error from the last choice.
    - Each roll of the sequence shows in turn, with set-aside dice raised and outlined, then the peg slides up.
    - Set-aside dice move to a saved bowl next to the throw area, with the number of matches so far underneath, like "3 matches for 7".
      The bowl stays filled until the turn passes or the peg reaches the top; a six-dice reset empties it back onto the table, but the count carries on.
@@ -151,8 +154,9 @@ A pile of the dice the player has left to throw, left of the throw area, in a py
   - waiting for a target: the game screen at that choice
   - no game, a finished one, or one never named: the menu, with the names prefilled
 - Unit tests use a fixture client that replays a game recorded from the engine; each choice point offers only the recorded target, and manual turns aren't scripted.
-- The "take" options come from `game/matching.ts`, which mirrors the engine's matching only to decide what to offer; the API stays the judge.
+- The "take" options, their lanes, and the ghost peg's row are looked up for the selected dice in the observation's `takes`; the frontend has no matching rules of its own.
 - A rejection of a choice (`wrong_phase`, `illegal_target`, `illegal_dice`) shows the API's message as a sentence, so hints off can teach the rules.
+- After a `wrong_phase` rejection, for example when another tab moved the game on, the game screen reloads the game from the session.
 
 ## Version handshake
 

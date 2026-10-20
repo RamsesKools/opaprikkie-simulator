@@ -309,6 +309,8 @@ export interface components {
             /** Continuation */
             continuation: number;
             sequence: components["schemas"]["SequenceInProgress"] | null;
+            /** Takes */
+            takes: components["schemas"]["TakeOption"][];
         };
         /**
          * Phase
@@ -379,6 +381,20 @@ export interface components {
             target: number;
             /** Dice */
             dice: number[];
+        };
+        /**
+         * TakeOption
+         * @description Dice that may be taken for `target`, by their place in the roll, and the row reached.
+         */
+        TakeOption: {
+            /** Target */
+            target: number;
+            /** Dice */
+            dice: number[];
+            /** Matches */
+            matches: number;
+            /** Row */
+            row: number;
         };
         /** Target */
         Target: {

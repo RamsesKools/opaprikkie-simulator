@@ -20,6 +20,15 @@ class Roll(BaseModel):
     matches: int
 
 
+class TakeOption(BaseModel):
+    """Dice that may be taken for `target`, by their place in the roll, and the row reached."""
+
+    target: int
+    dice: list[int]
+    matches: int
+    row: int
+
+
 class SequenceInProgress(BaseModel):
     """A roll sequence played by hand: the rolls taken so far and the throw on the table."""
 
@@ -39,6 +48,7 @@ class Observation(BaseModel):
     turn: int
     continuation: int
     sequence: SequenceInProgress | None
+    takes: list[TakeOption]
 
     @classmethod
     def of(cls, observation: engine.Observation) -> "Observation":
@@ -60,6 +70,7 @@ class Observation(BaseModel):
                 dice=list(sequence.dice),
                 reset=sequence.reset,
             ),
+            takes=[TakeOption(**vars(t)) for t in observation.takes],
         )
 
 

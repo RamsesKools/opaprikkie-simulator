@@ -386,6 +386,39 @@ test("resumes a sequence in progress on reload, playing it on automatically", as
   expect(take).toHaveBeenCalledExactlyOnceWith(2, [0]);
 });
 
+test("resumes a sequence in progress by hand with automatic turns off", async () => {
+  const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
+  const opened = scriptedGame.branches[0]!.steps[0]!.game;
+  const game = {
+    ...opened,
+    phase: "choosing_dice" as const,
+    observation: {
+      ...opened.observation!,
+      sequence: {
+        target: 2,
+        rolls: [
+          { dice: opened.observation!.opening_roll, set_aside: [0], reset: false, matches: 1 },
+        ],
+        matches: 1,
+        dice: [2, 3, 4, 5, 1],
+        reset: false,
+      },
+      takes: [{ target: 2, dice: [0], matches: 1, row: 2 }],
+    },
+  };
+  await resumeWith(saved(game), { take });
+  const toggle = await until(() => screen.queryByRole("checkbox", { name: strings.autoPlay }));
+
+  fireEvent.click(toggle);
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.game.throwStack(5) })),
+  );
+
+  expect(screen.getByText(strings.game.takeMore("Ann", 2))).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: strings.game.stop })).toBeInTheDocument();
+  expect(take).not.toHaveBeenCalled();
+});
+
 test("resumes the dice-off winner's choice on reload", async () => {
   const chooseFirstPlayer = vi.fn<GameClient["chooseFirstPlayer"]>(() => new Promise(() => {}));
   await resumeWith(saved(scriptedGame.first_player_choice), { chooseFirstPlayer });

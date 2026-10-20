@@ -12,6 +12,7 @@ from opaprikkie.engine import (
     Roll,
     RollSequence,
     SequenceInProgress,
+    TakeOption,
     choose_target,
     observe,
     stop,
@@ -213,3 +214,40 @@ def test_a_sequence_in_progress_is_locked_to_its_target():
     with pytest.raises(IllegalAction) as raised:
         choose_target(waiting, 6)
     assert raised.value.code == "wrong_phase"
+
+
+def test_the_observation_lists_every_take_the_opening_roll_allows():
+    state = choosing_target((6, 6, 1, 2, 3, 5), rows={6: 4, 1: 5})
+
+    takes = observe(state).takes
+
+    assert [t for t in takes if t.target == 6] == [
+        TakeOption(target=6, dice=(0,), matches=1, row=5),
+        TakeOption(target=6, dice=(1,), matches=1, row=5),
+        TakeOption(target=6, dice=(0, 1), matches=2, row=5),
+    ]
+    assert [t for t in takes if t.dice == (0, 1)] == [
+        TakeOption(target=6, dice=(0, 1), matches=2, row=5),
+        TakeOption(target=12, dice=(0, 1), matches=1, row=1),
+    ]
+    assert TakeOption(target=7, dice=(0, 2), matches=1, row=1) in takes
+    assert TakeOption(target=7, dice=(0, 1, 2, 5), matches=2, row=2) not in takes
+    assert not [t for t in takes if t.target == 1]
+    assert {t.target for t in takes} == {2, 3, 5, 6, 7, 8, 9, 11, 12}
+
+
+def test_during_a_sequence_the_takes_are_for_its_target_from_its_row_so_far():
+    _, after, sequence = in_sequence((6, 6, 1, 2, 3, 4), 6, (0, 1), rows={6: 1})
+    sixes = [i for i, value in enumerate(sequence.dice) if value == 6]
+
+    takes = observe(after).takes
+
+    assert {t.target for t in takes} == {6}
+    assert [t.dice for t in takes if t.matches == 1] == [(i,) for i in sixes]
+    assert all(t.row == min(1 + 2 + t.matches, CLASSIC.rows) for t in takes)
+
+
+def test_the_dice_off_winner_has_nothing_to_take():
+    state = dataclasses.replace(choosing_target(()), phase=Phase.CHOOSING_FIRST_PLAYER)
+
+    assert observe(state).takes == ()

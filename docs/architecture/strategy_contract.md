@@ -10,11 +10,14 @@ The rules behind each choice are in [game rules](../game_rules.md).
 - the ruleset (its name over HTTP) and the observing seat
 - every player's peg positions
 - the opening roll
-- legal targets, each with `matches` (raw count in the opening roll), `guaranteed_moves` (clamped to the remaining distance), and `set_aside` (the indices of the opening-roll dice it keeps)
+- legal targets for the roll on the table, each with `matches` (every match it holds), `guaranteed_moves` (those matches clamped to the remaining distance), and `set_aside` (the indices of the dice the automatic path keeps)
 - turn number and continuation index
 - `sequence`: during a sequence played by hand, its target, the rolls taken so far, their `matches`, the `dice` on the table, and whether they're a six-dice `reset`; otherwise `None`
+- `takes`: every valid take for the roll on the table, each with its `target`, its `dice` (sorted indices, every one part of a match), its `matches`, and the `row` the peg would reach (clamped to the top)
 
-During such a sequence, the legal targets hold only its target, for the dice on the table, with `guaranteed_moves` clamped to what's left after the matches taken.
+The roll on the table is the opening roll, or during a sequence played by hand its latest roll; then the legal targets and takes hold only the sequence's target, counted from the matches taken so far.
+`takes` is how a UI offers takes without rules of its own: it looks the selected dice up, and every entry with exactly those dice is one option.
+The engine computes it on first use, so strategies, which never read it, don't pay for it.
 The observing seat is the player choosing next: the dice-off winner, then the player on turn.
 Outside those choice points `observe` raises `wrong_phase`.
 

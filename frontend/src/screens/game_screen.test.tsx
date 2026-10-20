@@ -36,6 +36,7 @@ const game: Game = {
     turn: 1,
     continuation: 0,
     sequence: null,
+    takes: [],
   },
   winner: null,
   seed: null,
@@ -51,17 +52,19 @@ function show(
 ) {
   const onFinished = vi.fn<(game: Game) => void>();
   const onError = vi.fn<(error: unknown) => void>();
-  render(
+  const screenWith = (settings: { autoPlay: boolean; hints: boolean }) => (
     <GameScreen
       client={{ chooseTarget, ...client } as GameClient}
       initial={{ game: shown, logs }}
-      autoPlay={autoPlay}
-      hints={hints}
+      {...settings}
       onFinished={onFinished}
       onError={onError}
-    />,
+    />
   );
-  return { onFinished, onError };
+  const { rerender } = render(screenWith({ autoPlay, hints }));
+  const toggle = (settings: { autoPlay: boolean; hints: boolean }) =>
+    rerender(screenWith(settings));
+  return { onFinished, onError, toggle };
 }
 
 const advance = (ms: number) => act(() => vi.advanceTimersByTimeAsync(ms));
@@ -314,6 +317,14 @@ const twoSixes: Game = {
       { target: 7, matches: 2, guaranteed_moves: 2, set_aside: [0, 2, 3, 5] },
       { target: 12, matches: 1, guaranteed_moves: 1, set_aside: [0, 1] },
     ],
+    takes: [
+      { target: 1, dice: [2], matches: 1, row: 1 },
+      { target: 6, dice: [0], matches: 1, row: 1 },
+      { target: 6, dice: [1], matches: 1, row: 1 },
+      { target: 6, dice: [0, 1], matches: 2, row: 2 },
+      { target: 7, dice: [0, 2], matches: 1, row: 1 },
+      { target: 12, dice: [0, 1], matches: 1, row: 1 },
+    ],
   },
 };
 
@@ -330,6 +341,7 @@ const lockedToSix: Game = {
       dice: [2, 6, 3, 5, 1],
       reset: false,
     },
+    takes: [{ target: 6, dice: [1], matches: 1, row: 2 }],
   },
 };
 
@@ -460,4 +472,188 @@ test("plays the rest of a sequence by itself when turns play automatically", asy
   await advance(0);
 
   expect(take).toHaveBeenCalledExactlyOnceWith(6, [1]);
+});
+
+test("takes the options from the observation, without rules of its own", async () => {
+  const shown: Game = {
+    ...twoSixes,
+    observation: {
+      ...twoSixes.observation!,
+      takes: [{ target: 9, dice: [2], matches: 1, row: 3 }],
+    },
+  };
+  await throwManually(shown);
+
+  selectDie(0);
+  expect(takes()).toEqual([]);
+  selectDie(0);
+  selectDie(2);
+  expect(takes()).toEqual([strings.game.take(1, 9)]);
+  expect(lit()).toEqual([9]);
+  fireEvent.mouseEnter(column(9));
+  expect(anns().querySelector<HTMLElement>(".ghost")?.style.getPropertyValue("--row")).toBe("3");
+});
+
+test("doesn't retry a failed automatic take, and leaves the sequence to the player", async () => {
+  const take = vi.fn<GameClient["take"]>().mockRejectedValue(new GameError("network", "offline"));
+  show(vi.fn<GameClient["chooseTarget"]>(), [], true, lockedToSix, { client: { take } });
+
+  await advance(timing.ready);
+  await advance(10_000);
+
+  expect(take).toHaveBeenCalledOnce();
+  expect(screen.getByText(strings.errors.network)).toBeInTheDocument();
+  selectDie(1);
+  fireEvent.click(screen.getByRole("button", { name: strings.game.take(1, 6) }));
+  expect(take).toHaveBeenCalledTimes(2);
+  expect(screen.getByRole("button", { name: strings.game.stop })).toBeInTheDocument();
+});
+
+test("keeps the choice on screen but disabled while a take is pending", async () => {
+  const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
+  show(vi.fn<GameClient["chooseTarget"]>(), [], false, lockedToSix, { client: { take } });
+  fireEvent.click(throwStack(5)!);
+  selectDie(1);
+
+  fireEvent.click(screen.getByRole("button", { name: strings.game.take(1, 6) }));
+
+  expect(screen.getByRole("button", { name: strings.game.take(1, 6) })).toBeDisabled();
+  expect(screen.getByRole("button", { name: strings.game.stop })).toBeDisabled();
+  expect(within(screen.getByRole("group")).getAllByRole("button")[1]).toBeDisabled();
+  expect(column(6)).toBeDisabled();
+  expect(lit()).toEqual([6]);
+});
+
+test("clears a rejection once the selection changes", async () => {
+  const take = vi.fn<GameClient["take"]>().mockRejectedValue(new GameError("illegal_dice", "nope"));
+  await throwManually(twoSixes, false, { take });
+  selectDie(2);
+  fireEvent.click(column(5));
+  await advance(0);
+  expect(screen.getByText("Nope.")).toBeInTheDocument();
+
+  selectDie(2);
+
+  expect(screen.queryByText("Nope.")).not.toBeInTheDocument();
+});
+
+test("catches up with the session after a choice in another tab", async () => {
+  const elsewhere: Game = {
+    ...twoSixes,
+    observation: { ...twoSixes.observation!, seat: 1, turn: 2 },
+  };
+  const take = vi.fn<GameClient["take"]>().mockRejectedValue(new GameError("wrong_phase", "x"));
+  const session = vi.fn<GameClient["session"]>().mockResolvedValue({ names: [], game: elsewhere });
+  await throwManually(twoSixes, true, { take, session });
+  selectDie(0);
+
+  fireEvent.click(screen.getByRole("button", { name: strings.game.take(1, 6) }));
+  await advance(0);
+
+  expect(session).toHaveBeenCalledOnce();
+  expect(screen.getByText(strings.game.turn(2, "Bob"))).toBeInTheDocument();
+});
+
+test("hands a hot-seat game to the next human, who plays by hand too", async () => {
+  const bobs: Game = { ...twoSixes, observation: { ...twoSixes.observation!, seat: 1, turn: 2 } };
+  const logs: LogEntry[] = [
+    {
+      kind: "roll_sequence",
+      player: 0,
+      turn: 1,
+      continuation: 0,
+      target: 6,
+      rolls: [
+        { dice: [6, 6, 1, 2, 3, 4], set_aside: [0], reset: false, matches: 1 },
+        { dice: [2, 6, 3, 5, 1], set_aside: [], reset: false, matches: 0 },
+      ],
+      matches: 1,
+      movement: 1,
+    },
+  ];
+  const stop = vi.fn<GameClient["stop"]>().mockResolvedValue({ game: bobs, logs });
+  show(vi.fn<GameClient["chooseTarget"]>(), [], false, lockedToSix, { client: { stop } });
+  fireEvent.click(throwStack(5)!);
+
+  fireEvent.click(screen.getByRole("button", { name: strings.game.stop }));
+  await advance(0);
+  await advance(timing.roll);
+  await advance(timing.move);
+
+  expect(screen.getByText(strings.game.throwPrompt("Bob"))).toBeInTheDocument();
+  fireEvent.click(throwStack(6)!);
+  expect(screen.getByText(strings.game.selectDice("Bob", true))).toBeInTheDocument();
+});
+
+test("follows the toggles mid-sequence", async () => {
+  const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
+  const { toggle } = show(vi.fn<GameClient["chooseTarget"]>(), [], false, lockedToSix, {
+    client: { take },
+  });
+  fireEvent.click(throwStack(5)!);
+  selectDie(1);
+  expect(takes()).toEqual([strings.game.take(1, 6)]);
+
+  toggle({ autoPlay: false, hints: false });
+  expect(takes()).toEqual([]);
+  expect(column(6)).toHaveClass("highlight");
+
+  toggle({ autoPlay: true, hints: false });
+  await advance(0);
+  expect(take).toHaveBeenCalledExactlyOnceWith(6, [1]);
+});
+
+test("empties the bowl for a six-dice reset by hand, keeping the count", () => {
+  const sequence = lockedToSix.observation!.sequence!;
+  const reset: Game = {
+    ...lockedToSix,
+    observation: {
+      ...lockedToSix.observation!,
+      sequence: { ...sequence, dice: [6, 1, 2, 3, 4, 5], reset: true },
+    },
+  };
+  show(vi.fn<GameClient["chooseTarget"]>(), [], false, reset);
+
+  expect(screen.getByText(strings.game.throwPrompt("Ann"))).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: strings.game.kept([]) })).toBeInTheDocument();
+  expect(screen.getByText(strings.game.saved(1, 6))).toBeInTheDocument();
+  expect(throwStack(6)).toBeInTheDocument();
+});
+
+test("rolls again after topping a peg by hand", async () => {
+  const topped = { ...board, 6: 5 };
+  const next: Game = {
+    ...twoSixes,
+    pegs: [topped, board],
+    observation: { ...twoSixes.observation!, pegs: [topped, board], continuation: 1 },
+  };
+  const logs: LogEntry[] = [
+    {
+      kind: "roll_sequence",
+      player: 0,
+      turn: 1,
+      continuation: 0,
+      target: 6,
+      rolls: [{ dice: [6, 6, 1, 2, 3, 4], set_aside: [0, 1], reset: false, matches: 2 }],
+      matches: 2,
+      movement: 2,
+    },
+  ];
+  const take = vi.fn<GameClient["take"]>().mockResolvedValue({ game: next, logs });
+  const nearlyTopped = { ...board, 6: 3 };
+  const shown: Game = {
+    ...twoSixes,
+    pegs: [nearlyTopped, board],
+    observation: { ...twoSixes.observation!, pegs: [nearlyTopped, board] },
+  };
+  await throwManually(shown, true, { take });
+  selectDie(0);
+  selectDie(1);
+
+  fireEvent.click(screen.getByRole("button", { name: strings.game.take(2, 6) }));
+  await advance(0);
+  await advance(timing.roll);
+  await advance(timing.move);
+
+  expect(screen.getByText(strings.game.continuation(6))).toBeInTheDocument();
 });

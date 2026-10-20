@@ -20,6 +20,7 @@ const game = (at: { seat: number; continuation?: number } | null): Game => ({
     turn: 2,
     continuation: at.continuation ?? 0,
     sequence: null,
+    takes: [],
   },
   winner: at ? null : 0,
   seed: null,

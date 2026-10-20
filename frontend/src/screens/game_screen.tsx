@@ -1,9 +1,14 @@
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { Board } from "../components/board.tsx";
 import { Table } from "../components/table.tsx";
-import { TOP_ROW, type Game, type GameClient, type GameUpdate, type Pegs } from "../game/model.ts";
+import {
+  GameError,
+  type Game,
+  type GameClient,
+  type GameUpdate,
+  type Pegs,
+} from "../game/model.ts";
 import { errorMessage } from "../game/errors.ts";
-import { takeMatches } from "../game/matching.ts";
 import { bowl, buildScenes, throwKey, type Scene } from "../game/scenes.ts";
 import { seatStyle } from "../lib/palette.ts";
 import { strings } from "../lib/strings.ts";
@@ -14,6 +19,9 @@ const emptyPegs = (pegs: Pegs[]): Pegs[] =>
 type Playback = { game: Game; scenes: Scene[]; index: number };
 
 const nextScene = (playback: Playback): Playback => ({ ...playback, index: playback.index + 1 });
+
+const sameDice = (a: number[], b: number[]) =>
+  a.length === b.length && a.every((die, index) => die === b[index]);
 
 type Props = {
   client: GameClient;
@@ -34,6 +42,8 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
   const [error, setError] = useState<string | null>(null);
   const [hovered, setHovered] = useState<number | null>(null);
   const [selected, setSelected] = useState<number[]>([]);
+  // The game whose automatic take failed; the player finishes that sequence by hand.
+  const [stalled, setStalled] = useState<Game | null>(null);
   // A pick can land after New Game has left this screen.
   const mounted = useRef(false);
   const { game, scenes, index } = playback;
@@ -48,9 +58,10 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
     (game.phase === "choosing_target" || game.phase === "choosing_dice") &&
     observation !== null;
   const waiting = !autoPlay && human && scene?.ready === true;
-  const humanChoice = choosing && !busy && human && !waiting;
-  const manual = humanChoice && !autoPlay;
-  const autoTake = humanChoice && autoPlay && sequence !== null;
+  const humanChoice = choosing && human && !waiting;
+  const byHand = !autoPlay || (sequence !== null && stalled === game);
+  const manual = humanChoice && byHand;
+  const autoTake = humanChoice && !byHand && sequence !== null && !busy;
 
   useEffect(() => {
     mounted.current = true;
@@ -72,6 +83,20 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
   // Throws on the table before the answer; their replay starts at the last one.
   const thrown = (sequence?.rolls.length ?? 0) + 1;
 
+  const show = (next: Game, scenes: Scene[]) => {
+    setPlayback({ game: next, scenes, index: 0 });
+    setSelected([]);
+  };
+
+  // Another tab moved the game on, so this one catches up from the session.
+  const resync = () =>
+    client.session().then(
+      ({ game: current }) => {
+        if (mounted.current && current) show(current, buildScenes(game.pegs, [], current));
+      },
+      () => {},
+    );
+
   const respond = (request: () => Promise<GameUpdate>) => {
     setHovered(null);
     setBusy(true);
@@ -79,15 +104,15 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
     request().then(
       (update) => {
         if (!mounted.current) return;
-        const next = buildScenes(game.pegs, update.logs, update.game, thrown);
-        setPlayback({ game: update.game, scenes: next, index: 0 });
-        setSelected([]);
+        show(update.game, buildScenes(game.pegs, update.logs, update.game, thrown));
         setBusy(false);
       },
       (failure: unknown) => {
         if (!mounted.current) return;
         setError(errorMessage(failure));
         setBusy(false);
+        if (sequence) setStalled(game);
+        if (failure instanceof GameError && failure.code === "wrong_phase") void resync();
         onError(failure);
       },
     );
@@ -104,25 +129,20 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
     return () => clearTimeout(timer);
   }, [locked]);
 
-  const toggle = (die: number) =>
+  const toggle = (die: number) => {
+    setError(null);
     setSelected((current) =>
       current.includes(die)
         ? current.filter((other) => other !== die)
         : [...current, die].toSorted((a, b) => a - b),
     );
+  };
 
   const pegs = scene?.pegs ?? game.pegs;
   const own = pegs[player]!;
   const targets = Object.keys(own).map(Number);
-  const taken = sequence?.matches ?? 0;
   const dice = sequence?.dice ?? observation?.opening_roll ?? [];
-  const values = selected.map((die) => dice[die]!);
-  const options = manual
-    ? targets
-        .filter((target) => !sequence || target === sequence.target)
-        .map((target) => ({ target, matches: takeMatches(target, values) }))
-        .filter(({ target, matches }) => matches > 0 && own[target]! + taken < TOP_ROW)
-    : [];
+  const options = manual ? observation.takes.filter((t) => sameDice(t.dice, selected)) : [];
   const legal = humanChoice ? observation.legal_targets.map(({ target }) => target) : [];
 
   let lit: number[] = [];
@@ -131,10 +151,8 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
   if (manual) {
     lit = options.map(({ target }) => target);
     raised = selected;
-    const matches = hovered === null ? 0 : takeMatches(hovered, values);
-    if (hovered !== null && matches > 0) {
-      preview = { target: hovered, row: Math.min(own[hovered]! + taken + matches, TOP_ROW) };
-    }
+    const option = options.find(({ target }) => target === hovered);
+    if (option) preview = { target: option.target, row: option.row };
   } else if (humanChoice && hints) {
     lit = legal;
     const hint = observation.legal_targets.find(({ target }) => target === hovered);
@@ -184,9 +202,9 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
             }
             hand={0}
             kept={sequence ? bowl(sequence.rolls, sequence.reset) : []}
-            count={taken}
+            count={sequence?.matches ?? 0}
             target={sequence?.target ?? null}
-            {...(manual && { onToggle: toggle })}
+            {...(manual && { onToggle: toggle, disabled: busy })}
           />
         )}
         <div className="takes">
@@ -196,13 +214,14 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
                 key={target}
                 type="button"
                 className="primary"
+                disabled={busy}
                 onClick={() => take(target, selected)}
               >
                 {strings.game.take(matches, target)}
               </button>
             ))}
           {manual && sequence && (
-            <button type="button" onClick={stop}>
+            <button type="button" disabled={busy} onClick={stop}>
               {strings.game.stop}
             </button>
           )}
@@ -231,7 +250,7 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
             {...(humanChoice && seat === player
               ? {
                   legal: hints ? lit : [],
-                  pickable: hints ? lit : targets,
+                  pickable: busy ? [] : hints ? lit : targets,
                   onPick,
                   onHover: setHovered,
                   preview,

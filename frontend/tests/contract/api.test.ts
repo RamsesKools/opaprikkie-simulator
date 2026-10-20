@@ -99,12 +99,22 @@ test("plays a manual turn: takes fewer matches than rolled, then stops", async (
     const opened = await client.chooseFirstPlayer(game.observation!.seat);
     const single = opened.game.observation!.legal_targets.find(({ target }) => target <= 6);
     if (!single) continue;
+    const first = single.set_aside.slice(0, 1);
+    expect(opened.game.observation!.takes).toContainEqual({
+      target: single.target,
+      dice: first,
+      matches: 1,
+      row: 1,
+    });
     await expect(client.stop()).rejects.toMatchObject({ code: "wrong_phase" });
 
-    const taken = await client.take(single.target, single.set_aside.slice(0, 1));
+    const taken = await client.take(single.target, first);
     if (taken.game.phase !== "choosing_dice") continue;
     expect(taken.logs).toEqual([]);
     expect(taken.game.observation!.sequence).toMatchObject({ target: single.target, matches: 1 });
+    const takes = taken.game.observation!.takes;
+    expect(takes.length).toBeGreaterThan(0);
+    expect(takes.every(({ target, row }) => target === single.target && row >= 2)).toBe(true);
     const stopped = await client.stop();
 
     expect(stopped.logs[0]).toMatchObject({ kind: "roll_sequence", matches: 1, movement: 1 });
