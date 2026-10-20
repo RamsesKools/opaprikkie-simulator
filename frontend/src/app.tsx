@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RulesBooklet } from "./components/rules_booklet.tsx";
 import { errorMessage, isLost } from "./game/errors.ts";
 import type { Game, GameClient, GameSetup, GameUpdate, Health, Session } from "./game/model.ts";
+import { newDraft, withSeats, type Draft } from "./lib/names.ts";
 import { strings } from "./lib/strings.ts";
 import { version } from "./lib/version.ts";
 import { DiceOff } from "./screens/dice_off.tsx";
@@ -16,10 +17,10 @@ type Screen =
   | { kind: "game"; update: GameUpdate }
   | { kind: "victory"; game: Game };
 
-function prefill({ names, game }: Session): GameSetup | null {
-  if (names?.length !== 2) return null;
+function prefill(draft: Draft, { names, game }: Session): Draft {
+  if (names?.length !== 2) return draft;
   const mode = game && !game.controllers.includes("ai") ? "hot_seat" : "versus_ai";
-  return { mode, names: [names[0]!, names[1]!] };
+  return { ...draft, mode, roster: withSeats(draft.roster, mode, [names[0]!, names[1]!]) };
 }
 
 function resumed(game: Game | null): Screen {
@@ -33,7 +34,9 @@ type Props = { client: GameClient };
 
 export function App({ client }: Props) {
   const [screen, setScreen] = useState<Screen>({ kind: "loading" });
-  const [setup, setSetup] = useState<GameSetup | null>(null);
+  const [draft, setDraft] = useState<Draft>(newDraft);
+  // Bumped by New Game, so answers for the abandoned game are ignored.
+  const round = useRef(0);
   const [health, setHealth] = useState<Health | null>(null);
   const [rules, setRules] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +52,7 @@ export function App({ client }: Props) {
     handshake();
     client.session().then(
       (session) => {
-        setSetup(prefill(session));
+        setDraft((current) => prefill(current, session));
         setScreen(resumed(session.game));
       },
       () => setScreen({ kind: "menu" }),
@@ -76,7 +79,10 @@ export function App({ client }: Props) {
   );
 
   const start = (chosen: GameSetup) => {
-    setSetup(chosen);
+    setDraft((current) => ({
+      ...current,
+      roster: withSeats(current.roster, chosen.mode, chosen.names),
+    }));
     setError(null);
     setStarting(true);
     client
@@ -87,14 +93,21 @@ export function App({ client }: Props) {
 
   const play = useCallback((update: GameUpdate) => setScreen({ kind: "game", update }), []);
   const chooseFirst = async (player: number) => {
+    const at = round.current;
     setError(null);
     try {
-      play(await client.chooseFirstPlayer(player));
+      const update = await client.chooseFirstPlayer(player);
+      if (at === round.current) play(update);
       return true;
     } catch (failure) {
-      fail(failure);
+      if (at === round.current) fail(failure);
       return false;
     }
+  };
+  const startOver = () => {
+    round.current += 1;
+    setError(null);
+    setScreen({ kind: "menu" });
   };
   const finished = useCallback((game: Game) => setScreen({ kind: "victory", game }), []);
   const closeRules = useCallback(() => setRules(false), []);
@@ -104,7 +117,14 @@ export function App({ client }: Props) {
   return (
     <>
       <header className="wood">
-        <h1>{strings.title}</h1>
+        <div className="title">
+          <h1>{strings.title}</h1>
+          {screen.kind !== "menu" && screen.kind !== "loading" && (
+            <button type="button" onClick={startOver}>
+              {strings.newGame}
+            </button>
+          )}
+        </div>
         <div className="controls">
           {screen.kind === "game" && (
             <label className="auto-play">
@@ -132,7 +152,7 @@ export function App({ client }: Props) {
       <main>
         {error && <p role="alert">{error}</p>}
         {screen.kind === "menu" && (
-          <Menu initial={setup} dev={dev} pending={starting} onStart={start} />
+          <Menu draft={draft} onChange={setDraft} dev={dev} pending={starting} onStart={start} />
         )}
         {screen.kind === "dice_off" && (
           <DiceOff update={screen.update} onChooseFirst={chooseFirst} onAiStarts={play} />

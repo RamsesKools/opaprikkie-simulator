@@ -146,6 +146,13 @@ header h1 {
   text-shadow: 2px 2px 0 var(--hole);
 }
 
+header .title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
 .controls {
   display: flex;
   flex-wrap: wrap;

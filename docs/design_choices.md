@@ -9,6 +9,8 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
    - A big wooden switch flips between "Player vs AI", the default, and "Player vs Player" (hot-seat).
    - Names are trimmed, 1 to 20 characters, and stored in the session so they're prefilled next time, in the mode of the session's last game.
    - Defaults: "Player 1", "Player 2", and "Opa" for the AI; all editable.
+   - The menu keeps three names: player 1 sits in both modes, while player 2 and the AI each keep their own, so switching modes brings back the other mode's name.
+   - The app keeps them across games until the page reloads; the session only stores the last game's two.
    - Duplicate names are fine; seat colours tell players apart.
    - Start stays disabled while a name is out of range or the game is being created.
    - Versus AI, the human is seat 1 and the AI seat 2.
@@ -38,6 +40,9 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
    - Topped pegs get a gold ring.
 4. Victory screen when the last peg is topped: the winner's name in their colour, both final boards, and "Play again".
    - "Play again" returns to the menu with the last mode and names kept.
+5. "New Game" in the header, next to the title, leaves the dice-off, game, or victory screen for the menu, with the mode and names kept.
+   - Answers still on their way for the abandoned game are ignored.
+   - The backend keeps the abandoned game until the next one starts, so a reload before that resumes it.
 
 ## Board
 
@@ -55,6 +60,7 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 ## Header
 
 - A wooden bar across the top with the title and the "Rules" button, on every screen.
+- Outside the menu, a "New Game" button sits right of the title.
 - During the game it also holds the "Play turns automatically" toggle, on by default and kept for the next game.
 
 ## Rules booklet

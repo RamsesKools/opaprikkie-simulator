@@ -2,7 +2,13 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { App } from "./app.tsx";
 import { createFixtureClient, scriptedGame, type Script } from "./game/fixture_client.ts";
-import { GameError, type Game, type GameClient, type Session } from "./game/model.ts";
+import {
+  GameError,
+  type Game,
+  type GameClient,
+  type GameUpdate,
+  type Session,
+} from "./game/model.ts";
 import { strings } from "./lib/strings.ts";
 
 beforeEach(() => {
@@ -346,3 +352,81 @@ test.each([
   await until(() => screen.queryByRole("button", { name: strings.menu.start }));
   expect(screen.getByLabelText(strings.menu.player(1))).toHaveValue("Bob");
 });
+
+const newGame = () => screen.queryByRole("button", { name: strings.newGame });
+
+test("starts over with New Game, keeping every name", async () => {
+  await renderApp();
+  expect(newGame()).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText(strings.menu.opponent), { target: { value: "Oma" } });
+  hotSeat();
+  fireEvent.change(screen.getByLabelText(strings.menu.player(0)), { target: { value: "Ann" } });
+  fireEvent.change(screen.getByLabelText(strings.menu.player(1)), { target: { value: " Bob " } });
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Ann") })),
+  );
+  await until(() => screen.queryByText(strings.game.pick("Ann")));
+
+  fireEvent.click(newGame()!);
+
+  expect(screen.getByLabelText(strings.menu.player(0))).toHaveValue("Ann");
+  expect(screen.getByLabelText(strings.menu.player(1))).toHaveValue("Bob");
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.mode(strings.menu.hotSeat) }));
+  expect(screen.getByLabelText(strings.menu.you)).toHaveValue("Ann");
+  expect(screen.getByLabelText(strings.menu.opponent)).toHaveValue("Oma");
+  expect(newGame()).not.toBeInTheDocument();
+}, 60_000);
+
+test("ignores a dice-off choice that lands after New Game", async () => {
+  const fixture = createFixtureClient();
+  let land = () => {};
+  const chooseFirstPlayer = (player: number) =>
+    new Promise<GameUpdate>((resolve) => {
+      land = () => resolve(fixture.chooseFirstPlayer(player));
+    });
+  await renderApp({ ...fixture, chooseFirstPlayer });
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") })),
+  );
+
+  fireEvent.click(newGame()!);
+  land();
+  await act(() => vi.advanceTimersByTimeAsync(5000));
+
+  expect(screen.getByRole("button", { name: strings.menu.start })).toBeInTheDocument();
+}, 60_000);
+
+test("ignores a pick that fails after New Game", async () => {
+  let fail = () => {};
+  const chooseTarget = () =>
+    new Promise<GameUpdate>((_, reject) => {
+      fail = () => reject(new GameError("no_session", "gone"));
+    });
+  await renderApp({ ...createFixtureClient(), chooseTarget });
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") })),
+  );
+  fireEvent.click(await until(legalTarget));
+
+  fireEvent.click(newGame()!);
+  fail();
+  await act(() => vi.advanceTimersByTimeAsync(0));
+
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+}, 60_000);
+
+test("offers New Game on the victory screen too", async () => {
+  await renderApp();
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Opa") })),
+  );
+  await playToVictory("Opa");
+
+  fireEvent.click(newGame()!);
+
+  expect(screen.getByLabelText(strings.menu.opponent)).toHaveValue("Opa");
+}, 60_000);

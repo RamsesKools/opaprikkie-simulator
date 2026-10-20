@@ -1,6 +1,7 @@
 export const strings = {
   title: "Opa Prikkie",
   rules: "Rules",
+  newGame: "New Game",
   autoPlay: "Play turns automatically",
   close: "Close",
   stale: "A new version of Opa Prikkie is out.",

@@ -1,15 +1,21 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { useState } from "react";
 import { expect, test, vi } from "vitest";
 import type { GameSetup } from "../game/model.ts";
 import { strings } from "../lib/strings.ts";
+import { newDraft, type Draft } from "../lib/names.ts";
 import { Menu } from "./menu.tsx";
 
 type Dev = { strategies: string[] } | null;
-type Shown = { initial?: GameSetup | null; dev?: Dev; pending?: boolean };
+type Shown = { initial?: Partial<Draft>; dev?: Dev; pending?: boolean };
 
-function show({ initial = null, dev = null, pending = false }: Shown = {}) {
+function show({ initial = {}, dev = null, pending = false }: Shown = {}) {
   const onStart = vi.fn<(setup: GameSetup) => void>();
-  render(<Menu initial={initial} dev={dev} pending={pending} onStart={onStart} />);
+  function Controlled() {
+    const [draft, setDraft] = useState<Draft>({ ...newDraft, ...initial });
+    return <Menu draft={draft} onChange={setDraft} dev={dev} pending={pending} onStart={onStart} />;
+  }
+  render(<Controlled />);
   return { onStart };
 }
 
@@ -72,12 +78,32 @@ test("blocks a second start while one is pending", () => {
   expect(onStart).not.toHaveBeenCalled();
 });
 
-test("keeps the previous setup", () => {
-  show({ initial: { mode: "hot_seat", names: ["Ann", "Oma"] } });
+test("shows the draft's mode and names", () => {
+  show({ initial: { mode: "hot_seat", roster: { players: ["Ann", "Bob"], ai: "Oma" } } });
 
-  expect(screen.getByLabelText(strings.menu.player(1))).toHaveValue("Oma");
+  expect(screen.getByLabelText(strings.menu.player(0))).toHaveValue("Ann");
+  expect(screen.getByLabelText(strings.menu.player(1))).toHaveValue("Bob");
+});
+
+test("keeps player 1 across modes, and player 2 and the AI apart", () => {
+  const { onStart } = show();
+  const start = () => fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+
+  fireEvent.change(screen.getByLabelText(strings.menu.you), { target: { value: "Ann" } });
+  fireEvent.change(screen.getByLabelText(strings.menu.opponent), { target: { value: "Oma" } });
+  switchMode(strings.menu.versusAi);
+  expect(screen.getByLabelText(strings.menu.player(0))).toHaveValue("Ann");
+  expect(screen.getByLabelText(strings.menu.player(1))).toHaveValue("Player 2");
+  fireEvent.change(screen.getByLabelText(strings.menu.player(1)), { target: { value: "Bob" } });
+  start();
   switchMode(strings.menu.hotSeat);
-  expect(screen.getByLabelText(strings.menu.opponent)).toHaveValue("Opa");
+  expect(screen.getByLabelText(strings.menu.opponent)).toHaveValue("Oma");
+  start();
+
+  expect(onStart.mock.calls).toEqual([
+    [{ mode: "hot_seat", names: ["Ann", "Bob"] }],
+    [{ mode: "versus_ai", names: ["Ann", "Oma"] }],
+  ]);
 });
 
 test("hides the dev mode fields outside dev mode", () => {
@@ -126,7 +152,7 @@ test("offers the AI strategy versus the AI only", () => {
 
 test("keeps the previous seed and strategy in dev mode", () => {
   show({
-    initial: { mode: "versus_ai", names: ["Ann", "Opa"], seed: "7", strategy: "greedy" },
+    initial: { seed: "7", strategy: "greedy" },
     dev: { strategies: ["greedy", "smart"] },
   });
 

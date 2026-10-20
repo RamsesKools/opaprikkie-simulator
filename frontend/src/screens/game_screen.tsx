@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Board } from "../components/board.tsx";
 import { Table } from "../components/table.tsx";
 import type { Game, GameClient, GameUpdate, Pegs } from "../game/model.ts";
@@ -30,6 +30,8 @@ export function GameScreen({ client, initial, autoPlay, onFinished, onError }: P
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hovered, setHovered] = useState<number | null>(null);
+  // A pick can land after New Game has left this screen.
+  const mounted = useRef(false);
   const { game, scenes, index } = playback;
   const scene = scenes[index];
   const observation = game.observation;
@@ -38,6 +40,13 @@ export function GameScreen({ client, initial, autoPlay, onFinished, onError }: P
   const human = game.controllers[player] === "human";
   const choosing = !scene && game.phase === "choosing_target" && observation !== null;
   const waiting = !autoPlay && human && !playback.thrown && (scene ? scene.fresh : choosing);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!scene) {
@@ -58,11 +67,13 @@ export function GameScreen({ client, initial, autoPlay, onFinished, onError }: P
     setError(null);
     client.chooseTarget(target).then(
       (update) => {
+        if (!mounted.current) return;
         const next = buildScenes(game.pegs, update.logs, update.game);
         setPlayback({ game: update.game, scenes: next, index: 0, thrown: autoPlay });
         setBusy(false);
       },
       (failure: unknown) => {
+        if (!mounted.current) return;
         setError(errorMessage(failure));
         setBusy(false);
         onError(failure);
