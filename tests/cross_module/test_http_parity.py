@@ -68,3 +68,13 @@ def test_a_session_evicted_mid_game_fails_the_game():
 
     with pytest.raises(BackendError, match=r"POST /api/game/target failed with 401: .*no_session"):
         driver.play("parity", 0, evict)
+
+
+def test_a_batch_plays_in_one_session_so_it_evicts_no_user():
+    app = create_app(Settings(dev_mode=True, max_sessions=2))
+    user = TestClient(app)
+    user.post("/api/sessions")
+
+    run_batch(["random", "random"], games=3, seed="batch", driver=HttpDriver(TestClient(app)))
+
+    assert user.get("/api/session").status_code == 200

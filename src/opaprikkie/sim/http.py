@@ -25,7 +25,7 @@ class BackendError(Exception):
 
 
 class HttpDriver:
-    """Plays each game in a fresh session on a dev-mode backend, with both seats `human`."""
+    """Plays every game in one session on a dev-mode backend, with both seats `human`."""
 
     ruleset = CLASSIC
 
@@ -36,10 +36,9 @@ class HttpDriver:
             raise BackendError(f"backend runs {health['version']}, the simulator {__version__}")
         if not health["dev_mode"]:
             raise BackendError("seeded games need a backend in dev mode (OPAPRIKKIE_DEV_MODE)")
+        self._send("POST", "/api/sessions")
 
     def play(self, seed: str, first_player: int, choose: Chooser) -> PlayedGame:
-        self.client.cookies.clear()
-        self._send("POST", "/api/sessions")
         controllers = ["human"] * self.ruleset.players
         new_game = {"controllers": controllers, "seed": seed, "first_player": first_player}
         self._send("POST", "/api/game", new_game)

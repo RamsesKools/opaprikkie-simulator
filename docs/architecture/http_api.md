@@ -29,7 +29,7 @@ Choices, observations, and rejections follow the [strategy contract](strategy_co
 - The store lives in one process, so the backend must run as a single uvicorn worker.
 - A session unused for `SESSION_TTL_DAYS` expires.
 - Non-browser callers use the same path: `POST /api/sessions`, then send the cookie back.
-- The simulator starts a session per game, so a long batch evicts the other sessions on a shared backend.
+- The simulator plays a whole batch in one session, starting each game with `POST /api/game`, so a batch takes one slot and evicts no other session.
 
 ## AI seats
 
