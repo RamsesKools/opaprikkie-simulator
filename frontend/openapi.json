@@ -810,13 +810,21 @@
           "guaranteed_moves": {
             "type": "integer",
             "title": "Guaranteed Moves"
+          },
+          "set_aside": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Set Aside"
           }
         },
         "type": "object",
         "required": [
           "target",
           "matches",
-          "guaranteed_moves"
+          "guaranteed_moves",
+          "set_aside"
         ],
         "title": "LegalTarget"
       },
@@ -1036,13 +1044,18 @@
           "reset": {
             "type": "boolean",
             "title": "Reset"
+          },
+          "matches": {
+            "type": "integer",
+            "title": "Matches"
           }
         },
         "type": "object",
         "required": [
           "dice",
           "set_aside",
-          "reset"
+          "reset",
+          "matches"
         ],
         "title": "Roll"
       },

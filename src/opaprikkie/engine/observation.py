@@ -1,7 +1,7 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-from opaprikkie.engine.dice import count_matches
+from opaprikkie.engine.dice import set_aside
 from opaprikkie.engine.errors import IllegalAction, Rejection
 from opaprikkie.engine.ruleset import Ruleset
 from opaprikkie.engine.state import GameState, Phase
@@ -12,6 +12,7 @@ class LegalTarget:
     target: int
     matches: int
     guaranteed_moves: int
+    set_aside: tuple[int, ...]
 
 
 def legal_targets(
@@ -19,9 +20,10 @@ def legal_targets(
 ) -> tuple[LegalTarget, ...]:
     found = []
     for target, row in pegs.items():
-        matches = count_matches(ruleset, target, opening_roll)
+        taken = set_aside(ruleset, target, opening_roll)
+        matches = len(taken) // ruleset.targets[target]
         if row < ruleset.rows and matches:
-            found.append(LegalTarget(target, matches, min(matches, ruleset.rows - row)))
+            found.append(LegalTarget(target, matches, min(matches, ruleset.rows - row), taken))
     return tuple(found)
 
 

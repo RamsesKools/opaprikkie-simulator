@@ -203,3 +203,14 @@ def test_a_topped_peg_is_not_a_legal_target(dev_client):
     response = dev_client.post("/api/game/target", json={"target": int(topped[0])})
 
     assert response.json()["reason"] == "topped"
+
+
+def test_targets_and_rolls_show_the_dice_they_keep(client):
+    legal = started(client)["observation"]["legal_targets"][0]
+
+    logs = client.post("/api/game/target", json={"target": legal["target"]}).json()["logs"]
+
+    opening = logs[0]["rolls"][0]
+    assert legal["set_aside"]
+    assert opening["set_aside"] == legal["set_aside"]
+    assert opening["matches"] == legal["matches"]

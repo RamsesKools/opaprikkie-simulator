@@ -1,4 +1,10 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "ignorePatterns": ["openapi.json", "src/lib/api.d.ts", "package-lock.json", "*.md"]
+  "ignorePatterns": [
+    "openapi.json",
+    "src/lib/api.d.ts",
+    "src/game/fixtures/*.json",
+    "package-lock.json",
+    "*.md"
+  ]
 }

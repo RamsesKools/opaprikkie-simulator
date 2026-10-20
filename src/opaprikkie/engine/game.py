@@ -119,8 +119,8 @@ def _roll_sequence(state: GameState, player: int, target: int) -> tuple[RollSequ
     matches = 0
     while True:
         taken = set_aside(ruleset, target, dice)
-        rolls.append(Roll(dice, taken, reset))
         found = len(taken) // combo_size
+        rolls.append(Roll(dice, taken, reset, found))
         matches += found
         remaining = len(dice) - len(taken)
         if not found or matches >= distance:
