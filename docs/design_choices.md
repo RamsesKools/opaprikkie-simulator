@@ -15,7 +15,7 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
    - Start stays disabled while a name is out of range or the game is being created.
    - Versus AI, the human is seat 1 and the AI seat 2.
 2. Dice-off, animated and explained on screen.
-   - Each player throws two dice in their colour from a [dice stack](#dice-stack) onto their throw area; the winner is shown once all dice have landed.
+   - Both players' peg boards are visible, and they throw two dice in their colour from a [dice stack](#dice-stack) into the same fixed-size throw area; each player's dice stay in their own lane, and the winner is shown once all dice have landed.
    - A human throws by clicking their stack, which throws by itself after 3 to 5 seconds, with a bar under it filling up for the countdown; the AI throws by itself after about a second.
    - On a tie, a message names the tied players, and only they throw again.
    - The winner's name shows larger and in their seat colour, as in "Roman wins the dice-off!", and their throw area glows in that colour.

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { Board } from "../components/board.tsx";
 import { Dice } from "../components/dice.tsx";
 import { Stack } from "../components/stack.tsx";
 import type { DiceOffRound, GameUpdate } from "../game/model.ts";
@@ -10,13 +11,12 @@ type ThrowerProps = {
   player: number;
   name: string;
   human: boolean;
-  dice: number[];
+  count: number;
   thrown: boolean;
-  won: boolean;
   onThrow: (player: number) => void;
 };
 
-function Thrower({ player, name, human, dice, thrown, won, onThrow }: ThrowerProps) {
+function Thrower({ player, name, human, count, thrown, onThrow }: ThrowerProps) {
   const [delay] = useState(() =>
     human
       ? timing.autoThrowMin + Math.random() * (timing.autoThrowMax - timing.autoThrowMin)
@@ -29,22 +29,14 @@ function Thrower({ player, name, human, dice, thrown, won, onThrow }: ThrowerPro
   }, [thrown, delay, player, onThrow]);
 
   return (
-    <section className={won ? "thrower won" : "thrower"} style={seatStyle(player)}>
+    <section className={`thrower player-${player}`} style={seatStyle(player)}>
       <h2>{name}</h2>
-      <div className="throwing">
-        <div className={thrown ? "stack-slot hidden" : "stack-slot"}>
-          {human && !thrown ? (
-            <Stack
-              count={dice.length}
-              player={player}
-              onThrow={() => onThrow(player)}
-              autoPress={delay}
-            />
-          ) : (
-            <Stack count={dice.length} player={player} />
-          )}
-        </div>
-        <div className="throw-area felt">{thrown && <Dice values={dice} player={player} />}</div>
+      <div className={thrown ? "stack-slot hidden" : "stack-slot"}>
+        {human && !thrown ? (
+          <Stack count={count} player={player} onThrow={() => onThrow(player)} autoPress={delay} />
+        ) : (
+          <Stack count={count} player={player} />
+        )}
       </div>
     </section>
   );
@@ -131,17 +123,42 @@ export function DiceOff({ update, onChooseFirst, onAiStarts }: Props) {
           ))}
         </div>
       )}
-      <div className="throwers">
-        {rolls.map(({ player, dice }) => (
-          <Thrower
-            key={`${round}:${player}`}
+      <div className="dice-off-stage">
+        <div className="throwers">
+          {rolls.map(({ player, dice }) => (
+            <Thrower
+              key={`${round}:${player}`}
+              player={player}
+              name={game.names[player]!}
+              human={game.controllers[player] === "human"}
+              count={dice.length}
+              thrown={thrown.includes(player)}
+              onThrow={throwFor}
+            />
+          ))}
+        </div>
+        <div
+          className={
+            winner === null ? "throw-area felt dice-off-area" : "throw-area felt dice-off-area won"
+          }
+          style={winner === null ? undefined : seatStyle(winner)}
+        >
+          {rolls.map(
+            ({ player, dice }) =>
+              thrown.includes(player) && (
+                <Dice key={`${round}:${player}`} values={dice} player={player} />
+              ),
+          )}
+        </div>
+      </div>
+      <div className="boards">
+        {game.pegs.map((pegs, player) => (
+          <Board
+            key={player}
             player={player}
             name={game.names[player]!}
-            human={game.controllers[player] === "human"}
-            dice={dice}
-            thrown={thrown.includes(player)}
-            won={player === winner}
-            onThrow={throwFor}
+            pegs={pegs}
+            active={player === winner}
           />
         ))}
       </div>
