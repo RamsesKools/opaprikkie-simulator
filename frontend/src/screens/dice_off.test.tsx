@@ -34,6 +34,7 @@ function update(phase: Phase, seat: number): GameUpdate {
         legal_targets: [],
         turn: 1,
         continuation: 0,
+        sequence: null,
       },
       winner: null,
       seed: null,

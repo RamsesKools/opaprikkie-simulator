@@ -124,6 +124,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/game/take": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Take */
+        post: operations["take_api_game_take_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/game/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop */
+        post: operations["stop_api_game_stop_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -274,12 +308,13 @@ export interface components {
             turn: number;
             /** Continuation */
             continuation: number;
+            sequence: components["schemas"]["SequenceInProgress"] | null;
         };
         /**
          * Phase
          * @enum {string}
          */
-        Phase: "naming" | "choosing_first_player" | "choosing_target" | "finished";
+        Phase: "naming" | "choosing_first_player" | "choosing_target" | "choosing_dice" | "finished";
         /** Roll */
         Roll: {
             /** Dice */
@@ -313,11 +348,37 @@ export interface components {
             /** Movement */
             movement: number;
         };
+        /**
+         * SequenceInProgress
+         * @description A roll sequence played by hand: the rolls taken so far and the throw on the table.
+         */
+        SequenceInProgress: {
+            /** Target */
+            target: number;
+            /** Rolls */
+            rolls: components["schemas"]["Roll"][];
+            /** Matches */
+            matches: number;
+            /** Dice */
+            dice: number[];
+            /** Reset */
+            reset: boolean;
+        };
         /** Session */
         Session: {
             /** Names */
             names: string[] | null;
             game: components["schemas"]["Game"] | null;
+        };
+        /**
+         * Take
+         * @description The dice to set aside for `target`, by their place in the throw.
+         */
+        Take: {
+            /** Target */
+            target: number;
+            /** Dice */
+            dice: number[];
         };
         /** Target */
         Target: {
@@ -725,6 +786,126 @@ export interface operations {
                 "application/json": components["schemas"]["Target"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameUpdate"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    take_api_game_take_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                opaprikkie_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Take"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameUpdate"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    stop_api_game_stop_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                opaprikkie_session?: string | null;
+            };
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

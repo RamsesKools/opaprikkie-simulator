@@ -1,6 +1,13 @@
 from opaprikkie.engine.dice import count_matches, set_aside
 from opaprikkie.engine.errors import IllegalAction, Rejection
-from opaprikkie.engine.game import choose_first_player, choose_target, name_players, new_game
+from opaprikkie.engine.game import (
+    choose_first_player,
+    choose_target,
+    name_players,
+    new_game,
+    stop,
+    take,
+)
 from opaprikkie.engine.log import (
     DiceOffRoll,
     DiceOffRound,
@@ -12,7 +19,7 @@ from opaprikkie.engine.log import (
 )
 from opaprikkie.engine.observation import LegalTarget, Observation, observe
 from opaprikkie.engine.ruleset import CLASSIC, EndRule, Ruleset, StartRule
-from opaprikkie.engine.state import GameState, Phase
+from opaprikkie.engine.state import GameState, Phase, SequenceInProgress
 from opaprikkie.engine.strategies import (
     BUILTIN_STRATEGIES,
     GreedyStrategy,
@@ -41,6 +48,7 @@ __all__ = [
     "Roll",
     "RollSequence",
     "Ruleset",
+    "SequenceInProgress",
     "SmartStrategy",
     "StartRule",
     "Strategy",
@@ -51,4 +59,6 @@ __all__ = [
     "new_game",
     "observe",
     "set_aside",
+    "stop",
+    "take",
 ]

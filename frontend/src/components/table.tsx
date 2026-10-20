@@ -13,6 +13,7 @@ type Props = {
   count: number;
   target: number | null;
   onThrow?: () => void;
+  onToggle?: (index: number) => void;
 };
 
 export function Table({
@@ -26,6 +27,7 @@ export function Table({
   count,
   target,
   onThrow,
+  onToggle,
 }: Props) {
   return (
     <div className="table">
@@ -34,7 +36,14 @@ export function Table({
           <Stack count={hand} player={player} {...(onThrow && { onThrow })} />
         </div>
         <div className="throw-area felt">
-          <Dice values={dice} player={player} setAside={setAside} rollKey={rollKey} slots={slots} />
+          <Dice
+            values={dice}
+            player={player}
+            setAside={setAside}
+            rollKey={rollKey}
+            slots={slots}
+            {...(onToggle && { onToggle })}
+          />
         </div>
       </div>
       <div className="saved">

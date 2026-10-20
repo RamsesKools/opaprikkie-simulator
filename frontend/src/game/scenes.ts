@@ -1,5 +1,5 @@
 import { strings } from "../lib/strings.ts";
-import type { Game, LogEntry, Pegs, RollSequence } from "./model.ts";
+import type { Game, LogEntry, Pegs, Roll, RollSequence } from "./model.ts";
 import { timing } from "./timing.ts";
 
 export type Tone = "info" | "oh_no" | "cue";
@@ -26,7 +26,20 @@ export type Scene = {
   ms: number;
 };
 
-export const openingKey = (turn: number, continuation: number) => `${turn}:${continuation}:0`;
+export const throwKey = (turn: number, continuation: number, throwIndex: number) =>
+  `${turn}:${continuation}:${throwIndex}`;
+
+export const openingKey = (turn: number, continuation: number) => throwKey(turn, continuation, 0);
+
+/** The dice in the bowl once `rolls` are taken; a reset throw empties it back onto the table. */
+export function bowl(rolls: Roll[], reset: boolean): number[] {
+  let kept: number[] = [];
+  for (const roll of rolls) {
+    if (roll.reset) kept = [];
+    kept = [...kept, ...roll.set_aside.map((index) => roll.dice[index]!)];
+  }
+  return reset ? [] : kept;
+}
 
 const allSlots = (dice: number[]) => dice.map((_, index) => index);
 
@@ -54,7 +67,8 @@ const readyScene = (scene: Ready): Scene => ({
   ms: timing.ready,
 });
 
-export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[] {
+/** `thrown` counts the throws of the first sequence already on the table, from a manual turn. */
+export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game, thrown = 0): Scene[] {
   const scenes: Scene[] = [];
   let pegs = start;
   const turnLog = logs.filter((entry) => entry.kind !== "dice_off");
@@ -93,6 +107,7 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
       return;
     }
     const { target, rolls, movement } = entry;
+    const onTable = index === 0 ? thrown : 0;
     let kept: number[] = [];
     let count = 0;
     for (const [throwIndex, roll] of rolls.entries()) {
@@ -100,23 +115,25 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
       if (roll.reset) kept = [];
       const message = roll.reset ? strings.game.reset : strings.game.goesFor(name, target);
       const shared = { ...base, pegs, kept, count, target, message };
-      if (throwIndex > 0) scenes.push(readyScene({ ...shared, hand: roll.dice.length }));
-      scenes.push({
-        ...shared,
-        dice: roll.dice,
-        throwKey: `${entry.turn}:${entry.continuation}:${throwIndex}`,
-        slots: allSlots(roll.dice),
-        setAside: roll.set_aside,
-        hand: 0,
-        ms: timing.roll,
-      });
+      if (throwIndex >= Math.max(onTable, 1)) {
+        scenes.push(readyScene({ ...shared, hand: roll.dice.length }));
+      }
+      if (throwIndex >= onTable - 1)
+        scenes.push({
+          ...shared,
+          dice: roll.dice,
+          throwKey: throwKey(entry.turn, entry.continuation, throwIndex),
+          slots: allSlots(roll.dice),
+          setAside: roll.set_aside,
+          hand: 0,
+          ms: timing.roll,
+        });
       kept = [...kept, ...roll.set_aside.map((index) => roll.dice[index]!)];
       count += roll.matches;
     }
     const last = rolls.at(-1)!;
     const slots = allSlots(last.dice).filter((index) => !last.set_aside.includes(index));
     const leftover = slots.map((index) => last.dice[index]!);
-    const throwKey = `${entry.turn}:${entry.continuation}:${rolls.length - 1}`;
     pegs = pegs.map((board, seat) =>
       seat === entry.player ? { ...board, [target]: board[target]! + movement } : board,
     );
@@ -124,7 +141,7 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
       ...base,
       pegs,
       dice: leftover,
-      throwKey,
+      throwKey: throwKey(entry.turn, entry.continuation, rolls.length - 1),
       slots,
       setAside: [],
       hand: 0,
@@ -148,6 +165,22 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
     }
   });
   const observation = next.observation;
+  const sequence = observation?.sequence;
+  if (next.phase === "choosing_dice" && observation && sequence) {
+    const name = next.names[observation.seat]!;
+    scenes.push(
+      readyScene({
+        pegs,
+        player: observation.seat,
+        turn: observation.turn,
+        hand: sequence.dice.length,
+        kept: bowl(sequence.rolls, sequence.reset),
+        count: sequence.matches,
+        target: sequence.target,
+        message: sequence.reset ? strings.game.reset : strings.game.throws(name),
+      }),
+    );
+  }
   if (next.phase === "choosing_target" && observation) {
     const player = observation.seat;
     if (next.controllers[player] === "human") {

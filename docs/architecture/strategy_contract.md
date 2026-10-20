@@ -12,7 +12,9 @@ The rules behind each choice are in [game rules](../game_rules.md).
 - the opening roll
 - legal targets, each with `matches` (raw count in the opening roll), `guaranteed_moves` (clamped to the remaining distance), and `set_aside` (the indices of the opening-roll dice it keeps)
 - turn number and continuation index
+- `sequence`: during a sequence played by hand, its target, the rolls taken so far, their `matches`, the `dice` on the table, and whether they're a six-dice `reset`; otherwise `None`
 
+During such a sequence, the legal targets hold only its target, for the dice on the table, with `guaranteed_moves` clamped to what's left after the matches taken.
 The observing seat is the player choosing next: the dice-off winner, then the player on turn.
 Outside those choice points `observe` raises `wrong_phase`.
 
@@ -27,6 +29,7 @@ class Strategy(Protocol):
 ```
 
 - Strategies are pure: they never touch the state or roll dice for the game.
+- They only choose targets, so their sequences always run automatically; `take` and `stop` are for human players ([ADR 0006](../adr/0006_imperfect_play_without_passing.md)).
 - The caller supplies `rng`; the backend derives it from the game seed, so AI games replay from the seed alone.
 - Built-in strategies live in the engine; external ones live in the simulator or anywhere else and use the same calls.
 
@@ -56,11 +59,12 @@ class Strategy(Protocol):
 
 - The engine is the only validation point: `IllegalAction` carries a `code`, a `message`, and `hints`, with the state unchanged and no turn used.
 - HTTP returns 422 with `{code, message, ...hints}`:
-  - `wrong_phase` with the current `phase`
-  - `illegal_target` with `legal_targets` and a reason: `topped`, `no_match`, or `not_a_target` (which includes anything that isn't an int)
+  - `wrong_phase` with the current `phase`, including a stop before the first take
+  - `illegal_target` with `legal_targets` and a reason: `topped`, `no_match`, `not_a_target` (which includes anything that isn't an int), or `locked` (a take for another target than the sequence's)
+  - `illegal_dice` for a take, with a reason: `not_dice` (not a list of distinct places in the roll on the table), `empty`, or `no_match` (a die that isn't part of a match for the target); the target is checked first
   - `invalid_names` with the failing `rule`: `type`, `count`, or `blank` (names are stripped, and duplicates are fine)
   - `invalid_player` for a first player that isn't an int in the game, with the number of `players`
-- The UI only offers legal choices, so it never sees these.
+- With hints on, the UI only offers legal choices; with hints off, it shows the rejection's message.
 - The simulator treats a rejection as a strategy bug and fails fast: no retry, no fallback.
 
 ## Seeds

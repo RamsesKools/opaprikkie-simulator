@@ -90,6 +90,14 @@ def game_routes(settings: Settings, clock: Callable[[], float]) -> APIRouter:
     async def choose_target(request: models.Target, session: CurrentSession) -> models.GameUpdate:
         return update(session, *games.choose_target(current_game(session), request.target))
 
+    @router.post("/game/take")
+    async def take(request: models.Take, session: CurrentSession) -> models.GameUpdate:
+        return update(session, *games.take(current_game(session), request.target, request.dice))
+
+    @router.post("/game/stop")
+    async def stop(session: CurrentSession) -> models.GameUpdate:
+        return update(session, *games.stop(current_game(session)))
+
     @router.get("/game")
     async def read_game(session: CurrentSession) -> models.Game:
         return models.Game.of(current_game(session), settings.dev_mode)

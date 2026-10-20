@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { strings } from "../lib/strings.ts";
-import type { Game, LogEntry, RollSequence } from "./model.ts";
+import type { Game, LogEntry, Roll, RollSequence } from "./model.ts";
 import { buildScenes, openingKey } from "./scenes.ts";
 
 const board = (rows: Record<number, number> = {}) => ({ 1: 0, 7: 0, ...rows });
@@ -19,6 +19,7 @@ const game = (at: { seat: number; continuation?: number } | null): Game => ({
     legal_targets: [],
     turn: 2,
     continuation: at.continuation ?? 0,
+    sequence: null,
   },
   winner: at ? null : 0,
   seed: null,
@@ -267,4 +268,63 @@ test("keys the AI's opening roll and a dead turn like the opening roll on the ta
 
   expect(scenes[1]).toMatchObject({ message: strings.game.aiThinking("Opa"), throwKey: "1:0:0" });
   expect(scenes.at(-1)).toMatchObject({ tone: "oh_no", throwKey: openingKey(2, 0) });
+});
+
+const manual = (rolls: Roll[], dice: number[], reset = false): Game => {
+  const opened = game({ seat: 0 });
+  const matches = rolls.reduce((sum, roll) => sum + roll.matches, 0);
+  const sequence = { target: 1, rolls, matches, dice, reset };
+  return { ...opened, phase: "choosing_dice", observation: { ...opened.observation!, sequence } };
+};
+
+test("skips the throws a manual sequence already showed", () => {
+  const ended = sequence({
+    rolls: [
+      { dice: [1, 2, 3, 4, 5, 1], set_aside: [0], reset: false, matches: 1 },
+      { dice: [1, 2, 3, 4, 5], set_aside: [0], reset: false, matches: 1 },
+      { dice: [2, 3, 4, 5], set_aside: [], reset: false, matches: 0 },
+    ],
+  });
+
+  const scenes = buildScenes([board(), board()], [ended], game({ seat: 1 }), 2);
+
+  expect(scenes.map(({ dice, hand, kept }) => ({ dice, hand, kept }))).toEqual([
+    { dice: [1, 2, 3, 4, 5], hand: 0, kept: [1] },
+    { dice: [], hand: 4, kept: [1, 1] },
+    { dice: [2, 3, 4, 5], hand: 0, kept: [1, 1] },
+    { dice: [2, 3, 4, 5], hand: 0, kept: [1, 1] },
+  ]);
+  expect(scenes[0]).toMatchObject({ setAside: [0], throwKey: "1:0:1", ready: false });
+});
+
+test("waits with the rest of a manual sequence in the stack", () => {
+  const rolls = [
+    { dice: [1, 1, 3, 4, 5, 1], set_aside: [0, 1], reset: false, matches: 2 },
+    { dice: [1, 1, 2, 3], set_aside: [0], reset: false, matches: 1 },
+  ];
+
+  const scenes = buildScenes([board(), board()], [], manual(rolls, [1, 6, 6]));
+
+  expect(scenes).toEqual([
+    expect.objectContaining({
+      player: 0,
+      message: strings.game.throws("Ann"),
+      ready: true,
+      dice: [],
+      hand: 3,
+      kept: [1, 1, 1],
+      count: 3,
+      target: 1,
+    }),
+  ]);
+});
+
+test("empties the bowl when a manual sequence takes every die", () => {
+  const rolls = [
+    { dice: [1, 1, 1, 1, 1, 1], set_aside: [0, 1, 2, 3, 4, 5], reset: false, matches: 6 },
+  ];
+
+  const [scene] = buildScenes([board(), board()], [], manual(rolls, [1, 2, 3, 4, 5, 6], true));
+
+  expect(scene).toMatchObject({ message: strings.game.reset, hand: 6, kept: [], count: 6 });
 });

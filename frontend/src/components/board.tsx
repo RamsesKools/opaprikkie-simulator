@@ -8,7 +8,9 @@ type Props = {
   name: string;
   pegs: Pegs;
   active?: boolean;
+  /** Columns that glow; they're also the pickable ones unless `pickable` says otherwise. */
   legal?: number[];
+  pickable?: number[];
   highlight?: number | null;
   preview?: { target: number; row: number } | null;
   onPick?: (target: number) => void;
@@ -23,6 +25,7 @@ export function Board({
   pegs,
   active = false,
   legal = [],
+  pickable = legal,
   highlight,
   preview,
   onPick,
@@ -41,9 +44,9 @@ export function Board({
       <div className="columns">
         {targets.map((target) => {
           const row = pegs[target]!;
-          const pickable = legal.includes(target) && onPick !== undefined;
+          const enabled = pickable.includes(target) && onPick !== undefined;
           const classes = ["column"];
-          if (pickable) classes.push("legal");
+          if (enabled && legal.includes(target)) classes.push("legal");
           if (highlight === target) classes.push("highlight");
           if (row === TOP_ROW) classes.push("topped");
           return (
@@ -51,12 +54,12 @@ export function Board({
               key={target}
               type="button"
               className={classes.join(" ")}
-              disabled={!pickable}
+              disabled={!enabled}
               aria-label={strings.game.column(target, row)}
               onClick={() => onPick?.(target)}
-              onMouseEnter={() => pickable && onHover?.(target)}
+              onMouseEnter={() => enabled && onHover?.(target)}
               onMouseLeave={() => onHover?.(null)}
-              onFocus={() => pickable && onHover?.(target)}
+              onFocus={() => enabled && onHover?.(target)}
               onBlur={() => onHover?.(null)}
             >
               {rows.map((cell) => (

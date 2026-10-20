@@ -11,6 +11,7 @@ export type Mode = "hot_seat" | "versus_ai";
 export type Pegs = Schemas["Game"]["pegs"][number];
 export type LegalTarget = Schemas["LegalTarget"];
 export type Observation = Schemas["Observation"];
+export type SequenceInProgress = Schemas["SequenceInProgress"];
 export type Game = Schemas["Game"];
 export type DiceOffRound = Schemas["DiceOffRound"];
 export type Roll = Schemas["Roll"];
@@ -47,4 +48,7 @@ export interface GameClient {
   start(setup: GameSetup): Promise<GameUpdate>;
   chooseFirstPlayer(player: number): Promise<GameUpdate>;
   chooseTarget(target: number): Promise<GameUpdate>;
+  /** Sets aside the dice at these places in the throw for `target`, then throws the rest. */
+  take(target: number, dice: number[]): Promise<GameUpdate>;
+  stop(): Promise<GameUpdate>;
 }

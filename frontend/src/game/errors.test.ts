@@ -15,7 +15,19 @@ test("says when the server can't be reached", () => {
   expect(errorMessage(new GameError("network", "offline"))).toBe(strings.errors.network);
 });
 
-test.each([new GameError("illegal_target", "nope"), new Error("boom"), "boom"])(
+test.each(["wrong_phase", "illegal_target", "illegal_dice"])(
+  "shows the rejection the API gave for %s as a sentence",
+  (code) => {
+    expect(errorMessage(new GameError(code, "5 isn't a legal target"))).toBe(
+      "5 isn't a legal target.",
+    );
+    expect(errorMessage(new GameError(code, "choose at least one match"))).toBe(
+      "Choose at least one match.",
+    );
+  },
+);
+
+test.each([new GameError("internal_error", "nope"), new Error("boom"), "boom"])(
   "falls back to a generic message for %s",
   (error) => {
     expect(isLost(error)).toBe(false);

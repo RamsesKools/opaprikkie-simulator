@@ -133,6 +133,23 @@ test("posts the first player and the target", async () => {
   expect(calls.map(({ body }) => body)).toEqual([{ player: 1 }, { target: 7 }]);
 });
 
+test("posts the dice to take and a stop", async () => {
+  const { client, calls } = serve({
+    "POST /api/game/take": () => ({ status: 200, body: update("choosing_dice") }),
+    "POST /api/game/stop": () => ({
+      status: 200,
+      body: update("choosing_target", ["roll_sequence"]),
+    }),
+  });
+
+  expect((await client.take(6, [0, 2])).game.phase).toBe("choosing_dice");
+  expect((await client.stop()).logs).toHaveLength(1);
+  expect(calls).toEqual([
+    { route: "POST /api/game/take", body: { target: 6, dice: [0, 2] } },
+    { route: "POST /api/game/stop", body: undefined },
+  ]);
+});
+
 test("rejects with the API's error code", async () => {
   const { client } = serve({ "POST /api/game/target": () => failure(422, "illegal_target") });
 

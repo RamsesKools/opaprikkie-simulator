@@ -61,5 +61,7 @@ export function createApiClient(options: Options = {}): GameClient {
     },
     chooseFirstPlayer: (player) => call(api.POST("/api/game/first_player", { body: { player } })),
     chooseTarget: (target) => call(api.POST("/api/game/target", { body: { target } })),
+    take: (target, dice) => call(api.POST("/api/game/take", { body: { target, dice } })),
+    stop: () => call(api.POST("/api/game/stop")),
   };
 }

@@ -29,9 +29,18 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
    - With "Play turns automatically" off, a human player clicks their stack for every throw: the opening roll, each roll after it, and a fresh roll after topping a peg.
      The AI always throws by itself.
      Switching it off mid-game never hides dice already on the table; the next throw waits.
-   - The player picks a target by clicking its column on their own board; only legal columns are clickable and glow.
-   - Hovering or focusing a legal column raises the dice that form its matches, and shows a ghost peg on the row it's guaranteed to reach from the opening roll alone.
+   - With automatic turns on, the player picks a target by clicking its column on their own board; with [hints](#hints) on, only legal columns are clickable and glow.
+   - With hints on, hovering or focusing a legal column raises the dice that form its matches, and shows a ghost peg on the row it's guaranteed to reach from the opening roll alone.
      When that row is the top, the dashed ghost also gets a gold halo.
+   - With automatic turns off, a human plays the roll sequence by hand ([game rules](game_rules.md#roll-sequence)):
+     - Clicking dice in the throw area selects them, raised and outlined; clicking again deselects.
+     - With hints on, a row under the throw area lists a "take" option for every target the selection can form, like "Take 2 x 6" and "Take 1 x 12" for two sixes, and those lanes glow; clicking either takes the dice for that target.
+       A target only counts when every selected die is part of one of its matches.
+     - Taking sets the dice aside into the bowl and locks the target: its lane stays lit in the seat colour while the player throws the rest from the stack, selects more matches, and takes them again.
+     - After the first take, a "Stop" button next to the options ends the sequence, and the peg moves by the matches taken.
+       There's no stop before the first take, since a turn with a legal target can't pass.
+     - Once dice are selected, hovering a column they can be taken for shows the ghost peg where taking them would land; without a selection there's no preview.
+     - Switching automatic turns on mid-sequence takes every match from then on.
    - Each roll of the sequence shows in turn, with set-aside dice raised and outlined, then the peg slides up.
    - Set-aside dice move to a saved bowl next to the throw area, with the number of matches so far underneath, like "3 matches for 7".
      The bowl stays filled until the turn passes or the peg reaches the top; a six-dice reset empties it back onto the table, but the count carries on.
@@ -68,6 +77,7 @@ A pile of the dice the player has left to throw, left of the throw area, in a py
 - Its dice take the player's colour and show fixed faces; they never tumble.
 - Once thrown, it's empty while the dice are in the throw area, keeping its place so nothing shifts.
 - `components/stack.tsx` takes a dice count, a seat, an optional `onThrow`, and an optional auto-press time for the countdown bar.
+- Below 540 px, where the side columns can't hold it, the stack sits in a row with the throw area, and the bowl with its count moves into a row underneath.
 
 ## Colours
 
@@ -81,7 +91,17 @@ A pile of the dice the player has left to throw, left of the throw area, in a py
 
 - A wooden bar across the top with the title and the "Rules" button, on every screen.
 - Outside the menu, a "New Game" button sits right of the title.
-- During the game it also holds the "Play turns automatically" toggle, on by default and kept for the next game.
+- During the game it also holds the "Play turns automatically" and "Show hints" toggles, both on by default and kept for the next game.
+
+## Hints
+
+"Show hints" in the header turns the help in picking on or off; it's a frontend setting only.
+
+- On: legal columns glow, manual turns list "take" options and light their lanes, and hovering previews a pick.
+- Off: no glowing columns, no "take" options, and no preview in automatic turns.
+  Every column on the player's board is clickable: in automatic turns it chooses that target, in manual turns it takes the selected dice for it.
+  The API judges the choice, and a rejection shows its message, like "Not every chosen die is part of a match for 5."
+- The locked lane of a sequence in progress stays lit either way, as does the ghost peg for selected dice.
 
 ## Rules booklet
 
@@ -121,6 +141,7 @@ A pile of the dice the player has left to throw, left of the throw area, in a py
 - A failed action rejects with a `GameError` carrying the API's `code`, and `game/errors.ts` picks the message:
   - `network`: "Can't reach the server. Check your connection and try again."
   - `no_session` or `no_game`: the game is lost, so the app goes back to the menu, with the last names kept, saying "Your game was lost. Start a new one."
+  - a rejected choice: the API's message, as above
   - anything else: "Something went wrong."
 - Except for a lost game, the player stays put and can try again.
 - When the session can't load because the server is unreachable, the menu shows with the network message; any other failure there leaves a clean menu.
@@ -129,7 +150,9 @@ A pile of the dice the player has left to throw, left of the throw area, in a py
   - waiting for the dice-off winner's choice: the dice-off screen with the "Who starts?" buttons, without replaying the throws
   - waiting for a target: the game screen at that choice
   - no game, a finished one, or one never named: the menu, with the names prefilled
-- Unit tests use a fixture client that replays a game recorded from the engine; each choice point offers only the recorded target.
+- Unit tests use a fixture client that replays a game recorded from the engine; each choice point offers only the recorded target, and manual turns aren't scripted.
+- The "take" options come from `game/matching.ts`, which mirrors the engine's matching only to decide what to offer; the API stays the judge.
+- A rejection of a choice (`wrong_phase`, `illegal_target`, `illegal_dice`) shows the API's message as a sentence, so hints off can teach the rules.
 
 ## Version handshake
 

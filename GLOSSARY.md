@@ -18,10 +18,17 @@ A named set of game dimensions and rules the engine plays by; `CLASSIC` is the o
 The roll of all six dice that the target choice is based on; it is also the first roll of that target's roll sequence, so its matching dice count toward movement.
 
 **Set-aside dice**:
-The dice or disjoint pairs matching the chosen target, removed automatically after each roll; only the remaining dice are rerolled, and all six are rolled again once every die is set aside.
+The dice or disjoint pairs matching the chosen target, removed after each roll, automatically or by the player's take; only the remaining dice are rerolled, and all six are rolled again once every die is set aside.
 
 **Roll sequence**:
-The automatic rolls for one chosen target, from the opening roll until no match, too few dice, or the peg is topped.
+The rolls for one chosen target, from the opening roll until no match, too few dice, the peg is topped, or the player stops; it runs automatically or by hand.
+
+**Take**:
+Setting aside chosen dice from the roll on the table for the target, each part of a match; the first take, from the opening roll, chooses the target.
+A player may take fewer matches than they rolled, but must take at least one from an opening roll with a legal target.
+
+**Stop**:
+Ending a roll sequence played by hand before it ends by itself; the peg moves by the matches taken so far.
 
 **Continuation**:
 A fresh opening roll and target choice in the same turn, after the player topped a peg.
@@ -47,6 +54,9 @@ A decision-maker that selects one legal target from a game observation.
 
 **Controller**:
 Who decides for a seat: `human` (the caller) or `ai` (a built-in strategy played by the backend).
+
+**Hints**:
+The UI's help in picking: glowing legal columns, "take" options, and the hover preview; a frontend setting only.
 
 **Hot-seat game**:
 A game where two human players take turns using the same browser.

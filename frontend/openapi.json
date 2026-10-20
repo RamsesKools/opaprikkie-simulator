@@ -574,6 +574,168 @@
           }
         }
       }
+    },
+    "/api/game/take": {
+      "post": {
+        "summary": "Take",
+        "operationId": "take_api_game_take_post",
+        "parameters": [
+          {
+            "name": "opaprikkie_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Opaprikkie Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Take"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameUpdate"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        }
+      }
+    },
+    "/api/game/stop": {
+      "post": {
+        "summary": "Stop",
+        "operationId": "stop_api_game_stop_post",
+        "parameters": [
+          {
+            "name": "opaprikkie_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Opaprikkie Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameUpdate"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1017,6 +1179,16 @@
           "continuation": {
             "type": "integer",
             "title": "Continuation"
+          },
+          "sequence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SequenceInProgress"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -1027,7 +1199,8 @@
           "opening_roll",
           "legal_targets",
           "turn",
-          "continuation"
+          "continuation",
+          "sequence"
         ],
         "title": "Observation"
       },
@@ -1037,6 +1210,7 @@
           "naming",
           "choosing_first_player",
           "choosing_target",
+          "choosing_dice",
           "finished"
         ],
         "title": "Phase"
@@ -1127,6 +1301,46 @@
         ],
         "title": "RollSequence"
       },
+      "SequenceInProgress": {
+        "properties": {
+          "target": {
+            "type": "integer",
+            "title": "Target"
+          },
+          "rolls": {
+            "items": {
+              "$ref": "#/components/schemas/Roll"
+            },
+            "type": "array",
+            "title": "Rolls"
+          },
+          "matches": {
+            "type": "integer",
+            "title": "Matches"
+          },
+          "dice": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Dice"
+          },
+          "reset": {
+            "type": "boolean",
+            "title": "Reset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target",
+          "rolls",
+          "matches",
+          "dice",
+          "reset"
+        ],
+        "title": "SequenceInProgress",
+        "description": "A roll sequence played by hand: the rolls taken so far and the throw on the table."
+      },
       "Session": {
         "properties": {
           "names": {
@@ -1160,6 +1374,29 @@
           "game"
         ],
         "title": "Session"
+      },
+      "Take": {
+        "properties": {
+          "target": {
+            "type": "integer",
+            "title": "Target"
+          },
+          "dice": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Dice"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "target",
+          "dice"
+        ],
+        "title": "Take",
+        "description": "The dice to set aside for `target`, by their place in the throw."
       },
       "Target": {
         "properties": {

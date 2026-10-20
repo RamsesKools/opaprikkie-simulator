@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from opaprikkie.engine.frozen_map import FrozenMap
+from opaprikkie.engine.log import Roll
 from opaprikkie.engine.ruleset import Ruleset
 
 
@@ -10,7 +11,22 @@ class Phase(StrEnum):
     NAMING = "naming"
     CHOOSING_FIRST_PLAYER = "choosing_first_player"
     CHOOSING_TARGET = "choosing_target"
+    CHOOSING_DICE = "choosing_dice"
     FINISHED = "finished"
+
+
+@dataclass(frozen=True)
+class SequenceInProgress:
+    """A roll sequence played by hand: the rolls taken so far and the throw on the table."""
+
+    target: int
+    rolls: tuple[Roll, ...]
+    dice: tuple[int, ...]
+    reset: bool
+
+    @property
+    def matches(self) -> int:
+        return sum(roll.matches for roll in self.rolls)
 
 
 @dataclass(frozen=True)
@@ -27,6 +43,7 @@ class GameState:
     turn: int = 0
     continuation: int = 0
     opening_roll: tuple[int, ...] = ()
+    sequence: SequenceInProgress | None = None
     winner: int | None = None
 
     def __post_init__(self) -> None:

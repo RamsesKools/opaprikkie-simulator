@@ -586,6 +586,32 @@ button.primary:disabled {
   transform: translateY(-6px);
 }
 
+button.die {
+  border: 0;
+  cursor: pointer;
+}
+
+button.die:hover {
+  transform: translateY(-3px);
+}
+
+button.die.set-aside:hover {
+  transform: translateY(-6px);
+}
+
+button.die:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.takes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+}
+
 .pip.on {
   margin: 2px;
   border-radius: 50%;
@@ -870,6 +896,45 @@ button.primary:disabled {
 @keyframes glow {
   50% {
     background: rgb(255 255 255 / 40%);
+  }
+}
+
+/* Below this the side columns can't hold the stack and the bowl, so they move into rows. */
+@media (max-width: 540px) {
+  .table {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .table .throwing {
+    display: flex;
+    grid-column: 1;
+    width: auto;
+  }
+
+  .table .stack-slot {
+    position: static;
+    transform: none;
+  }
+
+  .saved {
+    grid-column: 1;
+    flex-direction: row;
+    gap: 12px;
+  }
+
+  .bowl {
+    width: 124px;
+    height: 124px;
+    padding: 10px;
+  }
+
+  .saved-count {
+    width: 8em;
+  }
+
+  .columns {
+    gap: 1px;
   }
 }
 

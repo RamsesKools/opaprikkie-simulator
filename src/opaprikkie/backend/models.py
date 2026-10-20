@@ -13,6 +13,23 @@ class LegalTarget(BaseModel):
     set_aside: list[int]
 
 
+class Roll(BaseModel):
+    dice: list[int]
+    set_aside: list[int]
+    reset: bool
+    matches: int
+
+
+class SequenceInProgress(BaseModel):
+    """A roll sequence played by hand: the rolls taken so far and the throw on the table."""
+
+    target: int
+    rolls: list[Roll]
+    matches: int
+    dice: list[int]
+    reset: bool
+
+
 class Observation(BaseModel):
     ruleset: str
     seat: int
@@ -21,9 +38,11 @@ class Observation(BaseModel):
     legal_targets: list[LegalTarget]
     turn: int
     continuation: int
+    sequence: SequenceInProgress | None
 
     @classmethod
     def of(cls, observation: engine.Observation) -> "Observation":
+        sequence = observation.sequence
         return cls(
             ruleset=observation.ruleset.name,
             seat=observation.seat,
@@ -32,6 +51,15 @@ class Observation(BaseModel):
             legal_targets=[LegalTarget(**vars(t)) for t in observation.legal_targets],
             turn=observation.turn,
             continuation=observation.continuation,
+            sequence=None
+            if sequence is None
+            else SequenceInProgress(
+                target=sequence.target,
+                rolls=[Roll(**vars(roll)) for roll in sequence.rolls],
+                matches=sequence.matches,
+                dice=list(sequence.dice),
+                reset=sequence.reset,
+            ),
         )
 
 
@@ -43,13 +71,6 @@ class DiceOffRoll(BaseModel):
 class DiceOffRound(BaseModel):
     kind: Literal["dice_off"]
     rolls: list[DiceOffRoll]
-
-
-class Roll(BaseModel):
-    dice: list[int]
-    set_aside: list[int]
-    reset: bool
-    matches: int
 
 
 class RollSequence(BaseModel):
@@ -110,8 +131,8 @@ class Game(BaseModel):
 
 
 def _observation(state: engine.GameState) -> Observation | None:
-    choosing = state.phase in (engine.Phase.CHOOSING_FIRST_PLAYER, engine.Phase.CHOOSING_TARGET)
-    return Observation.of(engine.observe(state)) if choosing else None
+    resting = state.phase in (engine.Phase.NAMING, engine.Phase.FINISHED)
+    return None if resting else Observation.of(engine.observe(state))
 
 
 class GameUpdate(BaseModel):
@@ -149,6 +170,7 @@ class Request(BaseModel):
 # Typed in the schema but passed on as sent: the engine is the only validator.
 Integer = Annotated[Any, WithJsonSchema({"type": "integer"})]
 Strings = Annotated[Any, WithJsonSchema({"type": "array", "items": {"type": "string"}})]
+Integers = Annotated[Any, WithJsonSchema({"type": "array", "items": {"type": "integer"}})]
 
 
 class NewGame(Request):
@@ -176,3 +198,10 @@ class FirstPlayer(Request):
 
 class Target(Request):
     target: Integer
+
+
+class Take(Request):
+    """The dice to set aside for `target`, by their place in the throw."""
+
+    target: Integer
+    dice: Integers

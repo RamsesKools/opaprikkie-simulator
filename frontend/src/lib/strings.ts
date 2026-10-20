@@ -3,6 +3,7 @@ export const strings = {
   rules: "Rules",
   newGame: "New Game",
   autoPlay: "Play turns automatically",
+  hints: "Show hints",
   close: "Close",
   stale: "A new version of Opa Prikkie is out.",
   reload: "Reload",
@@ -33,6 +34,11 @@ export const strings = {
   game: {
     turn: (turn: number, name: string) => `Turn ${turn}: ${name}`,
     pick: (name: string) => `${name}, pick a target.`,
+    selectDice: (name: string, hints: boolean) =>
+      hints ? `${name}, select dice to take.` : `${name}, select dice, then click their column.`,
+    takeMore: (name: string, target: number) => `${name}, take more for ${target} or stop.`,
+    take: (matches: number, target: number) => `Take ${matches} x ${target}`,
+    stop: "Stop",
     throwPrompt: (name: string) => `${name}, throw the dice!`,
     throws: (name: string) => `${name} throws the dice.`,
     aiThinking: (name: string) => `${name} is thinking...`,
@@ -51,6 +57,7 @@ export const strings = {
     board: (name: string) => `${name}'s board`,
     column: (target: number, row: number) => `Target ${target}, row ${row}`,
     dice: (values: number[]) => `Dice: ${values.join(", ")}`,
+    die: (value: number) => `Die ${value}`,
     stack: (count: number) => `${count} ${count === 1 ? "die" : "dice"} left to throw`,
     throwStack: (count: number) => `Throw ${count === 1 ? "the die" : `${count} dice`}`,
     seed: (seed: number | string) => `Seed: ${seed}`,
@@ -78,7 +85,7 @@ export const strings = {
       },
       {
         heading: "Your turn",
-        text: "You roll all six dice and pick one peg that matches. Then you keep rolling for that peg, or the game does it for you when turns play automatically.",
+        text: "You roll all six dice and pick one peg that matches. Then you keep rolling for that peg, or the game does it for you when turns play automatically. Playing by hand, you pick the dice to set aside: you may take fewer matches than you rolled, or stop after any roll, but you must take at least one match from your opening roll.",
       },
       {
         heading: "Matching",

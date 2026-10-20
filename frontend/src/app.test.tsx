@@ -115,13 +115,32 @@ test("toggles automatic turns from the header during the game", async () => {
   await until(() => screen.queryByText(strings.game.pick("Player 1")));
   expect(toggle()).toBeChecked();
   fireEvent.click(toggle()!);
-  expect(screen.getByText(strings.game.pick("Player 1"))).toBeInTheDocument();
+  expect(screen.getByText(strings.game.selectDice("Player 1", true))).toBeInTheDocument();
+  fireEvent.click(toggle()!);
   fireEvent.click(legalTarget()!);
+  fireEvent.click(toggle()!);
 
   const throwStack = () => screen.queryByRole("button", { name: /^Throw/ });
   await until(throwStack);
   fireEvent.click(toggle()!);
   expect(throwStack()).not.toBeInTheDocument();
+}, 60_000);
+
+test("toggles hints from the header during the game", async () => {
+  await renderApp();
+  const toggle = () => screen.queryByRole("checkbox", { name: strings.hints });
+  expect(toggle()).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") })),
+  );
+
+  await until(() => screen.queryByText(strings.game.pick("Player 1")));
+  expect(toggle()).toBeChecked();
+  expect(document.querySelectorAll(".column.legal")).not.toHaveLength(0);
+  fireEvent.click(toggle()!);
+
+  expect(document.querySelectorAll(".column.legal")).toHaveLength(0);
 }, 60_000);
 
 test("opens and closes the rules booklet", async () => {
@@ -339,6 +358,32 @@ test("resumes a game in play on reload", async () => {
   ).toBeInTheDocument();
   fireEvent.click(legalTarget()!);
   expect(chooseTarget).toHaveBeenCalledExactlyOnceWith(game.observation!.legal_targets[0]!.target);
+});
+
+test("resumes a sequence in progress on reload, playing it on automatically", async () => {
+  const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
+  const opened = scriptedGame.branches[0]!.steps[0]!.game;
+  const observation = opened.observation!;
+  const sequence = {
+    target: 2,
+    rolls: [{ dice: observation.opening_roll, set_aside: [0], reset: false, matches: 1 }],
+    matches: 1,
+    dice: [2, 3, 4, 5, 1],
+    reset: false,
+  };
+  const game = {
+    ...opened,
+    phase: "choosing_dice" as const,
+    observation: {
+      ...observation,
+      legal_targets: [{ target: 2, matches: 1, guaranteed_moves: 1, set_aside: [0] }],
+      sequence,
+    },
+  };
+  await resumeWith(saved(game), { take });
+
+  await until(() => (take.mock.calls.length ? true : null));
+  expect(take).toHaveBeenCalledExactlyOnceWith(2, [0]);
 });
 
 test("resumes the dice-off winner's choice on reload", async () => {

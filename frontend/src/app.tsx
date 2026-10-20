@@ -26,7 +26,9 @@ function prefill(draft: Draft, { names, game }: Session): Draft {
 function resumed(game: Game | null): Screen {
   if (game?.phase === "choosing_first_player")
     return { kind: "dice_off", update: { game, logs: [] } };
-  if (game?.phase === "choosing_target") return { kind: "game", update: { game, logs: [] } };
+  if (game?.phase === "choosing_target" || game?.phase === "choosing_dice") {
+    return { kind: "game", update: { game, logs: [] } };
+  }
   return { kind: "menu" };
 }
 
@@ -42,6 +44,7 @@ export function App({ client }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [autoPlay, setAutoPlay] = useState(true);
+  const [hints, setHints] = useState(true);
 
   // Runs again after every failure, so a redeploy behind an open tab shows the reload banner.
   const handshake = useCallback(() => {
@@ -131,14 +134,24 @@ export function App({ client }: Props) {
         </div>
         <div className="controls">
           {screen.kind === "game" && (
-            <label className="auto-play">
-              <input
-                type="checkbox"
-                checked={autoPlay}
-                onChange={(event) => setAutoPlay(event.target.checked)}
-              />
-              {strings.autoPlay}
-            </label>
+            <>
+              <label className="auto-play">
+                <input
+                  type="checkbox"
+                  checked={autoPlay}
+                  onChange={(event) => setAutoPlay(event.target.checked)}
+                />
+                {strings.autoPlay}
+              </label>
+              <label className="auto-play">
+                <input
+                  type="checkbox"
+                  checked={hints}
+                  onChange={(event) => setHints(event.target.checked)}
+                />
+                {strings.hints}
+              </label>
+            </>
           )}
           <button type="button" onClick={() => setRules(true)}>
             {strings.rules}
@@ -175,6 +188,7 @@ export function App({ client }: Props) {
             client={client}
             initial={screen.update}
             autoPlay={autoPlay}
+            hints={hints}
             onFinished={finished}
             onError={gameFailed}
           />
