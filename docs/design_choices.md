@@ -15,16 +15,17 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
    - Start stays disabled while a name is out of range or the game is being created.
    - Versus AI, the human is seat 1 and the AI seat 2.
 2. Dice-off, animated and explained on screen.
-   - Each player throws two dice in their colour onto the board; the winner is shown once all dice have landed.
-   - Each player has a "Throw" button that auto-presses after 3 to 5 seconds, with a fill showing the countdown; the AI throws by itself after about a second.
+   - Each player throws two dice in their colour from a [dice stack](#dice-stack) onto their throw area; the winner is shown once all dice have landed.
+   - A human throws by clicking their stack, which throws by itself after 3 to 5 seconds, with a bar under it filling up for the countdown; the AI throws by itself after about a second.
    - On a tie, a message names the tied players, and only they throw again.
-   - A human winner chooses who starts with one button per player.
+   - The winner's name shows larger and in their seat colour, as in "Roman wins the dice-off!", and their throw area glows in that colour.
+   - A human winner chooses who starts with one button per player, directly under that line.
    - An AI winner starts by itself, and the game screen follows after a short pause.
 3. Game: boards, the current player, the opening roll, and only legal targets to choose from.
    - A pill above the dice shows the turn number and the player in their colour; their board gets a border in that colour.
    - Dice show in the current player's colour.
-   - Dice are thrown into a throw area: green velvet inside a wooden frame, with the dice in rows of three.
-   - With "Play turns automatically" off, a human player presses "Throw" for every throw: the opening roll, each roll after it, and a fresh roll after topping a peg.
+   - Dice are thrown from a [dice stack](#dice-stack) into a throw area right of it: green velvet inside a wooden frame, with the dice in rows of three.
+   - With "Play turns automatically" off, a human player clicks their stack for every throw: the opening roll, each roll after it, and a fresh roll after topping a peg.
      The AI always throws by itself.
      Switching it off mid-game never hides dice already on the table; the next throw waits.
    - The player picks a target by clicking its column on their own board; only legal columns are clickable and glow.
@@ -48,6 +49,24 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 
 - 12 columns, targets 1 to 12, each with rows 0 to 5.
 - Row 0 is the bottom row, where every peg starts, and row 5 is the top.
+
+## Dice stack
+
+A pile of the dice the player has left to throw, left of the throw area, in a pyramid:
+
+```text
+6:   x      5:  x x    4: x x    3:  x     2: x    1: x
+    x x        x x x      x x       x x       x
+   x x x
+```
+
+- Its dice are those on the table that aren't set aside, so it shrinks as dice are set aside, and holds the dice of the next throw while it waits for one.
+- It's full at the start of a turn or continuation and after a six-dice reset; when the last dice are set aside, it's empty until the reset.
+- While a human picks a target, hovering one takes its set-aside dice off the stack too.
+- It's clickable only while it waits for a human's throw, and then its dice pulse a white glow.
+- With automatic turns on, and for the AI, it's shown the same way but isn't clickable.
+- Its dice take the player's colour and show fixed faces; they never tumble.
+- `components/stack.tsx` takes a dice count, a seat, an optional `onThrow`, and an optional auto-press time for the countdown bar.
 
 ## Colours
 
@@ -73,7 +92,7 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 ## Animations
 
 - Use whatever works best per feature: CSS, or a library when it gives a clearly better result.
-- For now everything is CSS: dice tumble in, pegs slide with a slight overshoot, legal columns glow, "Oh no" wobbles, and cues pop.
+- For now everything is CSS: dice tumble in, pegs slide with a slight overshoot, legal columns and a clickable stack glow, "Oh no" wobbles, and cues and the dice-off winner pop.
 - Dice tumble in only on a new throw; dice already on the table stay put while the sequence replays, and set-aside dice leave without moving the rest.
 - Reduced motion shortens every animation to almost nothing.
 - Timings live in `frontend/src/game/timing.ts`:

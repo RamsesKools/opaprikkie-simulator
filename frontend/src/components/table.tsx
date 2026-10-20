@@ -1,5 +1,6 @@
 import { strings } from "../lib/strings.ts";
 import { Dice } from "./dice.tsx";
+import { Stack } from "./stack.tsx";
 
 type Props = {
   player: number;
@@ -7,6 +8,7 @@ type Props = {
   setAside: number[];
   rollKey: string;
   slots?: number[];
+  hand: number;
   kept: number[];
   count: number;
   target: number | null;
@@ -19,6 +21,7 @@ export function Table({
   setAside,
   rollKey,
   slots,
+  hand,
   kept,
   count,
   target,
@@ -26,14 +29,11 @@ export function Table({
 }: Props) {
   return (
     <div className="table">
-      <div className="throw-area felt">
-        {onThrow ? (
-          <button type="button" className="throw" onClick={onThrow}>
-            {strings.game.throw}
-          </button>
-        ) : (
+      <div className="throwing">
+        <Stack count={hand} player={player} {...(onThrow && { onThrow })} />
+        <div className="throw-area felt">
           <Dice values={dice} player={player} setAside={setAside} rollKey={rollKey} slots={slots} />
-        )}
+        </div>
       </div>
       <div className="saved">
         <div className="bowl felt">

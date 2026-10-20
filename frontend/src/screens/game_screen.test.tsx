@@ -90,19 +90,24 @@ test("previews a target's dice and landing row on hover", () => {
       .map((die, index) => (die.classList.contains("set-aside") ? index : -1))
       .filter((index) => index >= 0);
   const ghost = () => bob.querySelector<HTMLElement>(".ghost");
+  const stack = (count: number) => screen.getByRole("img", { name: strings.game.stack(count) });
 
+  expect(stack(6)).toBeInTheDocument();
   fireEvent.mouseEnter(column(1, 0));
   expect(raised()).toEqual([0]);
+  expect(stack(5)).toBeInTheDocument();
   expect(ghost()?.style.getPropertyValue("--row")).toBe("1");
   expect(ghost()).not.toHaveClass("finishing");
 
   fireEvent.mouseEnter(column(3, 4));
   expect(raised()).toEqual([1, 2]);
+  expect(stack(4)).toBeInTheDocument();
   expect(ghost()?.style.getPropertyValue("--row")).toBe("5");
   expect(ghost()).toHaveClass("finishing");
 
   fireEvent.mouseLeave(column(3, 4));
   expect(raised()).toEqual([]);
+  expect(stack(6)).toBeInTheDocument();
   expect(ghost()).toBeNull();
 
   fireEvent.mouseEnter(column(2, 0));
@@ -123,10 +128,13 @@ const annGoesForOne: LogEntry = {
   movement: 2,
 };
 
-const throwButton = () => screen.queryByRole("button", { name: strings.game.throw });
+const throwStack = (count: number) =>
+  screen.queryByRole("button", { name: strings.game.throwStack(count) });
 
 test("keeps set-aside dice in the bowl with the running count", async () => {
   show(vi.fn<GameClient["chooseTarget"]>(), [annGoesForOne]);
+  expect(screen.getByRole("img", { name: strings.game.stack(4) })).toBeInTheDocument();
+  expect(throwStack(4)).not.toBeInTheDocument();
 
   expect(screen.getByRole("img", { name: strings.game.kept([]) })).toBeInTheDocument();
   expect(screen.queryByText(strings.game.saved(2, 1))).not.toBeInTheDocument();
@@ -166,25 +174,26 @@ test("recovers from a failed choice on the next pick", async () => {
   expect(onFinished).toHaveBeenCalledWith(finished);
 });
 
-test("waits for each throw when turns don't play automatically", async () => {
+test("throws from the stack when turns don't play automatically", async () => {
   show(vi.fn<GameClient["chooseTarget"]>(), [annGoesForOne], false);
 
-  expect(throwButton()).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /^Throw/ })).not.toBeInTheDocument();
   await act(() => vi.advanceTimersByTimeAsync(timing.roll));
   expect(screen.getByText(strings.game.throwPrompt("Ann"))).toBeInTheDocument();
   expect(screen.getByRole("img", { name: strings.game.kept([1, 1]) })).toBeInTheDocument();
   await act(() => vi.advanceTimersByTimeAsync(10_000));
   expect(screen.getByText(strings.game.throwPrompt("Ann"))).toBeInTheDocument();
 
-  fireEvent.click(throwButton()!);
+  fireEvent.click(throwStack(4)!);
   expect(screen.getByRole("img", { name: strings.game.dice([2, 3, 4, 5]) })).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: strings.game.stack(4) })).toBeInTheDocument();
   await act(() => vi.advanceTimersByTimeAsync(timing.roll));
   await act(() => vi.advanceTimersByTimeAsync(timing.move));
 
   expect(screen.getByText(strings.game.throwPrompt("Bob"))).toBeInTheDocument();
   const bob = screen.getByRole("region", { name: strings.game.board("Bob") });
   expect(bob.querySelectorAll("button:enabled")).toHaveLength(0);
-  fireEvent.click(throwButton()!);
+  fireEvent.click(throwStack(6)!);
   expect(screen.getByText(strings.game.pick("Bob"))).toBeInTheDocument();
   expect(
     screen.getByRole("img", { name: strings.game.dice([1, 3, 3, 4, 5, 6]) }),

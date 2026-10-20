@@ -68,10 +68,74 @@ body::before {
   border-radius: 9px;
 }
 
-.table .throw {
-  padding: 14px 28px;
-  background: white;
-  font-size: 1.2rem;
+.throwing {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stack {
+  --stack-die: 32px;
+  --stack-gap: 3px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--stack-gap);
+  width: calc(3 * var(--stack-die) + 2 * var(--stack-gap) + 16px);
+  height: calc(3 * var(--stack-die) + 2 * var(--stack-gap) + 16px);
+  padding: 8px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+}
+
+.stack-row {
+  display: flex;
+  gap: var(--stack-gap);
+}
+
+.stack .die {
+  width: var(--stack-die);
+  height: var(--stack-die);
+  padding: 4px;
+  border-radius: 6px;
+  animation: none;
+}
+
+.stack .pip.on {
+  margin: 1px;
+}
+
+button.stack {
+  cursor: pointer;
+}
+
+button.stack .die {
+  animation: beckon 1.2s ease-in-out infinite;
+}
+
+button.stack:hover .die,
+button.stack:focus-visible .die {
+  transform: translateY(-3px);
+}
+
+button.stack:focus-visible {
+  outline: 3px solid var(--seat);
+  outline-offset: 2px;
+}
+
+.stack .fill {
+  position: absolute;
+  bottom: -4px;
+  left: calc(50% - var(--stack-die) / 2 - 6px);
+  width: calc(var(--stack-die) + 12px);
+  height: 6px;
+  border-radius: 3px;
+  background: var(--seat);
+  transform-origin: left;
+  animation: fill var(--auto-press) linear forwards;
 }
 
 .throw-area {
@@ -387,21 +451,19 @@ button.primary:disabled {
   min-height: 100px;
 }
 
-.throw {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  border-color: var(--seat);
-  font-weight: 600;
+.thrower.won .throw-area {
+  box-shadow:
+    inset 0 0 20px rgb(0 0 0 / 50%),
+    0 0 0 2px var(--wood-dark),
+    0 0 0 6px var(--seat),
+    0 0 18px 8px var(--seat-soft);
 }
 
-.throw .fill {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--seat-soft);
-  transform-origin: left;
-  animation: fill var(--auto-press) linear forwards;
+.winner-name {
+  display: inline-block;
+  color: var(--seat);
+  font-size: 1.8rem;
+  animation: pop 500ms ease-out;
 }
 
 .choices {
@@ -681,6 +743,14 @@ button.primary:disabled {
     height: 136px;
   }
 
+  .stack {
+    --stack-die: 24px;
+  }
+
+  .thrower .throw-area {
+    width: 170px;
+  }
+
   .label {
     font-size: 0.7rem;
   }
@@ -727,6 +797,15 @@ button.primary:disabled {
 @keyframes breathe {
   to {
     transform: scale(1.15);
+  }
+}
+
+@keyframes beckon {
+  50% {
+    box-shadow:
+      0 2px 0 rgb(0 0 0 / 25%),
+      0 0 0 2px white,
+      0 0 10px 2px rgb(255 255 255 / 80%);
   }
 }
 

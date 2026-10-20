@@ -57,7 +57,7 @@ test("clicks a hot-seat game through from the menu to the victory screen", async
   fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
 
   fireEvent.click(
-    await until(() => screen.queryAllByRole("button", { name: strings.diceOff.throw })[0]),
+    await until(() => screen.queryAllByRole("button", { name: strings.game.throwStack(2) })[0]),
   );
   await until(() => screen.queryByText(strings.diceOff.tie(["Player 1", "Player 2"])));
   fireEvent.click(
@@ -96,7 +96,9 @@ test("lets an AI dice-off winner start by itself", async () => {
   await renderApp(createFixtureClient(script));
   fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
 
-  await until(() => screen.queryByText(strings.diceOff.aiStarts("Opa")));
+  await until(() =>
+    screen.queryByText((_, element) => element?.textContent === strings.diceOff.aiStarts("Opa")),
+  );
   expect(screen.queryByText(strings.diceOff.whoStarts)).not.toBeInTheDocument();
   expect(await until(() => screen.queryByText(strings.game.aiThinking("Opa")))).toBeInTheDocument();
 });
@@ -116,9 +118,10 @@ test("toggles automatic turns from the header during the game", async () => {
   expect(screen.getByText(strings.game.pick("Player 1"))).toBeInTheDocument();
   fireEvent.click(legalTarget()!);
 
-  await until(() => screen.queryByRole("button", { name: strings.game.throw }));
+  const throwStack = () => screen.queryByRole("button", { name: /^Throw/ });
+  await until(throwStack);
   fireEvent.click(toggle()!);
-  expect(screen.queryByRole("button", { name: strings.game.throw })).not.toBeInTheDocument();
+  expect(throwStack()).not.toBeInTheDocument();
 }, 60_000);
 
 test("opens and closes the rules booklet", async () => {

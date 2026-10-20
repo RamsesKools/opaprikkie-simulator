@@ -10,6 +10,12 @@ const pips: Record<number, number[]> = {
   6: [0, 2, 3, 5, 6, 8],
 };
 
+export function Pips({ value }: { value: number }) {
+  return Array.from({ length: 9 }, (_, cell) => (
+    <span key={cell} className={pips[value]?.includes(cell) ? "pip on" : "pip"} />
+  ));
+}
+
 type Props = {
   values: number[];
   player: number;
@@ -34,9 +40,7 @@ export function Dice({ values, player, setAside = [], rollKey = "", slots, label
           className={setAside.includes(index) ? "die set-aside" : "die"}
           style={{ animationDelay: `${index * 40}ms` }}
         >
-          {Array.from({ length: 9 }, (_, cell) => (
-            <span key={cell} className={pips[value]?.includes(cell) ? "pip on" : "pip"} />
-          ))}
+          <Pips value={value} />
         </span>
       ))}
     </div>

@@ -14,6 +14,8 @@ export type Scene = {
   /** Each die's place in that throw, so dice taken away don't shift the rest. */
   slots: number[];
   setAside: number[];
+  /** The dice left to throw: those on the table that aren't set aside. */
+  hand: number;
   kept: number[];
   count: number;
   target: number | null;
@@ -55,6 +57,7 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
       throwKey: openingKey(entry.turn, entry.continuation),
       slots: allSlots(opening),
       setAside: [],
+      hand: opening.length,
       kept: [],
       count: 0,
       target: null,
@@ -81,6 +84,7 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
         throwKey: `${entry.turn}:${entry.continuation}:${throwIndex}`,
         slots: allSlots(roll.dice),
         setAside: roll.set_aside,
+        hand: roll.dice.length - roll.set_aside.length,
         kept,
         count,
         target,
@@ -105,6 +109,7 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
       throwKey,
       slots,
       setAside: [],
+      hand: leftover.length,
       kept,
       count,
       target,
@@ -117,6 +122,7 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
         ...shown,
         dice: [],
         slots: [],
+        hand: opening.length,
         message,
         tone: "cue",
         ms: timing.continuation,

@@ -72,6 +72,18 @@ test("moves set-aside dice to the bowl and counts the matches", () => {
   expect(scenes[2]).toMatchObject({ dice: [2, 3, 4, 5], setAside: [] });
 });
 
+test("keeps the dice not set aside in hand", () => {
+  const scenes = buildScenes([board(), board()], [sequence()], game({ seat: 1 }));
+
+  expect(scenes.map((scene) => scene.hand)).toEqual([4, 4, 4]);
+});
+
+test("starts an AI turn with all six dice in hand", () => {
+  const scenes = buildScenes([board(), board()], [sequence({ player: 1 })], game({ seat: 0 }));
+
+  expect(scenes[0]).toMatchObject({ message: strings.game.aiThinking("Opa"), hand: 6 });
+});
+
 test("skips dice-off entries", () => {
   const diceOff: LogEntry = { kind: "dice_off", rolls: [{ player: 0, dice: [1, 2] }] };
 
@@ -87,6 +99,7 @@ test("announces a six-dice reset and empties the bowl", () => {
 
   expect(scenes[1]?.message).toBe(strings.game.reset);
   expect(scenes[1]).toMatchObject({ kept: [], count: 6 });
+  expect(scenes.map((scene) => scene.hand)).toEqual([0, 5, 5]);
 });
 
 test("cues a continuation when the same player rolls again", () => {
@@ -98,6 +111,7 @@ test("cues a continuation when the same player rolls again", () => {
     message: strings.game.continuation(7),
     tone: "cue",
     dice: [],
+    hand: 6,
   });
 });
 

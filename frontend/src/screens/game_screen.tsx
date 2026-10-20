@@ -101,6 +101,7 @@ export function GameScreen({ client, initial, autoPlay, onFinished, onError }: P
             dice={[]}
             setAside={[]}
             rollKey=""
+            hand={scene?.dice.length ?? observation?.opening_roll.length ?? 0}
             kept={scene?.kept ?? []}
             count={scene?.count ?? 0}
             target={scene?.target ?? null}
@@ -113,6 +114,7 @@ export function GameScreen({ client, initial, autoPlay, onFinished, onError }: P
             setAside={scene.setAside}
             rollKey={scene.throwKey}
             slots={scene.slots}
+            hand={scene.hand}
             kept={scene.kept}
             count={scene.count}
             target={scene.target}
@@ -123,6 +125,7 @@ export function GameScreen({ client, initial, autoPlay, onFinished, onError }: P
             dice={choosing ? observation.opening_roll : []}
             setAside={hint?.set_aside ?? []}
             rollKey={observation ? openingKey(observation.turn, observation.continuation) : ""}
+            hand={choosing ? observation.opening_roll.length - (hint?.set_aside.length ?? 0) : 0}
             kept={[]}
             count={0}
             target={null}
