@@ -7,7 +7,6 @@ type Props = {
   dice: number[];
   setAside: number[];
   rollKey: string;
-  showStack?: boolean;
   slots?: number[];
   hand: number;
   kept: number[];
@@ -21,7 +20,6 @@ export function Table({
   dice,
   setAside,
   rollKey,
-  showStack = true,
   slots,
   hand,
   kept,
@@ -32,7 +30,7 @@ export function Table({
   return (
     <div className="table">
       <div className="throwing">
-        <div className={showStack ? "stack-slot" : "stack-slot hidden"}>
+        <div className="stack-slot">
           <Stack count={hand} player={player} {...(onThrow && { onThrow })} />
         </div>
         <div className="throw-area felt">

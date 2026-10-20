@@ -25,6 +25,7 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
    - A pill above the dice shows the turn number and the player in their colour; their board gets a border in that colour.
    - Dice show in the current player's colour.
    - Dice are thrown from a [dice stack](#dice-stack) into a throw area right of it: green velvet inside a wooden frame, with the dice in rows of three.
+   - Every throw first shows its dice waiting in the stack with the throw area empty, also with automatic turns on and for the AI, so a roll reads as stack, throw, set aside, back to the stack, throw.
    - With "Play turns automatically" off, a human player clicks their stack for every throw: the opening roll, each roll after it, and a fresh roll after topping a peg.
      The AI always throws by itself.
      Switching it off mid-game never hides dice already on the table; the next throw waits.
@@ -37,7 +38,7 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
    - A six-dice reset gets its own message.
    - No legal target: an animated "Oh no, you didn't roll any legal targets", then the turn passes.
    - Continuation: a cue like "Peg 7 is at the top, roll again".
-   - AI turns animate from the returned logs, each starting with "Opa is thinking..." over its opening roll, dead turns included.
+   - AI turns animate from the returned logs, each starting with "Opa throws the dice." over the full stack, then "Opa is thinking..." over its opening roll, dead turns included.
    - Topped pegs get a gold ring.
 4. Victory screen when the last peg is topped: the winner's name in their colour, both final boards, and "Play again".
    - "Play again" returns to the menu with the last mode and names kept.
@@ -60,13 +61,12 @@ A pile of the dice the player has left to throw, left of the throw area, in a py
    x x x
 ```
 
-- Its dice are those on the table that aren't set aside, so it shrinks as dice are set aside, and holds the dice of the next throw while it waits for one.
-- It's full at the start of a turn or continuation and after a six-dice reset; when the last dice are set aside, it's empty until the reset.
-- While a human picks a target, hovering one takes its set-aside dice off the stack too.
+- It holds the dice of the next throw: once dice are set aside, the bowl fills and only the rest go back to the stack.
+- It's full at the start of a turn or continuation and for a six-dice reset.
 - It's clickable only while it waits for a human's throw, and then its dice pulse a white glow.
 - With automatic turns on, and for the AI, it's shown the same way but isn't clickable.
 - Its dice take the player's colour and show fixed faces; they never tumble.
-- Once thrown, the stack disappears while the dice remain in the throw area; it returns for the next throw with only the available dice.
+- Once thrown, it's empty while the dice are in the throw area, keeping its place so nothing shifts.
 - `components/stack.tsx` takes a dice count, a seat, an optional `onThrow`, and an optional auto-press time for the countdown bar.
 
 ## Colours
@@ -100,6 +100,7 @@ A pile of the dice the player has left to throw, left of the throw area, in a py
 
 | Step | Duration |
 | -- | -- |
+| Dice waiting in the stack | 0.7 s |
 | Each roll in a sequence | 0.9 s |
 | Peg move | 0.8 s |
 | AI thinking | 0.9 s |

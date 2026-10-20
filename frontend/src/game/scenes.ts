@@ -14,14 +14,15 @@ export type Scene = {
   /** Each die's place in that throw, so dice taken away don't shift the rest. */
   slots: number[];
   setAside: number[];
-  /** The dice left to throw: those on the table that aren't set aside. */
+  /** The dice in the stack, not yet thrown. */
   hand: number;
   kept: number[];
   count: number;
   target: number | null;
   message: string;
   tone: Tone;
-  fresh: boolean;
+  /** The next throw waits in the stack, for a human's click with automatic turns off. */
+  ready: boolean;
   ms: number;
 };
 
@@ -37,6 +38,22 @@ function isContinuation(sequence: RollSequence, following: Position | undefined)
   );
 }
 
+type Ready = Pick<
+  Scene,
+  "pegs" | "player" | "turn" | "hand" | "kept" | "count" | "target" | "message"
+>;
+
+const readyScene = (scene: Ready): Scene => ({
+  ...scene,
+  dice: [],
+  throwKey: "",
+  slots: [],
+  setAside: [],
+  tone: "info",
+  ready: true,
+  ms: timing.ready,
+});
+
 export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[] {
   const scenes: Scene[] = [];
   let pegs = start;
@@ -48,7 +65,7 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
   turnLog.forEach((entry, index) => {
     const name = next.names[entry.player]!;
     const human = next.controllers[entry.player] === "human";
-    const base = { player: entry.player, turn: entry.turn, tone: "info" as Tone, fresh: false };
+    const base = { player: entry.player, turn: entry.turn, tone: "info" as Tone, ready: false };
     const opening = entry.kind === "no_move" ? entry.opening_roll : entry.rolls[0]!.dice;
     const still = {
       ...base,
@@ -57,17 +74,22 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
       throwKey: openingKey(entry.turn, entry.continuation),
       slots: allSlots(opening),
       setAside: [],
-      hand: opening.length,
+      hand: 0,
       kept: [],
       count: 0,
       target: null,
     };
+    // A human throws the opening roll of a sequence before picking its target.
+    if (!human || entry.kind === "no_move") {
+      const message = strings.game.throws(name);
+      scenes.push(readyScene({ ...still, hand: opening.length, message }));
+    }
     if (!human) {
       scenes.push({ ...still, message: strings.game.aiThinking(name), ms: timing.aiThink });
     }
     if (entry.kind === "no_move") {
       const message = strings.game.ohNo(name, human);
-      scenes.push({ ...still, message, tone: "oh_no", fresh: true, ms: timing.ohNo });
+      scenes.push({ ...still, message, tone: "oh_no", ms: timing.ohNo });
       return;
     }
     const { target, rolls, movement } = entry;
@@ -77,19 +99,15 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
       // A reset rolls all six again, so the bowl empties back onto the table.
       if (roll.reset) kept = [];
       const message = roll.reset ? strings.game.reset : strings.game.goesFor(name, target);
+      const shared = { ...base, pegs, kept, count, target, message };
+      if (throwIndex > 0) scenes.push(readyScene({ ...shared, hand: roll.dice.length }));
       scenes.push({
-        ...base,
-        pegs,
+        ...shared,
         dice: roll.dice,
         throwKey: `${entry.turn}:${entry.continuation}:${throwIndex}`,
         slots: allSlots(roll.dice),
         setAside: roll.set_aside,
-        hand: roll.dice.length - roll.set_aside.length,
-        kept,
-        count,
-        target,
-        message,
-        fresh: throwIndex > 0,
+        hand: 0,
         ms: timing.roll,
       });
       kept = [...kept, ...roll.set_aside.map((index) => roll.dice[index]!)];
@@ -109,7 +127,7 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
       throwKey,
       slots,
       setAside: [],
-      hand: leftover.length,
+      hand: 0,
       kept,
       count,
       target,
@@ -129,5 +147,23 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
       });
     }
   });
+  const observation = next.observation;
+  if (next.phase === "choosing_target" && observation) {
+    const player = observation.seat;
+    if (next.controllers[player] === "human") {
+      scenes.push(
+        readyScene({
+          pegs,
+          player,
+          turn: observation.turn,
+          hand: observation.opening_roll.length,
+          kept: [],
+          count: 0,
+          target: null,
+          message: strings.game.throws(next.names[player]!),
+        }),
+      );
+    }
+  }
   return scenes;
 }

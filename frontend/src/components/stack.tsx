@@ -4,7 +4,6 @@ import { strings } from "../lib/strings.ts";
 import { Pips } from "./dice.tsx";
 
 const pyramids: Record<number, number[]> = {
-  0: [],
   1: [1],
   2: [1, 1],
   3: [1, 2],
@@ -24,6 +23,8 @@ type Props = {
 };
 
 export function Stack({ count, player, onThrow, autoPress }: Props) {
+  const style = seatStyle(player);
+  if (count === 0) return <div className="stack" aria-hidden="true" style={style} />;
   const rows = pyramids[count] ?? [];
   const pile = rows.map((width, row) => {
     const first = rows.slice(0, row).reduce((sum, above) => sum + above, 0);
@@ -37,7 +38,6 @@ export function Stack({ count, player, onThrow, autoPress }: Props) {
       </span>
     );
   });
-  const style = seatStyle(player);
   if (!onThrow) {
     return (
       <div className="stack" role="img" aria-label={strings.game.stack(count)} style={style}>

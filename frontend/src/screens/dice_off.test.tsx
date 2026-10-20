@@ -70,12 +70,11 @@ test("throws from two-dice stacks, letting the AI throw by itself and auto-press
 
   await advance(timing.aiThrow);
   expect(screen.getByRole("img", { name: strings.game.dice([6, 6]) })).toBeInTheDocument();
-  expect(screen.getByRole("img", { name: strings.game.stack(0) })).toBeInTheDocument();
+  expect(screen.queryByRole("img", { name: strings.game.stack(2) })).not.toBeInTheDocument();
   expect(throwStack()).toBeInTheDocument();
 
   await advance(4000 - timing.aiThrow);
   expect(screen.getByRole("img", { name: strings.game.dice([2, 3]) })).toBeInTheDocument();
-  expect(screen.getAllByRole("img", { name: strings.game.stack(0) })).toHaveLength(2);
   expect(throwStack()).not.toBeInTheDocument();
 });
 

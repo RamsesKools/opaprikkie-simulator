@@ -45,17 +45,18 @@ test("shows every roll, then moves the peg", () => {
 
   expect(scenes.map((scene) => scene.dice)).toEqual([
     [1, 2, 3, 4, 5, 1],
+    [],
     [2, 3, 4, 5],
     [2, 3, 4, 5],
   ]);
-  expect(scenes[1]?.setAside).toEqual([]);
+  expect(scenes[2]?.setAside).toEqual([]);
   expect(scenes[0]).toMatchObject({
     setAside: [0, 5],
     target: 1,
     turn: 1,
     pegs: [board(), board()],
   });
-  expect(scenes[2]).toMatchObject({
+  expect(scenes[3]).toMatchObject({
     message: strings.game.moves(1, 2),
     pegs: [board({ 1: 2 }), board()],
   });
@@ -68,20 +69,48 @@ test("moves set-aside dice to the bowl and counts the matches", () => {
     { kept: [], count: 0 },
     { kept: [1, 1], count: 2 },
     { kept: [1, 1], count: 2 },
+    { kept: [1, 1], count: 2 },
   ]);
-  expect(scenes[2]).toMatchObject({ dice: [2, 3, 4, 5], setAside: [] });
+  expect(scenes[3]).toMatchObject({ dice: [2, 3, 4, 5], setAside: [] });
 });
 
-test("keeps the dice not set aside in hand", () => {
+test("holds the dice left to throw in the stack until they're thrown", () => {
   const scenes = buildScenes([board(), board()], [sequence()], game({ seat: 1 }));
 
-  expect(scenes.map((scene) => scene.hand)).toEqual([4, 4, 4]);
+  expect(scenes.map(({ ready, hand }) => ({ ready, hand }))).toEqual([
+    { ready: false, hand: 0 },
+    { ready: true, hand: 4 },
+    { ready: false, hand: 0 },
+    { ready: false, hand: 0 },
+  ]);
 });
 
-test("starts an AI turn with all six dice in hand", () => {
+test("starts an AI turn with all six dice in the stack, then thinks over its opening roll", () => {
   const scenes = buildScenes([board(), board()], [sequence({ player: 1 })], game({ seat: 0 }));
 
-  expect(scenes[0]).toMatchObject({ message: strings.game.aiThinking("Opa"), hand: 6 });
+  expect(scenes[0]).toMatchObject({
+    message: strings.game.throws("Opa"),
+    ready: true,
+    dice: [],
+    hand: 6,
+  });
+  expect(scenes[1]).toMatchObject({ message: strings.game.aiThinking("Opa"), hand: 0 });
+});
+
+test("ends with the next human's opening throw still in the stack", () => {
+  const scenes = buildScenes([board(), board()], [], game({ seat: 0 }));
+
+  expect(scenes).toEqual([
+    expect.objectContaining({
+      player: 0,
+      turn: 2,
+      message: strings.game.throws("Ann"),
+      ready: true,
+      dice: [],
+      hand: 6,
+      kept: [],
+    }),
+  ]);
 });
 
 test("skips dice-off entries", () => {
@@ -97,9 +126,8 @@ test("announces a six-dice reset and empties the bowl", () => {
   ];
   const scenes = buildScenes([board(), board()], [sequence({ rolls })], game({ seat: 1 }));
 
-  expect(scenes[1]?.message).toBe(strings.game.reset);
-  expect(scenes[1]).toMatchObject({ kept: [], count: 6 });
-  expect(scenes.map((scene) => scene.hand)).toEqual([0, 5, 5]);
+  expect(scenes[1]).toMatchObject({ message: strings.game.reset, ready: true, kept: [], count: 6 });
+  expect(scenes.map((scene) => scene.hand)).toEqual([0, 6, 0, 0]);
 });
 
 test("cues a continuation when the same player rolls again", () => {
@@ -107,12 +135,13 @@ test("cues a continuation when the same player rolls again", () => {
   const next = game({ seat: 0, continuation: 1 });
   const scenes = buildScenes([board(), board()], [topping], next);
 
-  expect(scenes.at(-1)).toMatchObject({
+  expect(scenes.at(-2)).toMatchObject({
     message: strings.game.continuation(7),
     tone: "cue",
     dice: [],
     hand: 6,
   });
+  expect(scenes.at(-1)).toMatchObject({ ready: true, hand: 6 });
 });
 
 test("cues a continuation followed by a dead roll", () => {
@@ -129,7 +158,15 @@ test("cues a continuation followed by a dead roll", () => {
     game({ seat: 1 }),
   );
 
-  expect(scenes.map((scene) => scene.tone)).toEqual(["info", "info", "info", "cue", "oh_no"]);
+  expect(scenes.map((scene) => scene.tone)).toEqual([
+    "info",
+    "info",
+    "info",
+    "info",
+    "cue",
+    "info",
+    "oh_no",
+  ]);
   expect(scenes.at(-1)?.message).toBe(strings.game.ohNo("Ann", true));
 });
 
@@ -143,7 +180,7 @@ test("doesn't cue a continuation when the game ends", () => {
 test("lets the AI think before its roll sequence", () => {
   const scenes = buildScenes([board(), board()], [sequence({ player: 1 })], game({ seat: 0 }));
 
-  expect(scenes[0]).toMatchObject({
+  expect(scenes[1]).toMatchObject({
     message: strings.game.aiThinking("Opa"),
     setAside: [],
     target: null,
@@ -161,16 +198,18 @@ test("lets the AI think before its dead turn, told in the third person", () => {
   };
   const scenes = buildScenes([board(), board()], [dead], game({ seat: 0 }));
 
-  expect(scenes).toHaveLength(2);
-  expect(scenes[0]).toMatchObject({ message: strings.game.aiThinking("Opa"), dice: [6] });
-  expect(scenes[1]).toMatchObject({
+  expect(scenes).toHaveLength(4);
+  expect(scenes[0]).toMatchObject({ ready: true, dice: [], hand: 1 });
+  expect(scenes[1]).toMatchObject({ message: strings.game.aiThinking("Opa"), dice: [6] });
+  expect(scenes[2]).toMatchObject({
     message: strings.game.ohNo("Opa", false),
     tone: "oh_no",
     dice: [6],
   });
+  expect(scenes[3]).toMatchObject({ player: 0, ready: true });
 });
 
-test("marks the throws after the opening roll as fresh", () => {
+test("waits before each throw after the opening roll and before a dead turn", () => {
   const deadTurn: LogEntry = {
     kind: "no_move",
     player: 0,
@@ -180,11 +219,13 @@ test("marks the throws after the opening roll as fresh", () => {
   };
   const scenes = buildScenes([board(), board()], [sequence(), deadTurn], game(null));
 
-  expect(scenes.map(({ fresh, message }) => ({ fresh, message }))).toEqual([
-    { fresh: false, message: strings.game.goesFor("Ann", 1) },
-    { fresh: true, message: strings.game.goesFor("Ann", 1) },
-    { fresh: false, message: strings.game.moves(1, 2) },
-    { fresh: true, message: strings.game.ohNo("Ann", true) },
+  expect(scenes.map(({ ready, message }) => ({ ready, message }))).toEqual([
+    { ready: false, message: strings.game.goesFor("Ann", 1) },
+    { ready: true, message: strings.game.goesFor("Ann", 1) },
+    { ready: false, message: strings.game.goesFor("Ann", 1) },
+    { ready: false, message: strings.game.moves(1, 2) },
+    { ready: true, message: strings.game.throws("Ann") },
+    { ready: false, message: strings.game.ohNo("Ann", true) },
   ]);
 });
 
@@ -202,7 +243,8 @@ test("keys the dice by their throw, so only a new throw tumbles in", () => {
     game({ seat: 1 }),
   );
 
-  expect(scenes.map(({ throwKey, slots }) => ({ throwKey, slots }))).toEqual([
+  const thrown = scenes.filter(({ ready }) => !ready);
+  expect(thrown.map(({ throwKey, slots }) => ({ throwKey, slots }))).toEqual([
     { throwKey: openingKey(1, 0), slots: [0, 1, 2, 3, 4, 5] },
     { throwKey: "1:0:1", slots: [0, 1, 2, 3] },
     { throwKey: "1:0:1", slots: [0, 1, 2] },
@@ -223,6 +265,6 @@ test("keys the AI's opening roll and a dead turn like the opening roll on the ta
     game({ seat: 1 }),
   );
 
-  expect(scenes[0]).toMatchObject({ message: strings.game.aiThinking("Opa"), throwKey: "1:0:0" });
+  expect(scenes[1]).toMatchObject({ message: strings.game.aiThinking("Opa"), throwKey: "1:0:0" });
   expect(scenes.at(-1)).toMatchObject({ tone: "oh_no", throwKey: openingKey(2, 0) });
 });

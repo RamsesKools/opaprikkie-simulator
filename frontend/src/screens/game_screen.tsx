@@ -10,7 +10,9 @@ import { strings } from "../lib/strings.ts";
 const emptyPegs = (pegs: Pegs[]): Pegs[] =>
   pegs.map((board) => Object.fromEntries(Object.keys(board).map((target) => [target, 0])));
 
-type Playback = { game: Game; scenes: Scene[]; index: number; thrown: boolean };
+type Playback = { game: Game; scenes: Scene[]; index: number };
+
+const nextScene = (playback: Playback): Playback => ({ ...playback, index: playback.index + 1 });
 
 type Props = {
   client: GameClient;
@@ -25,7 +27,6 @@ export function GameScreen({ client, initial, autoPlay, onFinished, onError }: P
     game: initial.game,
     scenes: buildScenes(emptyPegs(initial.game.pegs), initial.logs, initial.game),
     index: 0,
-    thrown: autoPlay,
   }));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +40,7 @@ export function GameScreen({ client, initial, autoPlay, onFinished, onError }: P
   const name = game.names[player]!;
   const human = game.controllers[player] === "human";
   const choosing = !scene && game.phase === "choosing_target" && observation !== null;
-  const waiting = !autoPlay && human && !playback.thrown && (scene ? scene.fresh : choosing);
+  const waiting = !autoPlay && human && scene?.ready === true;
 
   useEffect(() => {
     mounted.current = true;
@@ -54,12 +55,9 @@ export function GameScreen({ client, initial, autoPlay, onFinished, onError }: P
       return;
     }
     if (waiting) return;
-    const timer = setTimeout(
-      () => setPlayback((current) => ({ ...current, index: current.index + 1, thrown: autoPlay })),
-      scene.ms,
-    );
+    const timer = setTimeout(() => setPlayback(nextScene), scene.ms);
     return () => clearTimeout(timer);
-  }, [scene, waiting, autoPlay, game, onFinished]);
+  }, [scene, waiting, game, onFinished]);
 
   const pick = (target: number) => {
     setHovered(null);
@@ -69,7 +67,7 @@ export function GameScreen({ client, initial, autoPlay, onFinished, onError }: P
       (update) => {
         if (!mounted.current) return;
         const next = buildScenes(game.pegs, update.logs, update.game);
-        setPlayback({ game: update.game, scenes: next, index: 0, thrown: autoPlay });
+        setPlayback({ game: update.game, scenes: next, index: 0 });
         setBusy(false);
       },
       (failure: unknown) => {
@@ -95,23 +93,9 @@ export function GameScreen({ client, initial, autoPlay, onFinished, onError }: P
     <div className="game">
       <div className="status" style={seatStyle(player)}>
         <p className="turn">{strings.game.turn(scene?.turn ?? observation?.turn ?? 0, name)}</p>
-        {waiting ? (
+        {scene ? (
           <Table
             player={player}
-            showStack
-            dice={[]}
-            setAside={[]}
-            rollKey=""
-            hand={scene?.dice.length ?? observation?.opening_roll.length ?? 0}
-            kept={scene?.kept ?? []}
-            count={scene?.count ?? 0}
-            target={scene?.target ?? null}
-            onThrow={() => setPlayback((current) => ({ ...current, thrown: true }))}
-          />
-        ) : scene ? (
-          <Table
-            player={player}
-            showStack={false}
             dice={scene.dice}
             setAside={scene.setAside}
             rollKey={scene.throwKey}
@@ -120,15 +104,15 @@ export function GameScreen({ client, initial, autoPlay, onFinished, onError }: P
             kept={scene.kept}
             count={scene.count}
             target={scene.target}
+            {...(waiting && { onThrow: () => setPlayback(nextScene) })}
           />
         ) : (
           <Table
             player={player}
-            showStack={false}
             dice={choosing ? observation.opening_roll : []}
             setAside={hint?.set_aside ?? []}
             rollKey={observation ? openingKey(observation.turn, observation.continuation) : ""}
-            hand={choosing ? observation.opening_roll.length - (hint?.set_aside.length ?? 0) : 0}
+            hand={0}
             kept={[]}
             count={0}
             target={null}

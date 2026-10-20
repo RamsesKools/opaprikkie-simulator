@@ -31,13 +31,11 @@ function Thrower({ player, name, human, count, thrown, onThrow }: ThrowerProps) 
   return (
     <section className={`thrower player-${player}`} style={seatStyle(player)}>
       <h2>{name}</h2>
-      <div className={thrown ? "stack-slot hidden" : "stack-slot"}>
-        {human && !thrown ? (
-          <Stack count={count} player={player} onThrow={() => onThrow(player)} autoPress={delay} />
-        ) : (
-          <Stack count={count} player={player} />
-        )}
-      </div>
+      {human && !thrown ? (
+        <Stack count={count} player={player} onThrow={() => onThrow(player)} autoPress={delay} />
+      ) : (
+        <Stack count={thrown ? 0 : count} player={player} />
+      )}
     </section>
   );
 }

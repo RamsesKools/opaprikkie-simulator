@@ -1,4 +1,5 @@
 export const timing = {
+  ready: 700,
   roll: 900,
   move: 800,
   ohNo: 2400,

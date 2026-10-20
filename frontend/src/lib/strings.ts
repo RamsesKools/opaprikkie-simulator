@@ -34,6 +34,7 @@ export const strings = {
     turn: (turn: number, name: string) => `Turn ${turn}: ${name}`,
     pick: (name: string) => `${name}, pick a target.`,
     throwPrompt: (name: string) => `${name}, throw the dice!`,
+    throws: (name: string) => `${name} throws the dice.`,
     aiThinking: (name: string) => `${name} is thinking...`,
     goesFor: (name: string, target: number) => `${name} goes for ${target}.`,
     reset: "Every die is set aside, so all six roll again!",

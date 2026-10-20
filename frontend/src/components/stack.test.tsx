@@ -13,12 +13,19 @@ test.each([
   [3, [1, 2]],
   [2, [1, 1]],
   [1, [1]],
-  [0, []],
 ])("piles %i dice into a pyramid", (count, pyramid) => {
   render(<Stack count={count} player={0} />);
 
   expect(rows(screen.getByRole("img", { name: strings.game.stack(count) }))).toEqual(pyramid);
   expect(screen.queryByRole("button")).not.toBeInTheDocument();
+});
+
+test("keeps an empty stack's place without announcing it", () => {
+  const { container } = render(<Stack count={0} player={0} />);
+
+  expect(screen.queryByRole("img")).not.toBeInTheDocument();
+  expect(container.querySelector(".stack")).toHaveAttribute("aria-hidden", "true");
+  expect(container.querySelector(".stack")).toBeEmptyDOMElement();
 });
 
 test("throws when clicked", () => {
