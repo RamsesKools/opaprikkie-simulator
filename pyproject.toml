@@ -50,6 +50,7 @@ check = { cmd = "task lint && task typecheck && task lint_imports && task test",
 dev = { cmd = "python scripts/dev.py", help = "run the backend with reload and Vite with its /api proxy" }
 gen_api = { cmd = "python scripts/gen_api.py", help = "dump the OpenAPI schema and its TypeScript types to frontend/" }
 test_contract = { cmd = "python scripts/contract.py", help = "run the frontend contract suite against a live backend" }
+bench_sim = { cmd = "python scripts/bench_sim.py", help = "time simulate in-process and over HTTP on the same seeded batches" }
 bump = { cmd = "python scripts/version.py bump", help = "bump the app version: major, minor, or patch" }
 image_build = { cmd = "docker build --build-arg VERSION=$(uv version --short) --build-arg COMMIT=$(git rev-parse HEAD) --tag ghcr.io/ramseskools/opaprikkie:latest .", help = "build the image for this machine" }
 image_build_multiarch = { cmd = "docker buildx build --platform linux/amd64,linux/arm64 --build-arg VERSION=$(uv version --short) --build-arg COMMIT=$(git rev-parse HEAD) .", help = "check that the image builds for amd64 and arm64" }

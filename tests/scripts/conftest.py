@@ -34,3 +34,8 @@ def gen_api() -> ModuleType:
 @pytest.fixture
 def contract() -> ModuleType:
     return load("contract")
+
+
+@pytest.fixture
+def bench_sim() -> ModuleType:
+    return load("bench_sim")
