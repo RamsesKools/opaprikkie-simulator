@@ -196,6 +196,21 @@ test("shows the menu with defaults when the session can't load", async () => {
   await renderApp({ ...createFixtureClient(), session: down });
 
   expect(screen.getByLabelText(strings.menu.you)).toHaveValue("Player 1");
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});
+
+test("says on load when the server can't be reached", async () => {
+  const offline = () => Promise.reject(new GameError("network", "offline"));
+  await renderApp({ ...createFixtureClient(), session: offline });
+
+  expect(screen.getByRole("alert")).toHaveTextContent(strings.errors.network);
+  expect(screen.getByLabelText(strings.menu.you)).toHaveValue("Player 1");
+});
+
+test("shows a first visit's menu without an alert", async () => {
+  await renderApp();
+
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 });
 
 const health = (version: string, dev_mode = false) => ({
@@ -430,3 +445,17 @@ test("offers New Game on the victory screen too", async () => {
 
   expect(screen.getByLabelText(strings.menu.opponent)).toHaveValue("Opa");
 }, 60_000);
+
+test("clears the lost-game alert once the menu changes", async () => {
+  const gone = () => Promise.reject(new GameError("no_game", "start a game first"));
+  await renderApp({ ...createFixtureClient(), chooseFirstPlayer: gone });
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") })),
+  );
+  expect(await until(() => screen.queryByRole("alert"))).toHaveTextContent(strings.errors.lost);
+
+  fireEvent.change(screen.getByLabelText(strings.menu.you), { target: { value: "Ann" } });
+
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});

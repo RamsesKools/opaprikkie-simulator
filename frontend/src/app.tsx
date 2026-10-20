@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RulesBooklet } from "./components/rules_booklet.tsx";
-import { errorMessage, isLost } from "./game/errors.ts";
+import { errorMessage, isLost, isNetwork } from "./game/errors.ts";
 import type { Game, GameClient, GameSetup, GameUpdate, Health, Session } from "./game/model.ts";
 import { newDraft, withSeats, type Draft } from "./lib/names.ts";
 import { strings } from "./lib/strings.ts";
@@ -55,7 +55,11 @@ export function App({ client }: Props) {
         setDraft((current) => prefill(current, session));
         setScreen(resumed(session.game));
       },
-      () => setScreen({ kind: "menu" }),
+      (failure: unknown) => {
+        // Other failures leave a clean menu; Start reports them if they persist.
+        if (isNetwork(failure)) setError(errorMessage(failure));
+        setScreen({ kind: "menu" });
+      },
     );
   }, [client, handshake]);
 
@@ -152,7 +156,16 @@ export function App({ client }: Props) {
       <main>
         {error && <p role="alert">{error}</p>}
         {screen.kind === "menu" && (
-          <Menu draft={draft} onChange={setDraft} dev={dev} pending={starting} onStart={start} />
+          <Menu
+            draft={draft}
+            onChange={(changed) => {
+              setDraft(changed);
+              setError(null);
+            }}
+            dev={dev}
+            pending={starting}
+            onStart={start}
+          />
         )}
         {screen.kind === "dice_off" && (
           <DiceOff update={screen.update} onChooseFirst={chooseFirst} onAiStarts={play} />

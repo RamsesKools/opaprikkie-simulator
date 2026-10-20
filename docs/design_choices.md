@@ -102,6 +102,8 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
   - `no_session` or `no_game`: the game is lost, so the app goes back to the menu, with the last names kept, saying "Your game was lost. Start a new one."
   - anything else: "Something went wrong."
 - Except for a lost game, the player stays put and can try again.
+- When the session can't load because the server is unreachable, the menu shows with the network message; any other failure there leaves a clean menu.
+- An alert on the menu clears as soon as the player changes the mode or a name.
 - The app waits for the session before showing a screen, so a reload resumes the game:
   - waiting for the dice-off winner's choice: the dice-off screen with the "Who starts?" buttons, without replaying the throws
   - waiting for a target: the game screen at that choice
