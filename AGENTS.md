@@ -8,8 +8,6 @@ The browser MVP is being built; see [the roadmap](docs/roadmap/monorepo_mvp.md) 
 - `src/opaprikkie/`: one distribution with the `engine`, `backend`, and `sim` subpackages, plus `cli.py`.
 - `frontend/`: the React SPA; until the API is connected it plays a fixture game.
 - `tests/`: one folder per module, plus `cross_module/` and `container/`.
-- `src/opaprikkie_sim/`, its tests, and `apps/` are the old engine and prototypes.
-  They're excluded from every check and removed by #39; don't build on them, and don't port them: the rules changed.
 
 ## Commands
 

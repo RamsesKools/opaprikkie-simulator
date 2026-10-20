@@ -1,5 +1,3 @@
-# The old engine and the prototypes, until #39 removes them.
-exclude: ^(apps/|src/opaprikkie_sim/|tests/(unit|integration)/|tests/test_[^/]*\.py$|tests/__init__\.py$)
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0

@@ -62,10 +62,6 @@ addopts = [
   "--cov-report=term-missing:skip-covered",
   "-m",
   "not container",
-  # The old engine's tests, until #39 removes them.
-  "--ignore=tests/integration",
-  "--ignore=tests/unit",
-  "--ignore-glob=tests/test_*.py",
 ]
 markers = ["container: runs against the built Docker image"]
 
@@ -77,16 +73,7 @@ source = ["opaprikkie"]
 fail_under = 90
 
 [tool.ty.src]
-# The old engine and the prototypes, until #39 removes them.
-exclude = [
-  "apps",
-  "notebooks",
-  "src/opaprikkie_sim",
-  "tests/__init__.py",
-  "tests/integration",
-  "tests/test_*.py",
-  "tests/unit",
-]
+exclude = ["notebooks"]
 
 [tool.importlinter]
 root_package = "opaprikkie"

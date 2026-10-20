@@ -42,7 +42,6 @@ class Strategy(Protocol):
 - `smart` is a first version and may change, its bonus included.
   A flat bonus measured worse: against greedy over 1000 `CLASSIC` games, smart won 631 with no bonus and 464 with 1 row.
 - `SmartStrategy(topping_bonus=...)` sets the bonus, and `expected_value(observation, target)` returns a target's exact value as a `Fraction`.
-- Results from the old engine aren't comparable: the rules changed.
 
 ## Seat controllers
 
