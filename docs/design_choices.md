@@ -90,7 +90,11 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 
 - Screens talk to a `GameClient` (`frontend/src/game/model.ts`) that mirrors the backend's [HTTP API](architecture/http_api.md), with the types generated in `frontend/src/lib/api.d.ts`: each action returns a `GameUpdate`, `{game, logs}`.
 - `game/api_client.ts` implements it with `openapi-fetch`; `start` creates the game and names the players, and starts a fresh session when the old one is gone.
-- A failed action rejects with a `GameError` carrying the API's `code`; the screens show a generic message and let the player try again.
+- A failed action rejects with a `GameError` carrying the API's `code`, and `game/errors.ts` picks the message:
+  - `network`: "Can't reach the server. Check your connection and try again."
+  - `no_session` or `no_game`: the game is lost, so the app goes back to the menu, with the last names kept, saying "Your game was lost. Start a new one."
+  - anything else: "Something went wrong."
+- Except for a lost game, the player stays put and can try again.
 - The menu waits for the session, so the names are prefilled before it shows.
 - Unit tests use a fixture client that replays a game recorded from the engine; each choice point offers only the recorded target.
 

@@ -49,7 +49,7 @@ function show(
 ) {
   const client = { chooseTarget } as unknown as GameClient;
   const onFinished = vi.fn<(game: Game) => void>();
-  const onError = vi.fn<() => void>();
+  const onError = vi.fn<(error: unknown) => void>();
   render(
     <GameScreen
       client={client}
@@ -157,12 +157,12 @@ test("recovers from a failed choice on the next pick", async () => {
 
   pickOne();
   await act(() => vi.advanceTimersByTimeAsync(0));
-  expect(screen.getByText(strings.game.error)).toBeInTheDocument();
-  expect(onError).toHaveBeenCalledOnce();
+  expect(screen.getByText(strings.errors.generic)).toBeInTheDocument();
+  expect(onError).toHaveBeenCalledExactlyOnceWith(new GameError("internal_error", "down"));
 
   pickOne();
   await act(() => vi.advanceTimersByTimeAsync(0));
-  expect(screen.queryByText(strings.game.error)).not.toBeInTheDocument();
+  expect(screen.queryByText(strings.errors.generic)).not.toBeInTheDocument();
   expect(onFinished).toHaveBeenCalledWith(finished);
 });
 
@@ -205,4 +205,23 @@ test("shows neither outside dev mode", () => {
 
   expect(screen.queryByText(/^Seed/)).not.toBeInTheDocument();
   expect(screen.queryByText(/^AI strategy/)).not.toBeInTheDocument();
+});
+
+test("says when the server can't be reached", async () => {
+  show(vi.fn<GameClient["chooseTarget"]>().mockRejectedValue(new GameError("network", "offline")));
+
+  pickOne();
+  await act(() => vi.advanceTimersByTimeAsync(0));
+
+  expect(screen.getByText(strings.errors.network)).toBeInTheDocument();
+});
+
+test("sends one pick while it's pending", async () => {
+  const chooseTarget = vi.fn<GameClient["chooseTarget"]>(() => new Promise(() => {}));
+  show(chooseTarget);
+
+  pickOne();
+  pickOne();
+
+  expect(chooseTarget).toHaveBeenCalledOnce();
 });

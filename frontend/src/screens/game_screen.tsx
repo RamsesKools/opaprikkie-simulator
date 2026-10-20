@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Board } from "../components/board.tsx";
 import { Table } from "../components/table.tsx";
 import type { Game, GameClient, GameUpdate, Pegs } from "../game/model.ts";
+import { errorMessage } from "../game/errors.ts";
 import { buildScenes, type Scene } from "../game/scenes.ts";
 import { seatStyle } from "../lib/palette.ts";
 import { strings } from "../lib/strings.ts";
@@ -16,7 +17,7 @@ type Props = {
   initial: GameUpdate;
   autoPlay: boolean;
   onFinished: (game: Game) => void;
-  onError: () => void;
+  onError: (error: unknown) => void;
 };
 
 export function GameScreen({ client, initial, autoPlay, onFinished, onError }: Props) {
@@ -27,7 +28,7 @@ export function GameScreen({ client, initial, autoPlay, onFinished, onError }: P
     thrown: autoPlay,
   }));
   const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [hovered, setHovered] = useState<number | null>(null);
   const { game, scenes, index } = playback;
   const scene = scenes[index];
@@ -54,17 +55,17 @@ export function GameScreen({ client, initial, autoPlay, onFinished, onError }: P
   const pick = (target: number) => {
     setHovered(null);
     setBusy(true);
-    setFailed(false);
+    setError(null);
     client.chooseTarget(target).then(
       (update) => {
         const next = buildScenes(game.pegs, update.logs, update.game);
         setPlayback({ game: update.game, scenes: next, index: 0, thrown: autoPlay });
         setBusy(false);
       },
-      () => {
-        setFailed(true);
+      (failure: unknown) => {
+        setError(errorMessage(failure));
         setBusy(false);
-        onError();
+        onError(failure);
       },
     );
   };
@@ -77,7 +78,7 @@ export function GameScreen({ client, initial, autoPlay, onFinished, onError }: P
   let message = scene?.message ?? "";
   if (humanChoice) message = strings.game.pick(name);
   if (waiting) message = strings.game.throwPrompt(name);
-  if (failed) message = strings.game.error;
+  if (error) message = error;
 
   return (
     <div className="game">

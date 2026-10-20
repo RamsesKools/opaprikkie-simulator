@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { RulesBooklet } from "./components/rules_booklet.tsx";
+import { errorMessage, isLost } from "./game/errors.ts";
 import type { Game, GameClient, GameSetup, GameUpdate, Health, Session } from "./game/model.ts";
 import { strings } from "./lib/strings.ts";
 import { version } from "./lib/version.ts";
@@ -28,7 +29,7 @@ export function App({ client }: Props) {
   const [setup, setSetup] = useState<GameSetup | null>(null);
   const [health, setHealth] = useState<Health | null>(null);
   const [rules, setRules] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [autoPlay, setAutoPlay] = useState(true);
 
@@ -48,14 +49,28 @@ export function App({ client }: Props) {
       .finally(() => setScreen({ kind: "menu" }));
   }, [client, handshake]);
 
-  const fail = useCallback(() => {
-    setFailed(true);
-    handshake();
-  }, [handshake]);
+  // The game screen shows its own errors, so only a lost game reaches the app's alert.
+  const gameFailed = useCallback(
+    (failure: unknown) => {
+      if (isLost(failure)) {
+        setError(errorMessage(failure));
+        setScreen({ kind: "menu" });
+      }
+      handshake();
+    },
+    [handshake],
+  );
+  const fail = useCallback(
+    (failure: unknown) => {
+      setError(errorMessage(failure));
+      gameFailed(failure);
+    },
+    [gameFailed],
+  );
 
   const start = (chosen: GameSetup) => {
     setSetup(chosen);
-    setFailed(false);
+    setError(null);
     setStarting(true);
     client
       .start(chosen)
@@ -65,12 +80,12 @@ export function App({ client }: Props) {
 
   const play = useCallback((update: GameUpdate) => setScreen({ kind: "game", update }), []);
   const chooseFirst = async (player: number) => {
-    setFailed(false);
+    setError(null);
     try {
       play(await client.chooseFirstPlayer(player));
       return true;
-    } catch {
-      fail();
+    } catch (failure) {
+      fail(failure);
       return false;
     }
   };
@@ -108,7 +123,7 @@ export function App({ client }: Props) {
         </div>
       )}
       <main>
-        {failed && <p role="alert">{strings.game.error}</p>}
+        {error && <p role="alert">{error}</p>}
         {screen.kind === "menu" && (
           <Menu initial={setup} dev={dev} pending={starting} onStart={start} />
         )}
@@ -121,7 +136,7 @@ export function App({ client }: Props) {
             initial={screen.update}
             autoPlay={autoPlay}
             onFinished={finished}
-            onError={handshake}
+            onError={gameFailed}
           />
         )}
         {screen.kind === "victory" && (

@@ -51,9 +51,13 @@ export const strings = {
     board: (name: string) => `${name}'s board`,
     column: (target: number, row: number) => `Target ${target}, row ${row}`,
     dice: (values: number[]) => `Dice: ${values.join(", ")}`,
-    error: "Something went wrong.",
     seed: (seed: number | string) => `Seed: ${seed}`,
     strategy: (strategy: string) => `AI strategy: ${strategy}`,
+  },
+  errors: {
+    generic: "Something went wrong.",
+    network: "Can't reach the server. Check your connection and try again.",
+    lost: "Your game was lost. Start a new one.",
   },
   victory: {
     wins: (name: string) => `${name} wins!`,

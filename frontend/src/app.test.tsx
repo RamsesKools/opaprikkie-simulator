@@ -150,7 +150,7 @@ test("lets the menu start again after a failed start", async () => {
   fireEvent.click(start);
   expect(start).toBeDisabled();
 
-  expect(await until(() => screen.queryByRole("alert"))).toHaveTextContent(strings.game.error);
+  expect(await until(() => screen.queryByRole("alert"))).toHaveTextContent(strings.errors.generic);
   expect(start).toBeEnabled();
 });
 
@@ -167,7 +167,7 @@ test("lets the dice-off winner choose again after a failed choice", async () => 
   const starts = () => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") });
 
   fireEvent.click(await until(starts));
-  expect(await until(() => screen.queryByRole("alert"))).toHaveTextContent(strings.game.error);
+  expect(await until(() => screen.queryByRole("alert"))).toHaveTextContent(strings.errors.generic);
   fireEvent.click(starts()!);
 
   await until(() => screen.queryByText(strings.game.pick("Player 1")));
@@ -240,3 +240,57 @@ test("passes the dev mode seed and strategy to the game", async () => {
   expect(start).toHaveBeenCalledWith(expect.objectContaining({ seed: "s1", strategy: "smart" }));
   expect(screen.queryByText(strings.stale)).not.toBeInTheDocument();
 });
+
+const lost = () => Promise.reject(new GameError("no_session", "create a session first"));
+
+test("goes back to the menu when the game is lost mid-game", async () => {
+  await renderApp({ ...createFixtureClient(), chooseTarget: lost });
+  fireEvent.change(screen.getByLabelText(strings.menu.you), { target: { value: "Ann" } });
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Ann") })),
+  );
+
+  fireEvent.click(await until(legalTarget));
+
+  expect(await until(() => screen.queryByRole("alert"))).toHaveTextContent(strings.errors.lost);
+  expect(screen.getByLabelText(strings.menu.you)).toHaveValue("Ann");
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+}, 60_000);
+
+test("goes back to the menu when the game is lost in the dice-off", async () => {
+  const gone = () => Promise.reject(new GameError("no_game", "start a game first"));
+  await renderApp({ ...createFixtureClient(), chooseFirstPlayer: gone });
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") })),
+  );
+
+  expect(await until(() => screen.queryByRole("alert"))).toHaveTextContent(strings.errors.lost);
+  expect(screen.getByRole("button", { name: strings.menu.start })).toBeEnabled();
+});
+
+test("says when the server can't be reached at the start", async () => {
+  const offline = () => Promise.reject(new GameError("network", "offline"));
+  await renderApp({ ...createFixtureClient(), start: offline });
+
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+
+  expect(await until(() => screen.queryByRole("alert"))).toHaveTextContent(strings.errors.network);
+});
+
+test("leaves other game errors to the game screen", async () => {
+  await renderApp({ ...createFixtureClient(), chooseTarget: down });
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") })),
+  );
+
+  fireEvent.click(await until(legalTarget));
+
+  expect(await until(() => screen.queryByText(strings.errors.generic))).toBeInTheDocument();
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(legalTarget()).toBeDefined();
+}, 60_000);
