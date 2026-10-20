@@ -66,7 +66,6 @@ Details are in [module dependencies](../architecture/module_dependencies.md), [r
 5. Break the settled architecture into implementation issues for engine extraction, API, simulator, browser flows, and local development.
 
 The implementation runs as the sub-issues of [Implement the browser MVP](https://github.com/RamsesKools/opaprikkie-simulator/issues/30), in the order set by [#29](https://github.com/RamsesKools/opaprikkie-simulator/issues/29).
-The old `opaprikkie_sim` package stays until the new engine and simulator replace it; the terminal interactive mode goes with it.
 
 ## MVP acceptance
 
