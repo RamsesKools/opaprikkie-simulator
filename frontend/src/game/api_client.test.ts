@@ -1,0 +1,170 @@
+import { expect, test, vi } from "vitest";
+import { createApiClient } from "./api_client.ts";
+import { GameError, type Game, type GameUpdate } from "./model.ts";
+
+type Reply = { status: number; body: unknown };
+type Route = (body: unknown) => Reply;
+
+const game = (phase: Game["phase"]): Game => ({
+  ruleset: "classic",
+  phase,
+  names: ["Ann", "Opa"],
+  controllers: ["human", "ai"],
+  pegs: [{ 1: 0 }, { 1: 0 }],
+  observation: null,
+  winner: null,
+  seed: null,
+  strategy: null,
+});
+
+const update = (phase: Game["phase"], kinds: string[] = []): GameUpdate =>
+  ({
+    game: game(phase),
+    logs: kinds.map((kind) => ({ kind, player: 0, turn: 1, continuation: 0, opening_roll: [] })),
+  }) as GameUpdate;
+
+const failure = (status: number, code: string): Reply => ({
+  status,
+  body: { code, message: code },
+});
+
+function serve(routes: Record<string, Route | Reply[]>) {
+  const calls: { route: string; body: unknown }[] = [];
+  const fetch = vi.fn<(request: Request) => Promise<Response>>(async (request) => {
+    const route = `${request.method} ${new URL(request.url).pathname}`;
+    const text = await request.text();
+    const body: unknown = text ? JSON.parse(text) : undefined;
+    calls.push({ route, body });
+    const handler = routes[route];
+    const reply = Array.isArray(handler) ? handler.shift() : handler?.(body);
+    if (!reply) throw new Error(`unexpected ${route}`);
+    return new Response(JSON.stringify(reply.body), {
+      status: reply.status,
+      headers: { "content-type": "application/json" },
+    });
+  });
+  return { client: createApiClient({ baseUrl: "http://test", fetch }), calls };
+}
+
+test("reads the health", async () => {
+  const health = { version: "1.0.0", dev_mode: true, strategies: ["greedy"] };
+  const { client } = serve({ "GET /api/health": () => ({ status: 200, body: health }) });
+
+  expect(await client.health()).toEqual(health);
+});
+
+test("resumes the session from its cookie", async () => {
+  const session = { names: ["Ann", "Bob"], game: null };
+  const { client, calls } = serve({ "GET /api/session": () => ({ status: 200, body: session }) });
+
+  expect(await client.session()).toEqual(session);
+  expect(calls).toHaveLength(1);
+});
+
+test("starts a session when there is none", async () => {
+  const { client, calls } = serve({
+    "GET /api/session": () => failure(401, "no_session"),
+    "POST /api/sessions": () => ({ status: 201, body: { names: null, game: null } }),
+  });
+
+  expect(await client.session()).toEqual({ names: null, game: null });
+  expect(calls.map(({ route }) => route)).toEqual(["GET /api/session", "POST /api/sessions"]);
+});
+
+test("creates the game and names the players in one start", async () => {
+  const { client, calls } = serve({
+    "POST /api/game": () => ({ status: 201, body: update("naming") }),
+    "POST /api/game/names": () => ({
+      status: 200,
+      body: update("choosing_target", ["dice_off", "no_move"]),
+    }),
+  });
+
+  const started = await client.start({ mode: "versus_ai", names: ["Ann", "Opa"] });
+
+  expect(started.game.phase).toBe("choosing_target");
+  expect(started.logs.map(({ kind }) => kind)).toEqual(["dice_off", "no_move"]);
+  expect(calls).toEqual([
+    { route: "POST /api/game", body: { controllers: ["human", "ai"] } },
+    { route: "POST /api/game/names", body: { names: ["Ann", "Opa"] } },
+  ]);
+});
+
+test("sends the dev mode seed and strategy only when set", async () => {
+  const { client, calls } = serve({
+    "POST /api/game": () => ({ status: 201, body: update("naming") }),
+    "POST /api/game/names": () => ({ status: 200, body: update("choosing_first_player") }),
+  });
+
+  await client.start({ mode: "hot_seat", names: ["Ann", "Bob"], seed: "7", strategy: "greedy" });
+
+  expect(calls[0]!.body).toEqual({
+    controllers: ["human", "human"],
+    seed: "7",
+    strategy: "greedy",
+  });
+});
+
+test("starts a fresh session when the old one is gone", async () => {
+  const { client, calls } = serve({
+    "POST /api/game": [failure(401, "no_session"), { status: 201, body: update("naming") }],
+    "POST /api/sessions": () => ({ status: 201, body: { names: null, game: null } }),
+    "POST /api/game/names": () => ({ status: 200, body: update("choosing_first_player") }),
+  });
+
+  await client.start({ mode: "hot_seat", names: ["Ann", "Bob"] });
+
+  expect(calls.map(({ route }) => route)).toEqual([
+    "POST /api/game",
+    "POST /api/sessions",
+    "POST /api/game",
+    "POST /api/game/names",
+  ]);
+});
+
+test("posts the first player and the target", async () => {
+  const { client, calls } = serve({
+    "POST /api/game/first_player": () => ({ status: 200, body: update("choosing_target") }),
+    "POST /api/game/target": () => ({ status: 200, body: update("finished", ["roll_sequence"]) }),
+  });
+
+  expect((await client.chooseFirstPlayer(1)).game.phase).toBe("choosing_target");
+  expect((await client.chooseTarget(7)).logs).toHaveLength(1);
+  expect(calls.map(({ body }) => body)).toEqual([{ player: 1 }, { target: 7 }]);
+});
+
+test("rejects with the API's error code", async () => {
+  const { client } = serve({ "POST /api/game/target": () => failure(422, "illegal_target") });
+
+  const rejection = client.chooseTarget(3);
+
+  await expect(rejection).rejects.toBeInstanceOf(GameError);
+  await expect(rejection).rejects.toMatchObject({ code: "illegal_target" });
+});
+
+test("rejects with a generic code when the body isn't an API error", async () => {
+  const { client } = serve({
+    "POST /api/game/target": () => ({ status: 502, body: "Bad gateway" }),
+  });
+
+  await expect(client.chooseTarget(3)).rejects.toMatchObject({ code: "http_error" });
+});
+
+test("rejects with a network code when the request fails", async () => {
+  const { client } = serve({});
+
+  await expect(client.health()).rejects.toMatchObject({ code: "network" });
+});
+
+test("only starts a session for a missing one", async () => {
+  const { client, calls } = serve({
+    "GET /api/session": () => failure(500, "internal_error"),
+    "POST /api/game": () => failure(422, "invalid_request"),
+  });
+
+  await expect(client.session()).rejects.toMatchObject({ code: "internal_error" });
+  await expect(client.start({ mode: "hot_seat", names: ["A", "B"] })).rejects.toMatchObject({
+    code: "invalid_request",
+  });
+  expect(calls.map(({ route }) => route)).toEqual(["GET /api/session", "POST /api/game"]);
+});

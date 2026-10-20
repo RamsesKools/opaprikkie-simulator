@@ -65,6 +65,29 @@ jobs:
       - run: npm run check
       - run: npm run build
 
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            frontend/tools/api_types/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: uv sync --locked
+      - name: Drift check
+        run: |
+          uv run task gen_api
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+      - run: uv run task test_contract
+
   docker:
     runs-on: ubuntu-latest
     timeout-minutes: 15

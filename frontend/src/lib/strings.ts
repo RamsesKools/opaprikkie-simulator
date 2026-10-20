@@ -3,6 +3,8 @@ export const strings = {
   rules: "Rules",
   autoPlay: "Play turns automatically",
   close: "Close",
+  stale: "A new version of Opa Prikkie is out.",
+  reload: "Reload",
   menu: {
     mode: (label: string) => `Mode: ${label}`,
     hotSeat: "Player vs Player",
@@ -13,6 +15,10 @@ export const strings = {
     defaultAiName: "Opa",
     start: "Start",
     nameLength: "Names need 1 to 20 characters.",
+    dev: "Dev mode",
+    seed: "Seed",
+    strategy: "AI strategy",
+    randomStrategy: "Random",
   },
   diceOff: {
     title: "Dice-off",
@@ -46,6 +52,8 @@ export const strings = {
     column: (target: number, row: number) => `Target ${target}, row ${row}`,
     dice: (values: number[]) => `Dice: ${values.join(", ")}`,
     error: "Something went wrong.",
+    seed: (seed: number | string) => `Seed: ${seed}`,
+    strategy: (strategy: string) => `AI strategy: ${strategy}`,
   },
   victory: {
     wins: (name: string) => `${name} wins!`,

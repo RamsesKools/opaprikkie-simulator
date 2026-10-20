@@ -41,18 +41,25 @@ const game: Game = {
   strategy: null,
 };
 
-function show(chooseTarget: GameClient["chooseTarget"], logs: LogEntry[] = [], autoPlay = true) {
+function show(
+  chooseTarget: GameClient["chooseTarget"],
+  logs: LogEntry[] = [],
+  autoPlay = true,
+  shown: Game = game,
+) {
   const client = { chooseTarget } as unknown as GameClient;
   const onFinished = vi.fn<(game: Game) => void>();
+  const onError = vi.fn<() => void>();
   render(
     <GameScreen
       client={client}
-      initial={{ game, logs }}
+      initial={{ game: shown, logs }}
       autoPlay={autoPlay}
       onFinished={onFinished}
+      onError={onError}
     />,
   );
-  return onFinished;
+  return { onFinished, onError };
 }
 
 const pickOne = () => {
@@ -146,11 +153,12 @@ test("recovers from a failed choice on the next pick", async () => {
     .fn<GameClient["chooseTarget"]>()
     .mockRejectedValueOnce(new GameError("internal_error", "down"))
     .mockResolvedValueOnce({ game: finished, logs: [] });
-  const onFinished = show(chooseTarget);
+  const { onFinished, onError } = show(chooseTarget);
 
   pickOne();
   await act(() => vi.advanceTimersByTimeAsync(0));
   expect(screen.getByText(strings.game.error)).toBeInTheDocument();
+  expect(onError).toHaveBeenCalledOnce();
 
   pickOne();
   await act(() => vi.advanceTimersByTimeAsync(0));
@@ -182,4 +190,19 @@ test("waits for each throw when turns don't play automatically", async () => {
     screen.getByRole("img", { name: strings.game.dice([1, 3, 3, 4, 5, 6]) }),
   ).toBeInTheDocument();
   expect(bob.querySelectorAll("button:enabled")).toHaveLength(2);
+});
+
+test("shows the seed and the AI strategy in dev mode", () => {
+  const dev: Game = { ...game, controllers: ["human", "ai"], seed: "abc", strategy: "greedy" };
+  show(vi.fn<GameClient["chooseTarget"]>(), [], true, dev);
+
+  expect(screen.getByText(strings.game.seed("abc"))).toBeInTheDocument();
+  expect(screen.getByText(strings.game.strategy("greedy"))).toBeInTheDocument();
+});
+
+test("shows neither outside dev mode", () => {
+  show(vi.fn<GameClient["chooseTarget"]>());
+
+  expect(screen.queryByText(/^Seed/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/^AI strategy/)).not.toBeInTheDocument();
 });

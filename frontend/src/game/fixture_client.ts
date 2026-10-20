@@ -1,3 +1,4 @@
+import { version } from "../lib/version.ts";
 import recorded from "./fixtures/scripted_game.json";
 import {
   GameError,
@@ -26,6 +27,7 @@ export type Script = {
 
 // Recorded from the engine with seed "fixture-241", always picking the most guaranteed moves.
 // One branch per first player; each choice point offers only the recorded target.
+// Drives the screens in tests without a backend.
 export const scriptedGame = recorded as Script;
 
 export function createFixtureClient(script: Script = scriptedGame): GameClient {
@@ -72,6 +74,8 @@ export function createFixtureClient(script: Script = scriptedGame): GameClient {
   }
 
   return {
+    health: async () => ({ version, dev_mode: false, strategies: null }),
+    session: async () => ({ names: null, game: null }),
     start: async ({ mode, names: chosen }: GameSetup) => {
       names = [...chosen];
       controllers = ["human", mode === "versus_ai" ? "ai" : "human"];

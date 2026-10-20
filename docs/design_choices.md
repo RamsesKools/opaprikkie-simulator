@@ -7,7 +7,7 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 
 1. Menu: pick the mode and enter names.
    - A big wooden switch flips between "Player vs AI", the default, and "Player vs Player" (hot-seat).
-   - Names are trimmed, 1 to 20 characters, and stored in the session so they're prefilled next time.
+   - Names are trimmed, 1 to 20 characters, and stored in the session so they're prefilled next time, in the mode of the session's last game.
    - Defaults: "Player 1", "Player 2", and "Opa" for the AI; all editable.
    - Duplicate names are fine; seat colours tell players apart.
    - Start stays disabled while a name is out of range or the game is being created.
@@ -88,16 +88,26 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 
 ## View model
 
-- Screens talk to a `GameClient` (`frontend/src/game/model.ts`) whose types mirror the backend's [HTTP API](architecture/http_api.md): each action returns a `GameUpdate`, `{game, logs}`.
+- Screens talk to a `GameClient` (`frontend/src/game/model.ts`) that mirrors the backend's [HTTP API](architecture/http_api.md), with the types generated in `frontend/src/lib/api.d.ts`: each action returns a `GameUpdate`, `{game, logs}`.
+- `game/api_client.ts` implements it with `openapi-fetch`; `start` creates the game and names the players, and starts a fresh session when the old one is gone.
 - A failed action rejects with a `GameError` carrying the API's `code`; the screens show a generic message and let the player try again.
-- Until the API is connected, a fixture client replays a game recorded from the engine; each choice point offers only the recorded target.
+- The menu waits for the session, so the names are prefilled before it shows.
+- Unit tests use a fixture client that replays a game recorded from the engine; each choice point offers only the recorded target.
+
+## Version handshake
+
+- On load and after every failed action, the app compares `GET /api/health`'s `version` with its own from `package.json`.
+- On a mismatch, a banner under the header says "A new version of Opa Prikkie is out." with a "Reload" button.
+- A failed health check changes nothing; the next failure checks again.
 
 ## Dev mode
 
 When `GET /api/health` reports `dev_mode`:
 
-- the menu shows a seed field and an AI strategy dropdown
-- the game shows the seed and the AI's strategy
+- the menu shows a seed field and, versus AI, an AI strategy dropdown with the `strategies` the health lists, defaulting to "Random"
+- a blank seed or "Random" isn't sent, so the backend picks
+- the seed is always sent as a string, like the backend's own generated seeds, so a seed copied from the game replays it
+- the game shows the seed and the AI's strategy under the message
 
 The AI strategy is never shown otherwise.
 

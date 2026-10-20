@@ -16,9 +16,10 @@ type Props = {
   initial: GameUpdate;
   autoPlay: boolean;
   onFinished: (game: Game) => void;
+  onError: () => void;
 };
 
-export function GameScreen({ client, initial, autoPlay, onFinished }: Props) {
+export function GameScreen({ client, initial, autoPlay, onFinished, onError }: Props) {
   const [playback, setPlayback] = useState<Playback>(() => ({
     game: initial.game,
     scenes: buildScenes(emptyPegs(initial.game.pegs), initial.logs, initial.game),
@@ -63,6 +64,7 @@ export function GameScreen({ client, initial, autoPlay, onFinished }: Props) {
       () => {
         setFailed(true);
         setBusy(false);
+        onError();
       },
     );
   };
@@ -118,6 +120,12 @@ export function GameScreen({ client, initial, autoPlay, onFinished }: Props) {
             {message}
           </span>
         </p>
+        {game.seed !== null && (
+          <p className="dev">
+            <span>{strings.game.seed(game.seed)}</span>
+            {game.strategy !== null && <span>{strings.game.strategy(game.strategy)}</span>}
+          </p>
+        )}
       </div>
       <div className="boards">
         {pegs.map((board, seat) => (

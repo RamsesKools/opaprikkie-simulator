@@ -4,11 +4,12 @@ import type { GameSetup } from "../game/model.ts";
 import { strings } from "../lib/strings.ts";
 import { Menu } from "./menu.tsx";
 
-type Shown = { initial?: GameSetup | null; pending?: boolean };
+type Dev = { strategies: string[] } | null;
+type Shown = { initial?: GameSetup | null; dev?: Dev; pending?: boolean };
 
-function show({ initial = null, pending = false }: Shown = {}) {
+function show({ initial = null, dev = null, pending = false }: Shown = {}) {
   const onStart = vi.fn<(setup: GameSetup) => void>();
-  render(<Menu initial={initial} pending={pending} onStart={onStart} />);
+  render(<Menu initial={initial} dev={dev} pending={pending} onStart={onStart} />);
   return { onStart };
 }
 
@@ -77,4 +78,58 @@ test("keeps the previous setup", () => {
   expect(screen.getByLabelText(strings.menu.player(1))).toHaveValue("Oma");
   switchMode(strings.menu.hotSeat);
   expect(screen.getByLabelText(strings.menu.opponent)).toHaveValue("Opa");
+});
+
+test("hides the dev mode fields outside dev mode", () => {
+  show();
+
+  expect(screen.queryByLabelText(strings.menu.seed)).not.toBeInTheDocument();
+  expect(screen.queryByLabelText(strings.menu.strategy)).not.toBeInTheDocument();
+});
+
+test("sends the seed and the AI strategy in dev mode", () => {
+  const { onStart } = show({ dev: { strategies: ["greedy", "smart"] } });
+
+  fireEvent.change(screen.getByLabelText(strings.menu.seed), { target: { value: " 42 " } });
+  fireEvent.change(screen.getByLabelText(strings.menu.strategy), { target: { value: "smart" } });
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+
+  expect(onStart).toHaveBeenCalledWith({
+    mode: "versus_ai",
+    names: ["Player 1", "Opa"],
+    seed: "42",
+    strategy: "smart",
+  });
+});
+
+test("leaves a blank seed and a random strategy out", () => {
+  const { onStart } = show({ dev: { strategies: ["greedy"] } });
+
+  expect(screen.getByLabelText(strings.menu.strategy)).toHaveDisplayValue(
+    strings.menu.randomStrategy,
+  );
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+
+  expect(onStart).toHaveBeenCalledWith({ mode: "versus_ai", names: ["Player 1", "Opa"] });
+});
+
+test("offers the AI strategy versus the AI only", () => {
+  const { onStart } = show({ dev: { strategies: ["greedy"] } });
+
+  fireEvent.change(screen.getByLabelText(strings.menu.strategy), { target: { value: "greedy" } });
+  switchMode(strings.menu.versusAi);
+  expect(screen.queryByLabelText(strings.menu.strategy)).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+
+  expect(onStart).toHaveBeenCalledWith({ mode: "hot_seat", names: ["Player 1", "Player 2"] });
+});
+
+test("keeps the previous seed and strategy in dev mode", () => {
+  show({
+    initial: { mode: "versus_ai", names: ["Ann", "Opa"], seed: "7", strategy: "greedy" },
+    dev: { strategies: ["greedy", "smart"] },
+  });
+
+  expect(screen.getByLabelText(strings.menu.seed)).toHaveValue("7");
+  expect(screen.getByLabelText(strings.menu.strategy)).toHaveValue("greedy");
 });

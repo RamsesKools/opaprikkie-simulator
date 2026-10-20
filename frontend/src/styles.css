@@ -286,6 +286,53 @@ button.primary:disabled {
   background: var(--seat);
 }
 
+.menu .dev {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px 12px;
+  border: 2px dashed var(--muted);
+  border-radius: 8px;
+}
+
+.menu .dev label {
+  display: grid;
+  gap: 4px;
+}
+
+.menu .dev input,
+.menu .dev select {
+  font: inherit;
+  padding: 6px 8px;
+  border: 2px solid var(--muted);
+  border-radius: 8px;
+  background: white;
+}
+
+.status .dev {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 16px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 16px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  background: var(--paper);
+  border-bottom: 2px solid var(--wood-dark);
+  font-weight: 600;
+}
+
 .problem {
   margin: 0;
   color: #b3261e;

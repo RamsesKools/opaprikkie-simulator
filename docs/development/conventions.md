@@ -21,10 +21,10 @@ taskipy is the single command surface for Python and frontend: `uv run task <nam
 | `typecheck` | ty and `tsc -b` |
 | `lint_imports` | `import-linter` module contracts |
 | `test` | pytest with the 90% coverage gate, and Vitest |
-| `test_contract` | starts uvicorn and runs the frontend contract suite |
+| `test_contract` | starts uvicorn in dev mode on a free port and runs the frontend contract suite against it |
 | `check` | everything above except `format` |
 | `dev` | uvicorn `--reload` on the settings' host and port, and Vite with its `/api` proxy |
-| `gen_api` | dumps the OpenAPI schema to `frontend/openapi.json` |
+| `gen_api` | dumps the OpenAPI schema to `frontend/openapi.json` and its types to `frontend/src/lib/api.d.ts` |
 | `bump <part>` | sets the version in `pyproject.toml` and `frontend/package.json` |
 | `wayfinder_pull` | refreshes the `.plan/` cache of the planning map |
 | `image_build`, `image_build_multiarch` | local Docker builds |
@@ -47,7 +47,9 @@ taskipy is the single command surface for Python and frontend: `uv run task <nam
 - Frontend: Vitest, React Testing Library, and jsdom, 90% v8 coverage excluding generated types and `main.tsx`.
   Unit tests sit next to the source as `*.test.ts(x)`.
 - Contract suite: `frontend/tests/contract/` drives the real API client against a live backend through every flow the UI relies on (create session, start game, choose target, game end, rejected target, cookie resume).
+- Contract suite runs in Node with one cookie jar per simulated browser, from `vitest.contract.config.ts`.
 - Drift check: `task gen_api` writes `frontend/openapi.json` and `api.d.ts` without a server; both are committed, and CI fails when regenerating them changes anything.
+  `openapi-typescript` needs the TypeScript 5 compiler API, which TypeScript 7 doesn't ship, so it lives in its own package, `frontend/tools/api_types/`, which `gen_api` installs with `npm ci`.
 
 ## Pre-commit
 

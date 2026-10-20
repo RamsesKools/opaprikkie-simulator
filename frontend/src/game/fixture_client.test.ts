@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { createFixtureClient, scriptedGame, type Script } from "./fixture_client.ts";
+import { version } from "../lib/version.ts";
 import { GameError, type GameClient, type GameUpdate, type LogEntry } from "./model.ts";
 
 const names: [string, string] = ["Ann", "Bob"];
@@ -86,4 +87,11 @@ describe("versus AI", () => {
     expect(update.game.observation?.seat).toBe(0);
     expect(update.logs.some((entry) => entry.kind === "roll_sequence")).toBe(true);
   });
+});
+
+test("reports this build's version without dev mode or a saved session", async () => {
+  const client = createFixtureClient();
+
+  expect(await client.health()).toEqual({ version, dev_mode: false, strategies: null });
+  expect(await client.session()).toEqual({ names: null, game: null });
 });

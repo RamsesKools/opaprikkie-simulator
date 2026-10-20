@@ -7,7 +7,7 @@ Choices, observations, and rejections follow the [strategy contract](strategy_co
 
 | Route | Does | Returns |
 | -- | -- | -- |
-| `GET /api/health` | the version handshake | `{version, dev_mode}` |
+| `GET /api/health` | the version handshake | `{version, dev_mode, strategies}` |
 | `POST /api/sessions` | starts a session and sets its cookie | 201, `Session` |
 | `GET /api/session` | resumes from the cookie | `Session`: the last `names` and the `game`, either may be `null` |
 | `POST /api/game` | starts a new game, replacing the session's game | 201, `GameUpdate` in phase `naming` |
@@ -40,7 +40,7 @@ Choices, observations, and rejections follow the [strategy contract](strategy_co
 ## Dev mode
 
 - With `OPAPRIKKIE_DEV_MODE` off, `seed`, `first_player`, or `strategy` on `POST /api/game` gets a 403 `dev_mode_only` listing the `fields`, and `Game` shows neither `seed` nor `strategy`.
-- With it on, those fields are accepted, `Game` shows both, and `/docs` and `/openapi.json` are served.
+- With it on, those fields are accepted, `Game` shows both, `/api/health` lists the built-in `strategies` (`null` otherwise), and `/docs` and `/openapi.json` are served.
 - A dev `first_player` must be a seat number, checked on creation, and skips the dice-off when the players are named.
 
 ## Errors
@@ -63,4 +63,4 @@ Choice fields (`names`, `player`, `target`) are typed in the schema but passed t
 
 ## Schema
 
-`uv run task gen_api` writes the OpenAPI schema to `frontend/openapi.json` without a server.
+`uv run task gen_api` writes the OpenAPI schema to `frontend/openapi.json` and its TypeScript types to `frontend/src/lib/api.d.ts`, without a server.
