@@ -69,5 +69,6 @@ class Strategy(Protocol):
 - The backend generates every seed and keeps it out of responses.
 - With `OPAPRIKKIE_DEV_MODE` on, game creation accepts `seed`, `first_player`, and AI strategy, and the state includes the seed; otherwise those fields get a 403.
 - In-process callers always pass their own seed.
+- The simulator over HTTP passes them too, so it needs a dev-mode backend.
 - The simulator seeds each seat's strategy `rng` with `<game seed>:strategy:<seat>`.
 - Once games are stored, the seed may move out of the engine state.

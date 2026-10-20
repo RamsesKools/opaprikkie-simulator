@@ -37,7 +37,9 @@ flowchart LR
 
 - Owns batch runs, strategy matchups, the HTTP client, and aggregate statistics.
 - Drives games either in-process through `engine` or over HTTP against a running backend.
-- `run_batch` plays a matchup through a `GameDriver`; `InProcessDriver` is the in-process one.
+- `run_batch` plays a matchup through a `GameDriver`: `InProcessDriver` calls the engine, `HttpDriver` an `httpx2.Client` pointed at a backend.
+- `HttpDriver` checks `/api/health` first and fails fast unless the backend runs the same version in dev mode, since it sends each game's seed and first player.
+- It plays each game in a new session with both seats `human`, so the logs match in-process ones, and maps a 422 rejection back to the engine's `IllegalAction`.
 - Game `i` of a batch gets the seed `<batch seed>:<i>` and first player `i % players`, skipping the dice-off, so a batch seed replays the whole batch.
 - Each seat's strategy gets its own `Random`, seeded from the game seed and the seat.
 - A game's turns count both players' turns, the engine's turn number at the end.

@@ -42,6 +42,9 @@ uv run opaprikkie serve
 # Play 1000 games of random versus random and print win rates, turns, continuations, and dead turns
 uv run opaprikkie simulate random random --games 1000 --seed 42
 
+# The same batch over HTTP, against a backend started with OPAPRIKKIE_DEV_MODE=true
+uv run opaprikkie simulate random random --games 1000 --seed 42 --url http://127.0.0.1:8000
+
 # Show all commands
 uv run opaprikkie --help
 ```

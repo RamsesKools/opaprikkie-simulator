@@ -1,13 +1,14 @@
 import secrets
 
 import click
+import httpx2
 import uvicorn
 
 from opaprikkie import __version__
 from opaprikkie.backend.app import create_app
 from opaprikkie.backend.settings import Settings
 from opaprikkie.engine import BUILTIN_STRATEGIES, CLASSIC
-from opaprikkie.sim import BatchStats, run_batch
+from opaprikkie.sim import BackendError, BatchStats, HttpDriver, run_batch
 
 
 @click.group()
@@ -27,12 +28,26 @@ def serve() -> None:
 @click.argument("strategies", nargs=CLASSIC.players, type=click.Choice(sorted(BUILTIN_STRATEGIES)))
 @click.option("-n", "--games", default=1000, show_default=True, type=click.IntRange(min=1))
 @click.option("-s", "--seed", help="Batch seed; a random one is picked and printed if omitted.")
-def simulate(strategies: tuple[str, ...], games: int, seed: str | None) -> None:
+@click.option("--url", help="Play over HTTP against the backend at URL, in dev mode.")
+def simulate(strategies: tuple[str, ...], games: int, seed: str | None, url: str | None) -> None:
     """Play STRATEGIES against each other, one per seat, and print a summary."""
     seed = seed or secrets.token_hex(4)
-    stats = run_batch(strategies, games, seed).stats
+    if url is None:
+        stats = run_batch(strategies, games, seed).stats
+    else:
+        stats = _over_http(url, strategies, games, seed)
     click.echo(f"{games} games of {' vs '.join(strategies)}, seed {seed}")
     click.echo(_summary(stats))
+
+
+def _over_http(url: str, strategies: tuple[str, ...], games: int, seed: str) -> BatchStats:
+    try:
+        with httpx2.Client(base_url=url) as client:
+            return run_batch(strategies, games, seed, HttpDriver(client)).stats
+    except BackendError as error:
+        raise click.ClickException(str(error)) from error
+    except httpx2.TransportError as error:
+        raise click.ClickException(f"can't reach the backend at {url}: {error}") from error
 
 
 def _summary(stats: BatchStats) -> str:
