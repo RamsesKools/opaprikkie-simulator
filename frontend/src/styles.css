@@ -597,8 +597,6 @@ button.primary:disabled {
 }
 
 .ghost.finishing {
-  border-style: solid;
-  border-color: gold;
   opacity: 0.85;
   box-shadow:
     0 0 0 3px rgb(255 215 0 / 60%),

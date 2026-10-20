@@ -225,3 +225,38 @@ test("sends one pick while it's pending", async () => {
 
   expect(chooseTarget).toHaveBeenCalledOnce();
 });
+
+test("keeps the dice on the table until the next throw", async () => {
+  const next: Game = { ...game, observation: { ...game.observation!, seat: 0, turn: 2 } };
+  const logs: LogEntry[] = [
+    {
+      kind: "roll_sequence",
+      player: 1,
+      turn: 1,
+      continuation: 0,
+      target: 3,
+      rolls: [
+        { dice: [1, 3, 3, 4, 5, 6], set_aside: [1, 2], reset: false, matches: 2 },
+        { dice: [2, 3, 5, 6], set_aside: [1], reset: false, matches: 1 },
+      ],
+      matches: 3,
+      movement: 1,
+    },
+  ];
+  show(vi.fn<GameClient["chooseTarget"]>().mockResolvedValue({ game: next, logs }));
+  const die = (dice: number[], index: number) =>
+    screen.getByRole("img", { name: strings.game.dice(dice) }).children[index];
+  const opening = die([1, 3, 3, 4, 5, 6], 0);
+
+  const bob = screen.getByRole("region", { name: strings.game.board("Bob") });
+  fireEvent.click(within(bob).getByRole("button", { name: strings.game.column(3, 4) }));
+  await act(() => vi.advanceTimersByTimeAsync(0));
+  expect(die([1, 3, 3, 4, 5, 6], 0)).toBe(opening);
+
+  await act(() => vi.advanceTimersByTimeAsync(timing.roll));
+  const second = die([2, 3, 5, 6], 2);
+  expect(second).not.toBe(opening);
+  await act(() => vi.advanceTimersByTimeAsync(timing.roll));
+  expect(screen.getByText(strings.game.moves(3, 1))).toBeInTheDocument();
+  expect(die([2, 5, 6], 1)).toBe(second);
+});

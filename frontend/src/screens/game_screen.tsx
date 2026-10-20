@@ -3,7 +3,7 @@ import { Board } from "../components/board.tsx";
 import { Table } from "../components/table.tsx";
 import type { Game, GameClient, GameUpdate, Pegs } from "../game/model.ts";
 import { errorMessage } from "../game/errors.ts";
-import { buildScenes, type Scene } from "../game/scenes.ts";
+import { buildScenes, openingKey, type Scene } from "../game/scenes.ts";
 import { seatStyle } from "../lib/palette.ts";
 import { strings } from "../lib/strings.ts";
 
@@ -111,7 +111,8 @@ export function GameScreen({ client, initial, autoPlay, onFinished, onError }: P
             player={player}
             dice={scene.dice}
             setAside={scene.setAside}
-            rollKey={`${index}`}
+            rollKey={scene.throwKey}
+            slots={scene.slots}
             kept={scene.kept}
             count={scene.count}
             target={scene.target}
@@ -121,7 +122,7 @@ export function GameScreen({ client, initial, autoPlay, onFinished, onError }: P
             player={player}
             dice={choosing ? observation.opening_roll : []}
             setAside={hint?.set_aside ?? []}
-            rollKey={`${observation?.turn}:${observation?.continuation}`}
+            rollKey={observation ? openingKey(observation.turn, observation.continuation) : ""}
             kept={[]}
             count={0}
             target={null}

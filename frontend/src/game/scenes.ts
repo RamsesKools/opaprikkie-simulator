@@ -9,6 +9,10 @@ export type Scene = {
   player: number;
   turn: number;
   dice: number[];
+  /** The throw the dice come from; the dice only tumble in when it changes. */
+  throwKey: string;
+  /** Each die's place in that throw, so dice taken away don't shift the rest. */
+  slots: number[];
   setAside: number[];
   kept: number[];
   count: number;
@@ -18,6 +22,10 @@ export type Scene = {
   fresh: boolean;
   ms: number;
 };
+
+export const openingKey = (turn: number, continuation: number) => `${turn}:${continuation}:0`;
+
+const allSlots = (dice: number[]) => dice.map((_, index) => index);
 
 type Position = { player: number; continuation: number };
 
@@ -40,7 +48,17 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
     const human = next.controllers[entry.player] === "human";
     const base = { player: entry.player, turn: entry.turn, tone: "info" as Tone, fresh: false };
     const opening = entry.kind === "no_move" ? entry.opening_roll : entry.rolls[0]!.dice;
-    const still = { ...base, pegs, dice: opening, setAside: [], kept: [], count: 0, target: null };
+    const still = {
+      ...base,
+      pegs,
+      dice: opening,
+      throwKey: openingKey(entry.turn, entry.continuation),
+      slots: allSlots(opening),
+      setAside: [],
+      kept: [],
+      count: 0,
+      target: null,
+    };
     if (!human) {
       scenes.push({ ...still, message: strings.game.aiThinking(name), ms: timing.aiThink });
     }
@@ -60,6 +78,8 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
         ...base,
         pegs,
         dice: roll.dice,
+        throwKey: `${entry.turn}:${entry.continuation}:${throwIndex}`,
+        slots: allSlots(roll.dice),
         setAside: roll.set_aside,
         kept,
         count,
@@ -72,11 +92,23 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
       count += roll.matches;
     }
     const last = rolls.at(-1)!;
-    const leftover = last.dice.filter((_, index) => !last.set_aside.includes(index));
+    const slots = allSlots(last.dice).filter((index) => !last.set_aside.includes(index));
+    const leftover = slots.map((index) => last.dice[index]!);
+    const throwKey = `${entry.turn}:${entry.continuation}:${rolls.length - 1}`;
     pegs = pegs.map((board, seat) =>
       seat === entry.player ? { ...board, [target]: board[target]! + movement } : board,
     );
-    const shown = { ...base, pegs, dice: leftover, setAside: [], kept, count, target };
+    const shown = {
+      ...base,
+      pegs,
+      dice: leftover,
+      throwKey,
+      slots,
+      setAside: [],
+      kept,
+      count,
+      target,
+    };
     scenes.push({ ...shown, message: strings.game.moves(target, movement), ms: timing.move });
     const following = turnLog[index + 1] ?? nextPosition;
     if (isContinuation(entry, following)) {
@@ -84,6 +116,7 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game): Scene[
       scenes.push({
         ...shown,
         dice: [],
+        slots: [],
         message,
         tone: "cue",
         ms: timing.continuation,

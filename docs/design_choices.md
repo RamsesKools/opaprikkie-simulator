@@ -29,7 +29,7 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
      Switching it off mid-game never hides dice already on the table; the next throw waits.
    - The player picks a target by clicking its column on their own board; only legal columns are clickable and glow.
    - Hovering or focusing a legal column raises the dice that form its matches, and shows a ghost peg on the row it's guaranteed to reach from the opening roll alone.
-     When that row is the top, the ghost gets a gold halo.
+     When that row is the top, the dashed ghost also gets a gold halo.
    - Each roll of the sequence shows in turn, with set-aside dice raised and outlined, then the peg slides up.
    - Set-aside dice move to a saved bowl next to the throw area, with the number of matches so far underneath, like "3 matches for 7".
      The bowl stays filled until the turn passes or the peg reaches the top; a six-dice reset empties it back onto the table, but the count carries on.
@@ -74,6 +74,7 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 
 - Use whatever works best per feature: CSS, or a library when it gives a clearly better result.
 - For now everything is CSS: dice tumble in, pegs slide with a slight overshoot, legal columns glow, "Oh no" wobbles, and cues pop.
+- Dice tumble in only on a new throw; dice already on the table stay put while the sequence replays, and set-aside dice leave without moving the rest.
 - Reduced motion shortens every animation to almost nothing.
 - Timings live in `frontend/src/game/timing.ts`:
 
