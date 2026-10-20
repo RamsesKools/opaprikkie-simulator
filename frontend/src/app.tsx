@@ -22,6 +22,13 @@ function prefill({ names, game }: Session): GameSetup | null {
   return { mode, names: [names[0]!, names[1]!] };
 }
 
+function resumed(game: Game | null): Screen {
+  if (game?.phase === "choosing_first_player")
+    return { kind: "dice_off", update: { game, logs: [] } };
+  if (game?.phase === "choosing_target") return { kind: "game", update: { game, logs: [] } };
+  return { kind: "menu" };
+}
+
 type Props = { client: GameClient };
 
 export function App({ client }: Props) {
@@ -40,13 +47,13 @@ export function App({ client }: Props) {
 
   useEffect(() => {
     handshake();
-    client
-      .session()
-      .then(
-        (session) => setSetup(prefill(session)),
-        () => setSetup(null),
-      )
-      .finally(() => setScreen({ kind: "menu" }));
+    client.session().then(
+      (session) => {
+        setSetup(prefill(session));
+        setScreen(resumed(session.game));
+      },
+      () => setScreen({ kind: "menu" }),
+    );
   }, [client, handshake]);
 
   // The game screen shows its own errors, so only a lost game reaches the app's alert.

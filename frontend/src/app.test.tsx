@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { App } from "./app.tsx";
 import { createFixtureClient, scriptedGame, type Script } from "./game/fixture_client.ts";
-import { GameError, type GameClient } from "./game/model.ts";
+import { GameError, type Game, type GameClient, type Session } from "./game/model.ts";
 import { strings } from "./lib/strings.ts";
 
 beforeEach(() => {
@@ -37,9 +37,9 @@ async function playToVictory(winner: string) {
   }
 }
 
-async function renderApp(client: GameClient = createFixtureClient()) {
+async function renderApp(client: GameClient = createFixtureClient(), menu = true) {
   render(<App client={client} />);
-  await until(() => screen.queryByRole("button", { name: strings.menu.start }));
+  if (menu) await until(() => screen.queryByRole("button", { name: strings.menu.start }));
 }
 
 const hotSeat = () =>
@@ -174,8 +174,8 @@ test("lets the dice-off winner choose again after a failed choice", async () => 
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 }, 60_000);
 
-test("prefills the names from the session", async () => {
-  const game = { ...scriptedGame.first_player_choice, names: ["Ann", "Bob"] };
+test("prefills the names and mode from the session's finished game", async () => {
+  const game = { ...scriptedGame.branches[0]!.final, names: ["Ann", "Bob"] };
   const session = vi.fn<GameClient["session"]>(async () => ({
     names: ["Ann", "Bob"],
     game: { ...game, controllers: ["human", "human"] },
@@ -294,3 +294,55 @@ test("leaves other game errors to the game screen", async () => {
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   expect(legalTarget()).toBeDefined();
 }, 60_000);
+
+const saved = (game: Omit<Game, "names" | "controllers">, names = ["Ann", "Bob"]) => ({
+  names,
+  game: { ...game, names, controllers: ["human", "human"] } as Game,
+});
+
+const resumeWith = (session: Session, client: Partial<GameClient> = {}) =>
+  renderApp({ ...createFixtureClient(), session: async () => session, ...client }, false);
+
+test("resumes a game in play on reload", async () => {
+  const chooseTarget = vi.fn<GameClient["chooseTarget"]>(() => new Promise(() => {}));
+  const game = scriptedGame.branches[0]!.steps[0]!.game;
+  await resumeWith(saved(game), { chooseTarget });
+
+  await until(() => screen.queryByText(strings.game.pick("Ann")));
+  expect(screen.queryByRole("button", { name: strings.menu.start })).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("img", { name: strings.game.dice(game.observation!.opening_roll) }),
+  ).toBeInTheDocument();
+  fireEvent.click(legalTarget()!);
+  expect(chooseTarget).toHaveBeenCalledExactlyOnceWith(game.observation!.legal_targets[0]!.target);
+});
+
+test("resumes the dice-off winner's choice on reload", async () => {
+  const chooseFirstPlayer = vi.fn<GameClient["chooseFirstPlayer"]>(() => new Promise(() => {}));
+  await resumeWith(saved(scriptedGame.first_player_choice), { chooseFirstPlayer });
+
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Bob") })),
+  );
+
+  expect(chooseFirstPlayer).toHaveBeenCalledExactlyOnceWith(1);
+});
+
+test("goes back to the menu when a resumed game is lost", async () => {
+  await resumeWith(saved(scriptedGame.branches[0]!.steps[0]!.game), { chooseTarget: lost });
+
+  fireEvent.click(await until(legalTarget));
+
+  expect(await until(() => screen.queryByRole("alert"))).toHaveTextContent(strings.errors.lost);
+  expect(screen.getByLabelText(strings.menu.player(0))).toHaveValue("Ann");
+}, 60_000);
+
+test.each([
+  ["finished", scriptedGame.branches[0]!.final],
+  ["unnamed", { ...scriptedGame.first_player_choice, phase: "naming", observation: null }],
+] as const)("shows the menu for a %s game", async (_, game) => {
+  await resumeWith(saved(game as Omit<Game, "names" | "controllers">));
+
+  await until(() => screen.queryByRole("button", { name: strings.menu.start }));
+  expect(screen.getByLabelText(strings.menu.player(1))).toHaveValue("Bob");
+});
