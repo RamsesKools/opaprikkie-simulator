@@ -57,10 +57,10 @@ class HttpDriver:
     def _send(self, method: str, path: str, body: _Json | None = None) -> _Json:
         response = self.client.request(method, path, json=body)
         if response.is_success:
-            return response.json()
+            return _json(response, method, path)
         if response.status_code == 422:
-            error = response.json()
-            if error["code"] in Rejection:
+            error = _json(response, method, path)
+            if error.get("code") in Rejection:
                 code, message = Rejection(error.pop("code")), error.pop("message")
                 raise IllegalAction(code, message, **error)
         raise BackendError(f"{method} {path} failed with {response.status_code}: {response.text}")
@@ -80,6 +80,15 @@ class HttpDriver:
         )
 
 
+def _json(response: httpx2.Response, method: str, path: str) -> _Json:
+    try:
+        return response.json()
+    except ValueError as error:
+        raise BackendError(
+            f"{method} {path} answered {response.status_code} without JSON"
+        ) from error
+
+
 def _entry(data: _Json) -> LogEntry:
     match data["kind"]:
         case "roll_sequence":
@@ -96,7 +105,9 @@ def _entry(data: _Json) -> LogEntry:
                 data["matches"],
                 data["movement"],
             )
-        case _:
+        case "no_move":
             return NoMove(
                 data["player"], data["turn"], data["continuation"], tuple(data["opening_roll"])
             )
+        case kind:
+            raise BackendError(f"unexpected log entry {kind!r}")

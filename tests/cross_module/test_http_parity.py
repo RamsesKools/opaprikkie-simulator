@@ -56,3 +56,15 @@ def test_a_rejected_choice_over_http_fails_the_batch_like_in_process(driver):
     assert over_http.value.message == in_process.value.message
     assert over_http.value.hints["reason"] == "not_a_target"
     assert over_http.value.__notes__ == ["cheater in seat 1 of game 'batch:0'"]
+
+
+def test_a_session_evicted_mid_game_fails_the_game():
+    app = create_app(Settings(dev_mode=True, max_sessions=1))
+    driver = HttpDriver(TestClient(app))
+
+    def evict(observation: Observation) -> int:
+        TestClient(app).post("/api/sessions")
+        return lowest(observation)
+
+    with pytest.raises(BackendError, match=r"POST /api/game/target failed with 401: .*no_session"):
+        driver.play("parity", 0, evict)

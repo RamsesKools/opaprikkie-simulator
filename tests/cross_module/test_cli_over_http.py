@@ -7,21 +7,27 @@ import pytest
 import uvicorn
 from click.testing import CliRunner
 
-from opaprikkie import cli
+from opaprikkie import __version__, cli
 from opaprikkie.backend.app import create_app
 from opaprikkie.backend.settings import Settings
+from opaprikkie.engine import IllegalAction, RandomStrategy
+from opaprikkie.sim import http
 
 
 def serve(settings: Settings) -> Iterator[str]:
     server = uvicorn.Server(uvicorn.Config(create_app(settings), port=0, log_level="warning"))
-    thread = threading.Thread(target=server.run)
+    thread = threading.Thread(target=server.run, daemon=True)
     thread.start()
+    deadline = time.monotonic() + 10
     while not server.started:
+        if not thread.is_alive() or time.monotonic() > deadline:
+            server.should_exit = True
+            pytest.fail("uvicorn didn't start")
         time.sleep(0.01)
     port = server.servers[0].sockets[0].getsockname()[1]
     yield f"http://127.0.0.1:{port}"
     server.should_exit = True
-    thread.join()
+    thread.join(timeout=10)
 
 
 @pytest.fixture(scope="module")
@@ -59,3 +65,22 @@ def test_an_unreachable_backend_fails_with_the_reason():
 
     assert result.exit_code == 1
     assert result.output.startswith(f"Error: can't reach the backend at {url}: ")
+
+
+def test_a_simulator_on_another_version_fails_with_the_reason(dev_backend, monkeypatch):
+    monkeypatch.setattr(http, "__version__", "0.0.1")
+
+    result = CliRunner().invoke(cli.main, ["simulate", "random", "random", "--url", dev_backend])
+
+    assert result.exit_code == 1
+    assert result.output == f"Error: backend runs {__version__}, the simulator 0.0.1\n"
+
+
+def test_a_rejected_choice_fails_the_batch_naming_the_strategy(dev_backend, monkeypatch):
+    monkeypatch.setattr(RandomStrategy, "choose_target", lambda self, observation, rng: 99)
+
+    result = CliRunner().invoke(cli.main, ["simulate", "random", "smart", "--url", dev_backend])
+
+    assert result.exit_code == 1
+    assert isinstance(result.exception, IllegalAction)
+    assert result.exception.__notes__[0].startswith("random in seat 0 of game ")
