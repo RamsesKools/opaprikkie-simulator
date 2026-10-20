@@ -97,7 +97,7 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
       () => {},
     );
 
-  const respond = (request: () => Promise<GameUpdate>) => {
+  const respond = (request: () => Promise<GameUpdate>, automatic = false) => {
     setHovered(null);
     setBusy(true);
     setError(null);
@@ -111,7 +111,7 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
         if (!mounted.current) return;
         setError(errorMessage(failure));
         setBusy(false);
-        if (sequence) setStalled(game);
+        if (automatic) setStalled(game);
         if (failure instanceof GameError && failure.code === "wrong_phase") void resync();
         onError(failure);
       },
@@ -122,7 +122,9 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
   const stop = () => respond(() => client.stop());
 
   const locked = autoTake ? observation.legal_targets[0] : undefined;
-  const takeAll = useEffectEvent(take);
+  const takeAll = useEffectEvent((target: number, dice: number[]) =>
+    respond(() => client.take(target, dice), true),
+  );
   useEffect(() => {
     if (!locked) return;
     const timer = setTimeout(() => takeAll(locked.target, locked.set_aside));
@@ -146,19 +148,22 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
   const legal = humanChoice ? observation.legal_targets.map(({ target }) => target) : [];
 
   let lit: number[] = [];
-  let preview: { target: number; row: number } | undefined;
   let raised: number[] = [];
+  // Where pegs would land, one ghost per target; the pegs only move once the sequence ends.
+  const landing = new Map<number, number>();
+  if (sequence) landing.set(sequence.target, own[sequence.target]! + sequence.matches);
   if (manual) {
     lit = options.map(({ target }) => target);
     raised = selected;
-    const option = options.find(({ target }) => target === hovered);
-    if (option) preview = { target: option.target, row: option.row };
+    for (const option of options) {
+      if (hints || option.target === hovered) landing.set(option.target, option.row);
+    }
   } else if (humanChoice && hints) {
     lit = legal;
     const hint = observation.legal_targets.find(({ target }) => target === hovered);
     if (hint) {
       raised = hint.set_aside;
-      preview = { target: hint.target, row: own[hint.target]! + hint.guaranteed_moves };
+      landing.set(hint.target, own[hint.target]! + hint.guaranteed_moves);
     }
   }
   const onPick = manual ? (target: number) => take(target, selected) : pick;
@@ -247,13 +252,15 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
             pegs={board}
             active={seat === player}
             highlight={seat === player ? (scene?.target ?? sequence?.target ?? null) : null}
+            {...(seat === player && {
+              landing: [...landing].map(([target, row]) => ({ target, row })),
+            })}
             {...(humanChoice && seat === player
               ? {
                   legal: hints ? lit : [],
                   pickable: busy ? [] : hints ? lit : targets,
                   onPick,
-                  onHover: setHovered,
-                  preview,
+                  ...(!busy && { onHover: setHovered }),
                 }
               : {})}
           />

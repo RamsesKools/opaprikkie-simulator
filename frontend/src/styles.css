@@ -899,38 +899,47 @@ button.die:focus-visible {
   }
 }
 
-/* Below this the side columns can't hold the stack and the bowl, so they move into rows. */
+/* Below this the side columns can't hold the stack, so it waits inside the empty throw area. */
 @media (max-width: 540px) {
   .table {
-    grid-template-columns: 1fr;
-    justify-items: center;
+    grid-template-columns: auto auto;
+    justify-content: center;
   }
 
   .table .throwing {
-    display: flex;
     grid-column: 1;
-    width: auto;
+    width: 190px;
+  }
+
+  .table .throw-area {
+    width: 190px;
   }
 
   .table .stack-slot {
-    position: static;
-    transform: none;
+    right: auto;
+    left: 50%;
+    z-index: 1;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .table .stack-slot button.stack {
+    pointer-events: auto;
   }
 
   .saved {
-    grid-column: 1;
-    flex-direction: row;
-    gap: 12px;
+    grid-column: 2;
   }
 
   .bowl {
-    width: 124px;
-    height: 124px;
-    padding: 10px;
+    width: 120px;
+    height: 120px;
+    padding: 8px;
   }
 
   .saved-count {
-    width: 8em;
+    width: 120px;
+    text-align: center;
   }
 
   .columns {

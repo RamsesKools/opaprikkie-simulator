@@ -39,7 +39,10 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
      - Taking sets the dice aside into the bowl and locks the target: its lane stays lit in the seat colour while the player throws the rest from the stack, selects more matches, and takes them again.
      - After the first take, a "Stop" button next to the options ends the sequence, and the peg moves by the matches taken.
        There's no stop before the first take, since a turn with a legal target can't pass.
-     - Once dice are selected, hovering a column they can be taken for shows the ghost peg where taking them would land; without a selection there's no preview.
+     - A ghost peg marks where the peg will land, while the peg itself only moves once the sequence ends:
+       - During a sequence, on the locked lane, one row up per match taken so far, so each take moves it further.
+       - For the selected dice, on every lane they can be taken for, at the row the take would reach; with hints off only on hovering that lane.
+       - Without a selection there's nothing to mark beyond the takes so far.
      - Switching automatic turns on mid-sequence takes every match from then on.
        If such an automatic take fails, it isn't retried: the error shows and the player finishes the sequence by hand.
      - While a take or stop is on its way, the selection, lit lanes, options, and Stop stay on screen, disabled.
@@ -80,7 +83,7 @@ A pile of the dice the player has left to throw, left of the throw area, in a py
 - Its dice take the player's colour and show fixed faces; they never tumble.
 - Once thrown, it's empty while the dice are in the throw area, keeping its place so nothing shifts.
 - `components/stack.tsx` takes a dice count, a seat, an optional `onThrow`, and an optional auto-press time for the countdown bar.
-- Below 540 px, where the side columns can't hold it, the stack sits in a row with the throw area, and the bowl with its count moves into a row underneath.
+- Below 540 px, where the side columns can't hold it, the stack waits inside the empty throw area, so the throw area and the bowl stay on one line down to 360 px.
 
 ## Colours
 
@@ -104,7 +107,7 @@ A pile of the dice the player has left to throw, left of the throw area, in a py
 - Off: no glowing columns, no "take" options, and no preview in automatic turns.
   Every column on the player's board is clickable: in automatic turns it chooses that target, in manual turns it takes the selected dice for it.
   The API judges the choice, and a rejection shows its message, like "Not every chosen die is part of a match for 5."
-- The locked lane of a sequence in progress stays lit either way, as does the ghost peg for selected dice.
+- The locked lane of a sequence in progress stays lit either way, with its ghost peg for the matches taken so far; the ghost peg for selected dice shows on hover.
 
 ## Rules booklet
 

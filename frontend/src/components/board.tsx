@@ -12,7 +12,8 @@ type Props = {
   legal?: number[];
   pickable?: number[];
   highlight?: number | null;
-  preview?: { target: number; row: number } | null;
+  /** Ghost pegs marking where pegs would land. */
+  landing?: { target: number; row: number }[];
   onPick?: (target: number) => void;
   onHover?: (target: number | null) => void;
 };
@@ -27,7 +28,7 @@ export function Board({
   legal = [],
   pickable = legal,
   highlight,
-  preview,
+  landing = [],
   onPick,
   onHover,
 }: Props) {
@@ -65,12 +66,15 @@ export function Board({
               {rows.map((cell) => (
                 <span key={cell} className="hole" />
               ))}
-              {preview?.target === target && (
-                <span
-                  className={preview.row === TOP_ROW ? "ghost finishing" : "ghost"}
-                  style={{ "--row": preview.row } as CSSProperties}
-                />
-              )}
+              {landing
+                .filter((mark) => mark.target === target)
+                .map((mark) => (
+                  <span
+                    key={mark.row}
+                    className={mark.row === TOP_ROW ? "ghost finishing" : "ghost"}
+                    style={{ "--row": mark.row } as CSSProperties}
+                  />
+                ))}
               <span className="peg" style={{ "--row": row } as CSSProperties} />
               <span className="label">{target}</span>
             </button>

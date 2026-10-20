@@ -657,3 +657,92 @@ test("rolls again after topping a peg by hand", async () => {
 
   expect(screen.getByText(strings.game.continuation(6))).toBeInTheDocument();
 });
+
+const ghosts = () =>
+  Object.fromEntries(
+    [...anns().querySelectorAll(".column")]
+      .filter((column) => column.querySelector(".ghost"))
+      .map((column) => [
+        Number(column.querySelector(".label")!.textContent),
+        Number(column.querySelector<HTMLElement>(".ghost")!.style.getPropertyValue("--row")),
+      ]),
+  );
+const pegRow = (target: number) =>
+  Number(
+    anns()
+      .querySelectorAll<HTMLElement>(".column .peg")
+      [target - 1]!.style.getPropertyValue("--row"),
+  );
+
+test("marks where the peg lands for every take the selection makes", async () => {
+  await throwManually(twoSixes);
+  expect(ghosts()).toEqual({});
+
+  selectDie(0);
+  selectDie(1);
+
+  expect(ghosts()).toEqual({ 6: 2, 12: 1 });
+  expect(pegRow(6)).toBe(0);
+});
+
+test("moves the landing mark one row per match taken, while the peg waits", async () => {
+  show(vi.fn<GameClient["chooseTarget"]>(), [], false, lockedToSix);
+  expect(ghosts()).toEqual({ 6: 1 });
+
+  fireEvent.click(throwStack(5)!);
+  expect(ghosts()).toEqual({ 6: 1 });
+  selectDie(1);
+
+  expect(ghosts()).toEqual({ 6: 2 });
+  expect(pegRow(6)).toBe(0);
+});
+
+test("with hints off, marks the selection's landing only on hover, and the takes so far always", async () => {
+  show(vi.fn<GameClient["chooseTarget"]>(), [], false, lockedToSix, { hints: false });
+  fireEvent.click(throwStack(5)!);
+  selectDie(1);
+  expect(ghosts()).toEqual({ 6: 1 });
+
+  fireEvent.mouseEnter(column(6));
+
+  expect(ghosts()).toEqual({ 6: 2 });
+});
+
+test("shows no landing marks in automatic turns until a column is hovered", async () => {
+  show(vi.fn<GameClient["chooseTarget"]>());
+  await advance(timing.ready);
+
+  expect(document.querySelectorAll(".ghost")).toHaveLength(0);
+});
+
+test("plays on automatically after a failed take by hand once turns are automatic again", async () => {
+  const take = vi
+    .fn<GameClient["take"]>()
+    .mockRejectedValueOnce(new GameError("network", "offline"))
+    .mockImplementation(() => new Promise(() => {}));
+  const { toggle } = show(vi.fn<GameClient["chooseTarget"]>(), [], false, lockedToSix, {
+    client: { take },
+  });
+  fireEvent.click(throwStack(5)!);
+  selectDie(1);
+  fireEvent.click(screen.getByRole("button", { name: strings.game.take(1, 6) }));
+  await advance(0);
+
+  toggle({ autoPlay: true, hints: true });
+  await advance(0);
+
+  expect(take).toHaveBeenCalledTimes(2);
+});
+
+test("previews nothing while a pick is pending", async () => {
+  show(vi.fn<GameClient["chooseTarget"]>(() => new Promise(() => {})));
+  await advance(timing.ready);
+  const bob = screen.getByRole("region", { name: strings.game.board("Bob") });
+  const columnOf = (target: number) =>
+    within(bob).getByRole("button", { name: strings.game.column(target, target === 3 ? 4 : 0) });
+
+  pickOne();
+  fireEvent.mouseEnter(columnOf(3));
+
+  expect(bob.querySelector(".ghost")).toBeNull();
+});
