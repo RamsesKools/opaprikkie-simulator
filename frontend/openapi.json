@@ -788,14 +788,30 @@
           "dev_mode": {
             "type": "boolean",
             "title": "Dev Mode"
+          },
+          "strategies": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strategies"
           }
         },
         "type": "object",
         "required": [
           "version",
-          "dev_mode"
+          "dev_mode",
+          "strategies"
         ],
-        "title": "Health"
+        "title": "Health",
+        "description": "The version handshake; `strategies` lists the built-ins in dev mode only."
       },
       "LegalTarget": {
         "properties": {

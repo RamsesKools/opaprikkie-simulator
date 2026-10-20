@@ -15,10 +15,12 @@ type Props = {
   player: number;
   setAside?: number[];
   rollKey?: string;
+  /** Keys for the dice, so dice taken away don't remount the rest. */
+  slots?: number[];
   label?: string;
 };
 
-export function Dice({ values, player, setAside = [], rollKey = "", label }: Props) {
+export function Dice({ values, player, setAside = [], rollKey = "", slots, label }: Props) {
   return (
     <div
       className="dice"
@@ -28,7 +30,7 @@ export function Dice({ values, player, setAside = [], rollKey = "", label }: Pro
     >
       {values.map((value, index) => (
         <span
-          key={`${rollKey}:${index}`}
+          key={`${rollKey}:${slots?.[index] ?? index}`}
           className={setAside.includes(index) ? "die set-aside" : "die"}
           style={{ animationDelay: `${index * 40}ms` }}
         >

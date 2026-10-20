@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Board } from "../components/board.tsx";
 import { Table } from "../components/table.tsx";
 import type { Game, GameClient, GameUpdate, Pegs } from "../game/model.ts";
-import { buildScenes, type Scene } from "../game/scenes.ts";
+import { errorMessage } from "../game/errors.ts";
+import { buildScenes, openingKey, type Scene } from "../game/scenes.ts";
 import { seatStyle } from "../lib/palette.ts";
 import { strings } from "../lib/strings.ts";
 
@@ -16,9 +17,10 @@ type Props = {
   initial: GameUpdate;
   autoPlay: boolean;
   onFinished: (game: Game) => void;
+  onError: (error: unknown) => void;
 };
 
-export function GameScreen({ client, initial, autoPlay, onFinished }: Props) {
+export function GameScreen({ client, initial, autoPlay, onFinished, onError }: Props) {
   const [playback, setPlayback] = useState<Playback>(() => ({
     game: initial.game,
     scenes: buildScenes(emptyPegs(initial.game.pegs), initial.logs, initial.game),
@@ -26,8 +28,10 @@ export function GameScreen({ client, initial, autoPlay, onFinished }: Props) {
     thrown: autoPlay,
   }));
   const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [hovered, setHovered] = useState<number | null>(null);
+  // A pick can land after New Game has left this screen.
+  const mounted = useRef(false);
   const { game, scenes, index } = playback;
   const scene = scenes[index];
   const observation = game.observation;
@@ -36,6 +40,13 @@ export function GameScreen({ client, initial, autoPlay, onFinished }: Props) {
   const human = game.controllers[player] === "human";
   const choosing = !scene && game.phase === "choosing_target" && observation !== null;
   const waiting = !autoPlay && human && !playback.thrown && (scene ? scene.fresh : choosing);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!scene) {
@@ -53,16 +64,19 @@ export function GameScreen({ client, initial, autoPlay, onFinished }: Props) {
   const pick = (target: number) => {
     setHovered(null);
     setBusy(true);
-    setFailed(false);
+    setError(null);
     client.chooseTarget(target).then(
       (update) => {
+        if (!mounted.current) return;
         const next = buildScenes(game.pegs, update.logs, update.game);
         setPlayback({ game: update.game, scenes: next, index: 0, thrown: autoPlay });
         setBusy(false);
       },
-      () => {
-        setFailed(true);
+      (failure: unknown) => {
+        if (!mounted.current) return;
+        setError(errorMessage(failure));
         setBusy(false);
+        onError(failure);
       },
     );
   };
@@ -75,7 +89,7 @@ export function GameScreen({ client, initial, autoPlay, onFinished }: Props) {
   let message = scene?.message ?? "";
   if (humanChoice) message = strings.game.pick(name);
   if (waiting) message = strings.game.throwPrompt(name);
-  if (failed) message = strings.game.error;
+  if (error) message = error;
 
   return (
     <div className="game">
@@ -97,7 +111,8 @@ export function GameScreen({ client, initial, autoPlay, onFinished }: Props) {
             player={player}
             dice={scene.dice}
             setAside={scene.setAside}
-            rollKey={`${index}`}
+            rollKey={scene.throwKey}
+            slots={scene.slots}
             kept={scene.kept}
             count={scene.count}
             target={scene.target}
@@ -107,7 +122,7 @@ export function GameScreen({ client, initial, autoPlay, onFinished }: Props) {
             player={player}
             dice={choosing ? observation.opening_roll : []}
             setAside={hint?.set_aside ?? []}
-            rollKey={`${observation?.turn}:${observation?.continuation}`}
+            rollKey={observation ? openingKey(observation.turn, observation.continuation) : ""}
             kept={[]}
             count={0}
             target={null}
@@ -118,6 +133,12 @@ export function GameScreen({ client, initial, autoPlay, onFinished }: Props) {
             {message}
           </span>
         </p>
+        {game.seed !== null && (
+          <p className="dev">
+            <span>{strings.game.seed(game.seed)}</span>
+            {game.strategy !== null && <span>{strings.game.strategy(game.strategy)}</span>}
+          </p>
+        )}
       </div>
       <div className="boards">
         {pegs.map((board, seat) => (

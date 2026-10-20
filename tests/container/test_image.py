@@ -15,7 +15,11 @@ def get(url: str) -> str:
 
 
 def test_health_reports_the_app_version(base_url):
-    assert json.loads(get(f"{base_url}/api/health")) == {"version": __version__, "dev_mode": False}
+    assert json.loads(get(f"{base_url}/api/health")) == {
+        "version": __version__,
+        "dev_mode": False,
+        "strategies": None,
+    }
 
 
 def test_serves_the_spa_and_its_assets(base_url):

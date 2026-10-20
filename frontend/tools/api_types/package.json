@@ -1,0 +1,9 @@
+{
+  "name": "opaprikkie-api-types",
+  "private": true,
+  "description": "openapi-typescript needs the TypeScript 5 compiler API, which TypeScript 7 doesn't ship.",
+  "devDependencies": {
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3"
+  }
+}

@@ -6,13 +6,24 @@ type Props = {
   dice: number[];
   setAside: number[];
   rollKey: string;
+  slots?: number[];
   kept: number[];
   count: number;
   target: number | null;
   onThrow?: () => void;
 };
 
-export function Table({ player, dice, setAside, rollKey, kept, count, target, onThrow }: Props) {
+export function Table({
+  player,
+  dice,
+  setAside,
+  rollKey,
+  slots,
+  kept,
+  count,
+  target,
+  onThrow,
+}: Props) {
   return (
     <div className="table">
       <div className="throw-area felt">
@@ -21,7 +32,7 @@ export function Table({ player, dice, setAside, rollKey, kept, count, target, on
             {strings.game.throw}
           </button>
         ) : (
-          <Dice values={dice} player={player} setAside={setAside} rollKey={rollKey} />
+          <Dice values={dice} player={player} setAside={setAside} rollKey={rollKey} slots={slots} />
         )}
       </div>
       <div className="saved">

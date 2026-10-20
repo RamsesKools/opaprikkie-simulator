@@ -4,16 +4,24 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from opaprikkie import __version__
+from opaprikkie import __version__, engine
 from opaprikkie.backend.app import create_app
 from opaprikkie.backend.settings import Settings
 
 
-@pytest.mark.parametrize("dev_mode", [True, False])
-def test_health_reports_version_and_dev_mode(dev_mode):
-    client = TestClient(create_app(Settings(dev_mode=dev_mode)))
+def test_health_reports_version_and_dev_mode():
+    client = TestClient(create_app(Settings()))
 
-    assert client.get("/api/health").json() == {"version": __version__, "dev_mode": dev_mode}
+    health = {"version": __version__, "dev_mode": False, "strategies": None}
+    assert client.get("/api/health").json() == health
+
+
+def test_health_lists_the_strategies_in_dev_mode():
+    client = TestClient(create_app(Settings(dev_mode=True)))
+
+    health = client.get("/api/health").json()
+    assert health["dev_mode"] is True
+    assert health["strategies"] == sorted(engine.BUILTIN_STRATEGIES)
 
 
 @pytest.mark.parametrize(("dev_mode", "status"), [(True, 200), (False, 404)])

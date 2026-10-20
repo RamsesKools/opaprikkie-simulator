@@ -1,8 +1,11 @@
 export const strings = {
   title: "Opa Prikkie",
   rules: "Rules",
+  newGame: "New Game",
   autoPlay: "Play turns automatically",
   close: "Close",
+  stale: "A new version of Opa Prikkie is out.",
+  reload: "Reload",
   menu: {
     mode: (label: string) => `Mode: ${label}`,
     hotSeat: "Player vs Player",
@@ -13,6 +16,10 @@ export const strings = {
     defaultAiName: "Opa",
     start: "Start",
     nameLength: "Names need 1 to 20 characters.",
+    dev: "Dev mode",
+    seed: "Seed",
+    strategy: "AI strategy",
+    randomStrategy: "Random",
   },
   diceOff: {
     title: "Dice-off",
@@ -45,7 +52,13 @@ export const strings = {
     board: (name: string) => `${name}'s board`,
     column: (target: number, row: number) => `Target ${target}, row ${row}`,
     dice: (values: number[]) => `Dice: ${values.join(", ")}`,
-    error: "Something went wrong.",
+    seed: (seed: number | string) => `Seed: ${seed}`,
+    strategy: (strategy: string) => `AI strategy: ${strategy}`,
+  },
+  errors: {
+    generic: "Something went wrong.",
+    network: "Can't reach the server. Check your connection and try again.",
+    lost: "Your game was lost. Start a new one.",
   },
   victory: {
     wins: (name: string) => `${name} wins!`,

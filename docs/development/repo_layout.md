@@ -14,6 +14,7 @@ src/opaprikkie/
 frontend/          React SPA (Vite, TypeScript, npm)
   src/             app code, unit tests next to the source
   tests/contract/  contract suite against a live backend
+  tools/api_types/ openapi-typescript with its own TypeScript 5
 tests/
   engine/          unit and integration tests per module
   backend/
@@ -31,7 +32,7 @@ docs/
   game_rules.md      rules the engine implements
   design_choices.md  frontend design choices
 notebooks/         exploration only, opt-in `notebook` dependency group
-scripts/           Python helper scripts: `dev.py`, `version.py`
+scripts/           Python helper scripts: `dev.py`, `version.py`, `gen_api.py`, `contract.py`
 .agents/           agent instructions and skills, see below
 pyproject.toml  uv.lock  ruff.toml  .python-version  .nvmrc
 Dockerfile  compose.yaml  .env.example

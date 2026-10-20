@@ -9,6 +9,7 @@ export default defineConfig({
     proxy: { "/api": backend },
   },
   test: {
+    include: ["src/**/*.test.{ts,tsx}"],
     environment: "jsdom",
     setupFiles: ["src/test_setup.ts"],
     coverage: {

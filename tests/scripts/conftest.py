@@ -29,3 +29,8 @@ def version() -> ModuleType:
 @pytest.fixture
 def gen_api() -> ModuleType:
     return load("gen_api")
+
+
+@pytest.fixture
+def contract() -> ModuleType:
+    return load("contract")

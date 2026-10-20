@@ -41,18 +41,25 @@ const game: Game = {
   strategy: null,
 };
 
-function show(chooseTarget: GameClient["chooseTarget"], logs: LogEntry[] = [], autoPlay = true) {
+function show(
+  chooseTarget: GameClient["chooseTarget"],
+  logs: LogEntry[] = [],
+  autoPlay = true,
+  shown: Game = game,
+) {
   const client = { chooseTarget } as unknown as GameClient;
   const onFinished = vi.fn<(game: Game) => void>();
+  const onError = vi.fn<(error: unknown) => void>();
   render(
     <GameScreen
       client={client}
-      initial={{ game, logs }}
+      initial={{ game: shown, logs }}
       autoPlay={autoPlay}
       onFinished={onFinished}
+      onError={onError}
     />,
   );
-  return onFinished;
+  return { onFinished, onError };
 }
 
 const pickOne = () => {
@@ -146,15 +153,16 @@ test("recovers from a failed choice on the next pick", async () => {
     .fn<GameClient["chooseTarget"]>()
     .mockRejectedValueOnce(new GameError("internal_error", "down"))
     .mockResolvedValueOnce({ game: finished, logs: [] });
-  const onFinished = show(chooseTarget);
+  const { onFinished, onError } = show(chooseTarget);
 
   pickOne();
   await act(() => vi.advanceTimersByTimeAsync(0));
-  expect(screen.getByText(strings.game.error)).toBeInTheDocument();
+  expect(screen.getByText(strings.errors.generic)).toBeInTheDocument();
+  expect(onError).toHaveBeenCalledExactlyOnceWith(new GameError("internal_error", "down"));
 
   pickOne();
   await act(() => vi.advanceTimersByTimeAsync(0));
-  expect(screen.queryByText(strings.game.error)).not.toBeInTheDocument();
+  expect(screen.queryByText(strings.errors.generic)).not.toBeInTheDocument();
   expect(onFinished).toHaveBeenCalledWith(finished);
 });
 
@@ -182,4 +190,73 @@ test("waits for each throw when turns don't play automatically", async () => {
     screen.getByRole("img", { name: strings.game.dice([1, 3, 3, 4, 5, 6]) }),
   ).toBeInTheDocument();
   expect(bob.querySelectorAll("button:enabled")).toHaveLength(2);
+});
+
+test("shows the seed and the AI strategy in dev mode", () => {
+  const dev: Game = { ...game, controllers: ["human", "ai"], seed: "abc", strategy: "greedy" };
+  show(vi.fn<GameClient["chooseTarget"]>(), [], true, dev);
+
+  expect(screen.getByText(strings.game.seed("abc"))).toBeInTheDocument();
+  expect(screen.getByText(strings.game.strategy("greedy"))).toBeInTheDocument();
+});
+
+test("shows neither outside dev mode", () => {
+  show(vi.fn<GameClient["chooseTarget"]>());
+
+  expect(screen.queryByText(/^Seed/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/^AI strategy/)).not.toBeInTheDocument();
+});
+
+test("says when the server can't be reached", async () => {
+  show(vi.fn<GameClient["chooseTarget"]>().mockRejectedValue(new GameError("network", "offline")));
+
+  pickOne();
+  await act(() => vi.advanceTimersByTimeAsync(0));
+
+  expect(screen.getByText(strings.errors.network)).toBeInTheDocument();
+});
+
+test("sends one pick while it's pending", async () => {
+  const chooseTarget = vi.fn<GameClient["chooseTarget"]>(() => new Promise(() => {}));
+  show(chooseTarget);
+
+  pickOne();
+  pickOne();
+
+  expect(chooseTarget).toHaveBeenCalledOnce();
+});
+
+test("keeps the dice on the table until the next throw", async () => {
+  const next: Game = { ...game, observation: { ...game.observation!, seat: 0, turn: 2 } };
+  const logs: LogEntry[] = [
+    {
+      kind: "roll_sequence",
+      player: 1,
+      turn: 1,
+      continuation: 0,
+      target: 3,
+      rolls: [
+        { dice: [1, 3, 3, 4, 5, 6], set_aside: [1, 2], reset: false, matches: 2 },
+        { dice: [2, 3, 5, 6], set_aside: [1], reset: false, matches: 1 },
+      ],
+      matches: 3,
+      movement: 1,
+    },
+  ];
+  show(vi.fn<GameClient["chooseTarget"]>().mockResolvedValue({ game: next, logs }));
+  const die = (dice: number[], index: number) =>
+    screen.getByRole("img", { name: strings.game.dice(dice) }).children[index];
+  const opening = die([1, 3, 3, 4, 5, 6], 0);
+
+  const bob = screen.getByRole("region", { name: strings.game.board("Bob") });
+  fireEvent.click(within(bob).getByRole("button", { name: strings.game.column(3, 4) }));
+  await act(() => vi.advanceTimersByTimeAsync(0));
+  expect(die([1, 3, 3, 4, 5, 6], 0)).toBe(opening);
+
+  await act(() => vi.advanceTimersByTimeAsync(timing.roll));
+  const second = die([2, 3, 5, 6], 2);
+  expect(second).not.toBe(opening);
+  await act(() => vi.advanceTimersByTimeAsync(timing.roll));
+  expect(screen.getByText(strings.game.moves(3, 1))).toBeInTheDocument();
+  expect(die([2, 5, 6], 1)).toBe(second);
 });

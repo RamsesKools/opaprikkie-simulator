@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import { strings } from "../lib/strings.ts";
 import type { Game, LogEntry, RollSequence } from "./model.ts";
-import { buildScenes } from "./scenes.ts";
+import { buildScenes, openingKey } from "./scenes.ts";
 
 const board = (rows: Record<number, number> = {}) => ({ 1: 0, 7: 0, ...rows });
 
@@ -172,4 +172,43 @@ test("marks the throws after the opening roll as fresh", () => {
     { fresh: false, message: strings.game.moves(1, 2) },
     { fresh: true, message: strings.game.ohNo("Ann", true) },
   ]);
+});
+
+test("keys the dice by their throw, so only a new throw tumbles in", () => {
+  const scenes = buildScenes(
+    [board(), board()],
+    [
+      sequence({
+        rolls: [
+          { dice: [1, 2, 3, 4, 5, 1], set_aside: [0, 5], reset: false, matches: 2 },
+          { dice: [2, 3, 4, 1], set_aside: [3], reset: false, matches: 1 },
+        ],
+      }),
+    ],
+    game({ seat: 1 }),
+  );
+
+  expect(scenes.map(({ throwKey, slots }) => ({ throwKey, slots }))).toEqual([
+    { throwKey: openingKey(1, 0), slots: [0, 1, 2, 3, 4, 5] },
+    { throwKey: "1:0:1", slots: [0, 1, 2, 3] },
+    { throwKey: "1:0:1", slots: [0, 1, 2] },
+  ]);
+});
+
+test("keys the AI's opening roll and a dead turn like the opening roll on the table", () => {
+  const dead: LogEntry = {
+    kind: "no_move",
+    player: 0,
+    turn: 2,
+    continuation: 0,
+    opening_roll: [2, 2, 2, 2, 2, 2],
+  };
+  const scenes = buildScenes(
+    [board(), board()],
+    [sequence({ player: 1 }), dead],
+    game({ seat: 1 }),
+  );
+
+  expect(scenes[0]).toMatchObject({ message: strings.game.aiThinking("Opa"), throwKey: "1:0:0" });
+  expect(scenes.at(-1)).toMatchObject({ tone: "oh_no", throwKey: openingKey(2, 0) });
 });

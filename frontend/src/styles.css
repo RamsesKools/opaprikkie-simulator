@@ -146,6 +146,13 @@ header h1 {
   text-shadow: 2px 2px 0 var(--hole);
 }
 
+header .title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
 .controls {
   display: flex;
   flex-wrap: wrap;
@@ -284,6 +291,53 @@ button.primary:disabled {
   height: 14px;
   border-radius: 50%;
   background: var(--seat);
+}
+
+.menu .dev {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px 12px;
+  border: 2px dashed var(--muted);
+  border-radius: 8px;
+}
+
+.menu .dev label {
+  display: grid;
+  gap: 4px;
+}
+
+.menu .dev input,
+.menu .dev select {
+  font: inherit;
+  padding: 6px 8px;
+  border: 2px solid var(--muted);
+  border-radius: 8px;
+  background: white;
+}
+
+.status .dev {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 16px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 16px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  background: var(--paper);
+  border-bottom: 2px solid var(--wood-dark);
+  font-weight: 600;
 }
 
 .problem {
@@ -543,8 +597,6 @@ button.primary:disabled {
 }
 
 .ghost.finishing {
-  border-style: solid;
-  border-color: gold;
   opacity: 0.85;
   box-shadow:
     0 0 0 3px rgb(255 215 0 / 60%),
