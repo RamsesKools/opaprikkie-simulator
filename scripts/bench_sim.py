@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CLI = Path(sys.executable).with_name("opaprikkie")
 MATCHUPS = (("random", "random"), ("smart", "greedy"))
 STARTUP_SECONDS = 30
+GRACE_SECONDS = 5
 
 
 def main(argv: list[str]) -> int:
@@ -45,8 +46,7 @@ def main(argv: list[str]) -> int:
             for games in args.games
         ]
     finally:
-        server.terminate()
-        server.wait()
+        stop(server)
     return 0 if all(same) else 1
 
 
@@ -77,6 +77,15 @@ def simulate(
     return time.perf_counter() - started, out
 
 
+def stop(server: subprocess.Popen[bytes]) -> None:
+    server.terminate()
+    try:
+        server.wait(timeout=GRACE_SECONDS)
+    except subprocess.TimeoutExpired:
+        server.kill()
+        server.wait()
+
+
 def free_port() -> int:
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
@@ -91,7 +100,7 @@ def wait_until_up(url: str, server: subprocess.Popen[bytes]) -> None:
             return
         except OSError:
             if server.poll() is not None or time.monotonic() > deadline:
-                raise
+                raise SystemExit("backend did not start") from None
             time.sleep(0.05)
 
 

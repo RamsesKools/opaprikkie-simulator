@@ -7,7 +7,7 @@ This is evidence only; picking the default is [#13](https://github.com/RamsesKoo
 
 - Parity: every run printed the identical summary on both paths, for both matchups and all batch sizes.
 - Throughput: in-process runs about 140 to 150 games/s, HTTP about 14 to 16, so in-process is roughly 10x faster.
-- Startup: about 0.27 s per CLI run in-process, 0.37 s over HTTP, plus 0.4 to 0.5 s once to start the server.
+- Startup: about 0.27 s per CLI run in-process, 0.37 s over HTTP, plus about 0.3 to 0.5 s once to start the server.
 - HTTP needs a running dev-mode backend of the same version, and a lost server ends the batch with no partial result.
 
 ## Method
@@ -18,6 +18,7 @@ This is evidence only; picking the default is [#13](https://github.com/RamsesKoo
 - Each run is a fresh CLI process timed wall clock, so the times include interpreter start and imports; the table shows the median.
 - Parity means all 6 summaries of a row pair are byte-identical; the script exits 1 otherwise.
 - Options: `--games 1 50 500`, `--repeats 3`, `--seed bench`. The whole run takes about 4 minutes, almost all of it HTTP.
+- For a quick check, `uv run task bench_sim --games 1 50` takes about half a minute.
 - Log-level parity of single games is already covered by `tests/cross_module/test_http_parity.py`.
 
 ## Machine and versions

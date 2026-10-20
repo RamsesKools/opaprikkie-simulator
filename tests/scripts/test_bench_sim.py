@@ -1,6 +1,14 @@
-import urllib.error
+import subprocess
+import sys
 
 import pytest
+
+STUBBORN = """
+import signal, time
+signal.signal(signal.SIGTERM, signal.SIG_IGN)
+print(flush=True)
+time.sleep(60)
+"""
 
 
 def test_prints_a_row_per_matchup_size_and_path_with_parity(bench_sim, capsys):
@@ -24,5 +32,16 @@ def test_fails_when_the_paths_disagree(bench_sim, monkeypatch, capsys):
 def test_fails_when_the_backend_doesnt_start(bench_sim, monkeypatch):
     monkeypatch.setattr(bench_sim, "CLI", "false")
 
-    with pytest.raises(urllib.error.URLError):
+    with pytest.raises(SystemExit, match="backend did not start"):
         bench_sim.main([])
+
+
+def test_kills_a_server_that_ignores_sigterm(bench_sim, monkeypatch):
+    monkeypatch.setattr(bench_sim, "GRACE_SECONDS", 0.2)
+    server = subprocess.Popen([sys.executable, "-c", STUBBORN], stdout=subprocess.PIPE)
+    assert server.stdout
+    server.stdout.readline()
+
+    bench_sim.stop(server)
+
+    assert server.returncode == -9
