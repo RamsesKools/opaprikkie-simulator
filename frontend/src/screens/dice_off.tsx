@@ -32,16 +32,18 @@ function Thrower({ player, name, human, dice, thrown, won, onThrow }: ThrowerPro
     <section className={won ? "thrower won" : "thrower"} style={seatStyle(player)}>
       <h2>{name}</h2>
       <div className="throwing">
-        {human && !thrown ? (
-          <Stack
-            count={dice.length}
-            player={player}
-            onThrow={() => onThrow(player)}
-            autoPress={delay}
-          />
-        ) : (
-          <Stack count={thrown ? 0 : dice.length} player={player} />
-        )}
+        <div className={thrown ? "stack-slot hidden" : "stack-slot"}>
+          {human && !thrown ? (
+            <Stack
+              count={dice.length}
+              player={player}
+              onThrow={() => onThrow(player)}
+              autoPress={delay}
+            />
+          ) : (
+            <Stack count={dice.length} player={player} />
+          )}
+        </div>
         <div className="throw-area felt">{thrown && <Dice values={dice} player={player} />}</div>
       </div>
     </section>

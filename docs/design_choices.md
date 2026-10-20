@@ -66,6 +66,7 @@ A pile of the dice the player has left to throw, left of the throw area, in a py
 - It's clickable only while it waits for a human's throw, and then its dice pulse a white glow.
 - With automatic turns on, and for the AI, it's shown the same way but isn't clickable.
 - Its dice take the player's colour and show fixed faces; they never tumble.
+- Once thrown, the stack disappears while the dice remain in the throw area; it returns for the next throw with only the available dice.
 - `components/stack.tsx` takes a dice count, a seat, an optional `onThrow`, and an optional auto-press time for the countdown bar.
 
 ## Colours

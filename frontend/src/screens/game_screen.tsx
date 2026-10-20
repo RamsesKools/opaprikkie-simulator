@@ -98,6 +98,7 @@ export function GameScreen({ client, initial, autoPlay, onFinished, onError }: P
         {waiting ? (
           <Table
             player={player}
+            showStack
             dice={[]}
             setAside={[]}
             rollKey=""
@@ -110,6 +111,7 @@ export function GameScreen({ client, initial, autoPlay, onFinished, onError }: P
         ) : scene ? (
           <Table
             player={player}
+            showStack={false}
             dice={scene.dice}
             setAside={scene.setAside}
             rollKey={scene.throwKey}
@@ -122,6 +124,7 @@ export function GameScreen({ client, initial, autoPlay, onFinished, onError }: P
         ) : (
           <Table
             player={player}
+            showStack={false}
             dice={choosing ? observation.opening_roll : []}
             setAside={hint?.set_aside ?? []}
             rollKey={observation ? openingKey(observation.turn, observation.continuation) : ""}
