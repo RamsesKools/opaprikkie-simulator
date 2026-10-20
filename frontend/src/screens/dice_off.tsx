@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { Board } from "../components/board.tsx";
 import { Dice } from "../components/dice.tsx";
+import { Stack } from "../components/stack.tsx";
 import type { DiceOffRound, GameUpdate } from "../game/model.ts";
 import { timing } from "../game/timing.ts";
 import { seatStyle } from "../lib/palette.ts";
@@ -9,12 +11,12 @@ type ThrowerProps = {
   player: number;
   name: string;
   human: boolean;
-  dice: number[] | null;
+  count: number;
+  thrown: boolean;
   onThrow: (player: number) => void;
 };
 
-function Thrower({ player, name, human, dice, onThrow }: ThrowerProps) {
-  const thrown = dice !== null;
+function Thrower({ player, name, human, count, thrown, onThrow }: ThrowerProps) {
   const [delay] = useState(() =>
     human
       ? timing.autoThrowMin + Math.random() * (timing.autoThrowMax - timing.autoThrowMin)
@@ -27,25 +29,13 @@ function Thrower({ player, name, human, dice, onThrow }: ThrowerProps) {
   }, [thrown, delay, player, onThrow]);
 
   return (
-    <section className="thrower" style={seatStyle(player)}>
+    <section className={`thrower player-${player}`} style={seatStyle(player)}>
       <h2>{name}</h2>
-      <div className="throw-area felt">
-        {dice ? (
-          <Dice values={dice} player={player} />
-        ) : (
-          human && (
-            <button
-              type="button"
-              className="throw"
-              style={{ "--auto-press": `${delay}ms` } as CSSProperties}
-              onClick={() => onThrow(player)}
-            >
-              <span className="fill" />
-              {strings.diceOff.throw}
-            </button>
-          )
-        )}
-      </div>
+      {human && !thrown ? (
+        <Stack count={count} player={player} onThrow={() => onThrow(player)} autoPress={delay} />
+      ) : (
+        <Stack count={thrown ? 0 : count} player={player} />
+      )}
     </section>
   );
 }
@@ -84,14 +74,25 @@ export function DiceOff({ update, onChooseFirst, onAiStarts }: Props) {
     return () => clearTimeout(timer);
   }, [roundDone, last, humanChooses, round, update, onAiStarts]);
 
-  let message: string = strings.diceOff.explain;
+  let winner: number | null = null;
+  if (roundDone && last) {
+    winner = humanChooses ? game.observation!.seat : game.controllers.indexOf("ai");
+  }
+  let message: ReactNode = strings.diceOff.explain;
   if (roundDone && !last) {
     message = strings.diceOff.tie(rolls.map(({ player }) => game.names[player]!));
-  } else if (roundDone && humanChooses) {
-    message = strings.diceOff.wins(game.names[game.observation!.seat]!);
-  } else if (roundDone) {
-    const ai = game.controllers.indexOf("ai");
-    message = strings.diceOff.aiStarts(game.names[ai]!);
+  } else if (winner !== null) {
+    const text = humanChooses ? strings.diceOff.wins : strings.diceOff.aiStarts;
+    const [before, after] = text("\0").split("\0");
+    message = (
+      <>
+        {before}
+        <strong className="winner-name" style={seatStyle(winner)}>
+          {game.names[winner]}
+        </strong>
+        {after}
+      </>
+    );
   }
 
   return (
@@ -100,19 +101,7 @@ export function DiceOff({ update, onChooseFirst, onAiStarts }: Props) {
       <p className="message" aria-live="polite">
         {message}
       </p>
-      <div className="throwers">
-        {rolls.map(({ player, dice }) => (
-          <Thrower
-            key={`${round}:${player}`}
-            player={player}
-            name={game.names[player]!}
-            human={game.controllers[player] === "human"}
-            dice={thrown.includes(player) ? dice : null}
-            onThrow={throwFor}
-          />
-        ))}
-      </div>
-      {roundDone && last && humanChooses && (
+      {winner !== null && humanChooses && (
         <div className="choices">
           <p>{strings.diceOff.whoStarts}</p>
           {game.names.map((name, player) => (
@@ -132,6 +121,45 @@ export function DiceOff({ update, onChooseFirst, onAiStarts }: Props) {
           ))}
         </div>
       )}
+      <div className="dice-off-stage">
+        <div className="throwers">
+          {rolls.map(({ player, dice }) => (
+            <Thrower
+              key={`${round}:${player}`}
+              player={player}
+              name={game.names[player]!}
+              human={game.controllers[player] === "human"}
+              count={dice.length}
+              thrown={thrown.includes(player)}
+              onThrow={throwFor}
+            />
+          ))}
+        </div>
+        <div
+          className={
+            winner === null ? "throw-area felt dice-off-area" : "throw-area felt dice-off-area won"
+          }
+          style={winner === null ? undefined : seatStyle(winner)}
+        >
+          {rolls.map(
+            ({ player, dice }) =>
+              thrown.includes(player) && (
+                <Dice key={`${round}:${player}`} values={dice} player={player} />
+              ),
+          )}
+        </div>
+      </div>
+      <div className="boards">
+        {game.pegs.map((pegs, player) => (
+          <Board
+            key={player}
+            player={player}
+            name={game.names[player]!}
+            pegs={pegs}
+            active={player === winner}
+          />
+        ))}
+      </div>
     </div>
   );
 }

@@ -43,17 +43,31 @@ body::before {
 .table {
   --die: 50px;
   --kept-die: 30px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   width: 100%;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 16px;
+  align-items: start;
+  column-gap: 16px;
 }
 
-.table .throw-area {
+.table .throw-area,
+.throw-area.dice-off-area {
   width: 240px;
   height: 200px;
+}
+
+.table .throwing {
+  position: relative;
+  grid-column: 2;
+  display: block;
+  width: 240px;
+}
+
+.table .stack-slot {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 12px);
+  transform: translateY(-50%);
 }
 
 .table .throw-area .dice {
@@ -68,10 +82,74 @@ body::before {
   border-radius: 9px;
 }
 
-.table .throw {
-  padding: 14px 28px;
-  background: white;
-  font-size: 1.2rem;
+.throwing {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stack {
+  --stack-die: 32px;
+  --stack-gap: 3px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--stack-gap);
+  width: calc(3 * var(--stack-die) + 2 * var(--stack-gap) + 16px);
+  height: calc(3 * var(--stack-die) + 2 * var(--stack-gap) + 16px);
+  padding: 8px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+}
+
+.stack-row {
+  display: flex;
+  gap: var(--stack-gap);
+}
+
+.stack .die {
+  width: var(--stack-die);
+  height: var(--stack-die);
+  padding: 4px;
+  border-radius: 6px;
+  animation: none;
+}
+
+.stack .pip.on {
+  margin: 1px;
+}
+
+button.stack {
+  cursor: pointer;
+}
+
+button.stack .die {
+  animation: beckon 1.2s ease-in-out infinite;
+}
+
+button.stack:hover .die,
+button.stack:focus-visible .die {
+  transform: translateY(-3px);
+}
+
+button.stack:focus-visible {
+  outline: 3px solid var(--seat);
+  outline-offset: 2px;
+}
+
+.stack .fill {
+  position: absolute;
+  bottom: -4px;
+  left: calc(50% - var(--stack-die) / 2 - 6px);
+  width: calc(var(--stack-die) + 12px);
+  height: 6px;
+  border-radius: 3px;
+  background: var(--seat);
+  transform-origin: left;
+  animation: fill var(--auto-press) linear forwards;
 }
 
 .throw-area {
@@ -89,6 +167,7 @@ body::before {
 }
 
 .saved {
+  grid-column: 3;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -359,17 +438,43 @@ button.primary:disabled {
   margin: 0;
 }
 
+.dice-off-stage {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  width: min(100%, 900px);
+}
+
 .throwers {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 16px;
+  display: contents;
 }
 
 .thrower {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 8px;
+  grid-row: 1;
+}
+
+.thrower.player-0 {
+  grid-column: 1;
+}
+
+.thrower.player-1 {
+  grid-column: 3;
+}
+
+.dice-off-area {
+  grid-column: 2;
+  grid-row: 1;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  align-items: center;
+}
+
+.dice-off-area .dice {
+  flex-wrap: nowrap;
   gap: 8px;
 }
 
@@ -382,26 +487,19 @@ button.primary:disabled {
   font-size: 1.1rem;
 }
 
-.thrower .throw-area {
-  width: 220px;
-  min-height: 100px;
+.dice-off-area.won {
+  box-shadow:
+    inset 0 0 20px rgb(0 0 0 / 50%),
+    0 0 0 2px var(--wood-dark),
+    0 0 0 6px var(--seat),
+    0 0 18px 8px var(--seat-soft);
 }
 
-.throw {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  border-color: var(--seat);
-  font-weight: 600;
-}
-
-.throw .fill {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--seat-soft);
-  transform-origin: left;
-  animation: fill var(--auto-press) linear forwards;
+.winner-name {
+  display: inline-block;
+  color: var(--seat);
+  font-size: 1.8rem;
+  animation: pop 500ms ease-out;
 }
 
 .choices {
@@ -676,9 +774,39 @@ button.primary:disabled {
     height: 170px;
   }
 
+  .table .throwing {
+    width: 196px;
+  }
+
   .bowl {
     width: 136px;
     height: 136px;
+  }
+
+  .stack {
+    --stack-die: 24px;
+  }
+
+  .dice-off-stage {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    row-gap: 16px;
+  }
+
+  .thrower.player-0 {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .thrower.player-1 {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .dice-off-area {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: center;
   }
 
   .label {
@@ -727,6 +855,15 @@ button.primary:disabled {
 @keyframes breathe {
   to {
     transform: scale(1.15);
+  }
+}
+
+@keyframes beckon {
+  50% {
+    box-shadow:
+      0 2px 0 rgb(0 0 0 / 25%),
+      0 0 0 2px white,
+      0 0 10px 2px rgb(255 255 255 / 80%);
   }
 }
 

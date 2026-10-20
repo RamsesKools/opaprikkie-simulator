@@ -24,7 +24,6 @@ export const strings = {
   diceOff: {
     title: "Dice-off",
     explain: "Each player throws two dice. The highest total chooses who starts.",
-    throw: "Throw",
     tie: (names: string[]) => `It's a tie! ${names.join(" and ")} throw again.`,
     wins: (name: string) => `${name} wins the dice-off!`,
     whoStarts: "Who starts?",
@@ -34,8 +33,8 @@ export const strings = {
   game: {
     turn: (turn: number, name: string) => `Turn ${turn}: ${name}`,
     pick: (name: string) => `${name}, pick a target.`,
-    throw: "Throw",
     throwPrompt: (name: string) => `${name}, throw the dice!`,
+    throws: (name: string) => `${name} throws the dice.`,
     aiThinking: (name: string) => `${name} is thinking...`,
     goesFor: (name: string, target: number) => `${name} goes for ${target}.`,
     reset: "Every die is set aside, so all six roll again!",
@@ -52,6 +51,8 @@ export const strings = {
     board: (name: string) => `${name}'s board`,
     column: (target: number, row: number) => `Target ${target}, row ${row}`,
     dice: (values: number[]) => `Dice: ${values.join(", ")}`,
+    stack: (count: number) => `${count} ${count === 1 ? "die" : "dice"} left to throw`,
+    throwStack: (count: number) => `Throw ${count === 1 ? "the die" : `${count} dice`}`,
     seed: (seed: number | string) => `Seed: ${seed}`,
     strategy: (strategy: string) => `AI strategy: ${strategy}`,
   },
