@@ -32,7 +32,7 @@ docs/
   game_rules.md      rules the engine implements
   design_choices.md  frontend design choices
 notebooks/         exploration only, opt-in `notebook` dependency group
-scripts/           Python helper scripts: `dev.py`, `version.py`, `gen_api.py`, `contract.py`
+scripts/           Python helper scripts: `dev.py`, `version.py`, `gen_api.py`, `contract.py`, `bench_sim.py`
 .agents/           agent instructions and skills, see below
 pyproject.toml  uv.lock  ruff.toml  .python-version  .nvmrc
 Dockerfile  compose.yaml  .env.example
