@@ -32,11 +32,10 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
      The AI always throws by itself.
      Switching modes never throws, hides, or changes the dice already on the table, and they don't tumble in again; in a manual mode, the next throw waits.
    - Playing automatically, the player picks a target by clicking its column on their own board; only legal columns are clickable and glow.
-   - Playing automatically, hovering or focusing a legal column raises the dice that form its matches, and shows a ghost peg on the row it's guaranteed to reach from the opening roll alone.
-     When that row is the top, the dashed ghost also gets a gold halo.
+   - Playing automatically, hovering or focusing a legal column raises the dice that form its matches, and shows a [ghost peg](#board) on the row it's guaranteed to reach from the opening roll alone.
    - In a manual play mode, a human plays the roll sequence by hand ([game rules](game_rules.md#roll-sequence)):
      - Clicking dice in the throw area selects them, raised and outlined; clicking again deselects.
-       A die only selects while the selection still fits one of the observation's take options; otherwise the click does nothing.
+       A die only selects while the selection still fits one of the observation's take options; otherwise it stays clickable, but the click does nothing.
      - Opening roll: once the selection is a whole take, the lanes it can be taken for glow, each with a ghost peg where the peg would land, like lane 6 two rows up and lane 12 one row up for two sixes.
        Clicking one of those lanes takes the dice for it and locks in the target.
      - Opening roll, playing with hints: the stack's place also shows a button per take the selection fits, like "Choose 2 x 6" and "Choose 1 x 12" for two sixes.
@@ -50,7 +49,7 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
        - "Finish peg and reroll all dice" when it tops the peg (a continuation);
        - "Move peg and end turn" when too few dice are left for a match;
        - "Finish peg and win" when it tops the last peg.
-     - In a later throw, clicking the locked lane takes the selection too.
+     - In a later throw, clicking the locked lane takes the selection too; with nothing selected, a first click selects its most matches, and a second takes them.
      - After the first take, a "Stop" button under the throw area ends the sequence, and the peg moves by the matches taken.
        There's no stop before the first take, since a turn with a legal target can't pass.
      - A ghost peg marks where the peg will land, while the peg itself only moves once the sequence ends:
@@ -78,6 +77,7 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 
 - 12 columns, targets 1 to 12, each with rows 0 to 5.
 - Row 0 is the bottom row, where every peg starts, and row 5 is the top.
+- A ghost peg, dashed in the seat colour, marks where a peg would land; on the top row it also gets a gold halo.
 
 ## Dice stack
 
@@ -110,7 +110,7 @@ A pile of the dice the player has left to throw, left of the throw area, in a py
 
 - A wooden bar across the top with the title and the "Rules" button, on every screen.
 - Outside the menu, a "New Game" button sits right of the title.
-- During the game it also holds the [play mode](#play-modes) slider.
+- During the game it also holds the [play mode](#play-modes) slider; below 540 px, the slider takes a full row of its own, with smaller labels.
 
 ## Sliders
 
@@ -125,10 +125,10 @@ It starts on "Play automatically" and keeps its position for the next game, but 
 - Play without hints: manual turns, and no lane in the opening roll lights up until dice are selected.
 - Play with hints: manual turns, and every legal lane also glows before any dice are selected; clicking one selects its take with the most matches, and clicking it again takes them.
   Once dice are selected in the opening roll, a "Choose" button per take shows in the stack's place.
-- Play automatically: turns play as before, always with the hints: legal columns glow and hovering previews a pick.
+- Play automatically: the player only picks the target and the sequence plays itself, always with the hints: legal columns glow and hovering previews a pick.
   There's no automatic play without hints.
 - Both manual modes otherwise play the same: dice only select into a valid take, and a whole take lights its lanes with their ghost pegs.
-- The locked lane of a sequence in progress stays lit in both manual modes, with its ghost peg for the matches taken so far; with nothing selected, a click on it selects its most matches, and a second click takes them.
+- In both manual modes, the locked lane of a sequence in progress stays lit, with its ghost peg for the matches taken so far.
 
 ## Rules booklet
 
