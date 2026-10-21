@@ -28,6 +28,7 @@ from opaprikkie.engine.ruleset import CLASSIC, EndRule, Ruleset, StartRule
 from opaprikkie.engine.state import GameState, Phase, SequenceInProgress
 from opaprikkie.engine.strategies import (
     BUILTIN_STRATEGIES,
+    BountyStrategy,
     GreedyStrategy,
     HandStrategy,
     HighestStrategy,
@@ -42,6 +43,7 @@ from opaprikkie.engine.strategies import (
 __all__ = [
     "BUILTIN_STRATEGIES",
     "CLASSIC",
+    "BountyStrategy",
     "DiceOffRoll",
     "DiceOffRound",
     "EndRule",

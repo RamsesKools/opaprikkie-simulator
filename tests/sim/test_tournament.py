@@ -1,6 +1,6 @@
 import pytest
 
-from opaprikkie.sim import run_batch, run_tournament
+from opaprikkie.sim import InProcessDriver, run_batch, run_tournament
 
 
 def test_every_pair_plays_head_to_head_with_its_own_batch_seed():
@@ -62,3 +62,27 @@ def test_ties_in_the_ranking_keep_the_given_order():
 def test_a_tournament_needs_distinct_strategies(strategies, message):
     with pytest.raises(ValueError, match=message):
         run_tournament(strategies, games=1, seed="t")
+
+
+def test_each_pair_alternates_the_first_player():
+    class Recording(InProcessDriver):
+        def __init__(self) -> None:
+            super().__init__()
+            self.first_players: list[int] = []
+
+        def play(self, seed, first_player, choose):
+            self.first_players.append(first_player)
+            return super().play(seed, first_player, choose)
+
+    driver = Recording()
+
+    run_tournament(["random", "greedy", "smart"], games=4, seed="t", driver=driver)
+
+    assert driver.first_players == [0, 1, 0, 1] * 3
+
+
+def test_the_argument_order_changes_the_pair_seeds():
+    ab = run_tournament(["random", "greedy"], games=20, seed="t")
+    ba = run_tournament(["greedy", "random"], games=20, seed="t")
+
+    assert ab.wins["random", "greedy"] != ba.wins["random", "greedy"]

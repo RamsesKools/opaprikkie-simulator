@@ -7,6 +7,7 @@ import pytest
 from opaprikkie.engine import (
     BUILTIN_STRATEGIES,
     CLASSIC,
+    BountyStrategy,
     EndRule,
     GreedyStrategy,
     HandStrategy,
@@ -14,6 +15,7 @@ from opaprikkie.engine import (
     Phase,
     RandomStrategy,
     RarestStrategy,
+    RollSequence,
     Ruleset,
     SloppyStrategy,
     SmartStrategy,
@@ -25,8 +27,10 @@ from opaprikkie.engine import (
     name_players,
     new_game,
     observe,
+    set_aside,
     take,
 )
+from opaprikkie.engine.strategies import bounty_points
 
 from .helpers import choosing_target
 
@@ -39,6 +43,7 @@ def test_builtins_are_registered_by_name():
         "highest",
         "sum",
         "rarest",
+        "bounty",
         "sloppy",
     }
     for name, strategy in BUILTIN_STRATEGIES.items():
@@ -46,7 +51,7 @@ def test_builtins_are_registered_by_name():
         assert strategy.name == name
 
 
-ALL = ["random", "greedy", "smart", "highest", "sum", "rarest", "sloppy"]
+ALL = ["random", "greedy", "smart", "highest", "sum", "rarest", "bounty", "sloppy"]
 
 
 @pytest.mark.parametrize("name", ALL)
@@ -226,10 +231,12 @@ def play_by_hand(strategy: HandStrategy, seed: str):
     state, _ = new_game(CLASSIC, seed)
     state, _ = name_players(state, ["Ada", "Bob"])
     state, _ = choose_first_player(state, strategy.choose_first_player(observe(state)))
+    log = ()
     while state.phase is not Phase.FINISHED:
         choice = strategy.choose_take(observe(state), rng)
-        state, _ = take(state, choice.target, choice.dice)
-    return state
+        state, entries = take(state, choice.target, choice.dice)
+        log += entries
+    return state, log
 
 
 # Two 7s (1+6, 2+5), one 12 (6+6), three 6s, and single 1, 2 and 5.
@@ -317,4 +324,58 @@ def test_sloppy_chooses_from_the_throw_on_the_table_in_a_sequence():
 
 @pytest.mark.parametrize("seed", ["a", "b", "c"])
 def test_sloppy_finishes_a_classic_game_in_both_seats(seed):
-    assert play_by_hand(SloppyStrategy(), seed).winner is not None
+    state, _ = play_by_hand(SloppyStrategy(), seed)
+
+    assert state.winner is not None
+
+
+@pytest.mark.parametrize("seed", ["a", "b", "c"])
+def test_sloppy_never_stops_early(seed):
+    _, log = play_by_hand(SloppyStrategy(), seed)
+
+    rolls = [
+        (entry.target, roll)
+        for entry in log
+        if isinstance(entry, RollSequence)
+        for roll in entry.rolls
+    ]
+    assert rolls
+    assert all(
+        roll.set_aside or not set_aside(CLASSIC, target, roll.dice) for target, roll in rolls
+    )
+
+
+@pytest.mark.parametrize(
+    ("opening_roll", "rows", "expected"),
+    [
+        pytest.param((1, 1, 1, 6, 6, 6), only_open({1: 0, 12: 0}), 12, id="1 x 12 is worth 6"),
+        pytest.param((1, 1, 2, 6, 2, 6), only_open({1: 0, 8: 0}), 8, id="2 x 8 is worth 2.4"),
+        pytest.param((1, 1, 1, 6, 6, 6), only_open({1: 0, 6: 0}), 6, id="3 points tie to higher"),
+        pytest.param((4, 4, 4, 6, 6, 6), only_open({10: 0, 12: 0}), 12, id="6 points tie to 12"),
+    ],
+)
+def test_bounty_picks_the_most_points(opening_roll, rows, expected):
+    observation = observe(choosing_target(opening_roll, rows))
+
+    assert BountyStrategy().choose_target(observation, Random(0)) == expected
+
+
+@pytest.mark.parametrize(
+    ("target", "points"),
+    [(1, 1), (6, 1), (7, 1), (8, Fraction(6, 5)), (9, Fraction(3, 2)), (10, 2), (11, 3), (12, 6)],
+)
+def test_bounty_points_are_the_odds_of_one_die_over_the_odds_of_the_lane(target, points):
+    assert bounty_points(CLASSIC, target) == points
+
+
+@pytest.mark.parametrize("strategy", [SumStrategy(), RarestStrategy(), BountyStrategy()])
+def test_value_strategies_count_raw_matches_on_a_clamped_peg(strategy):
+    # 11 holds 3 matches but only 1 row is left, and 12 holds 1: clamped, 12 wins; raw, 11 does.
+    state = choosing_target((5, 5, 5, 6, 6, 6), only_open({11: 4, 12: 0}))
+    observation = observe(state)
+
+    assert [(t.target, t.matches, t.guaranteed_moves) for t in observation.legal_targets] == [
+        (11, 3, 1),
+        (12, 1, 1),
+    ]
+    assert strategy.choose_target(observation, Random(0)) == 11

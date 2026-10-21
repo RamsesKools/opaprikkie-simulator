@@ -95,6 +95,23 @@ class RarestStrategy:
         return best.target
 
 
+class BountyStrategy:
+    """Picks the most points, where a match is worth the odds of one die over the lane's odds."""
+
+    name = "bounty"
+
+    def choose_first_player(self, observation: Observation) -> int:
+        return observation.seat
+
+    def choose_target(self, observation: Observation, rng: Random) -> int:
+        ruleset = observation.ruleset
+        best = max(
+            observation.legal_targets,
+            key=lambda t: (t.matches * bounty_points(ruleset, t.target), t.target),
+        )
+        return best.target
+
+
 class SloppyStrategy:
     """Plays its sequences by hand, taking uniformly among the valid takes and never stopping."""
 
@@ -145,6 +162,11 @@ def _match_odds_of(ruleset: Ruleset, target: int) -> Fraction:
     faces = range(1, ruleset.dice_faces + 1)
     ways = sum(sum(combo) == target for combo in product(faces, repeat=combo_size))
     return Fraction(ways, ruleset.dice_faces**combo_size)
+
+
+def bounty_points(ruleset: Ruleset, target: int) -> Fraction:
+    """What a match for `target` is worth: the odds of one die over the odds of its lane."""
+    return Fraction(1, ruleset.dice_faces) / _match_odds_of(ruleset, target)
 
 
 def _after_roll(
@@ -202,6 +224,7 @@ BUILTIN_STRATEGIES: Mapping[str, Strategy] = MappingProxyType(
             HighestStrategy(),
             SumStrategy(),
             RarestStrategy(),
+            BountyStrategy(),
             SloppyStrategy(),
         )
     }
