@@ -34,10 +34,18 @@ class Strategy(Protocol):
 
     def choose_first_player(self, observation: Observation) -> int: ...
     def choose_target(self, observation: Observation, rng: Random) -> int: ...
+
+
+class HandStrategy(Strategy, Protocol):
+    def choose_take(self, observation: Observation, rng: Random) -> TakeOption: ...
 ```
 
 - Strategies are pure: they never touch the state or roll dice for the game.
-- They only choose targets, so their sequences always run automatically; `take` and `stop` are for human players ([ADR 0006](../adr/0006_imperfect_play_without_passing.md)).
+- A `Strategy` only chooses targets, so its sequences run automatically ([ADR 0006](../adr/0006_imperfect_play_without_passing.md)).
+- A `HandStrategy` opts in to playing by hand ([ADR 0007](../adr/0007_strategies_that_play_by_hand.md)):
+  - Callers check for it with `isinstance`, and ask it for a take at every choice point, from the opening roll through each `choosing_dice` roll, instead of for a target.
+  - It returns one of the observation's `takes`, which the caller plays with the engine's `take`, so the engine validates it like a human's.
+  - It can't pass or stop, and `choose_target` stays for callers that only know targets.
 - The caller supplies `rng`; the backend derives it from the game seed, so AI games replay from the seed alone.
 - Built-in strategies live in the engine; external ones live in the simulator or anywhere else and use the same calls.
 
@@ -48,18 +56,45 @@ class Strategy(Protocol):
 | `random` | uniformly among legal targets |
 | `greedy` | most `guaranteed_moves`; ties go to the peg closest to the top, then the lower number |
 | `smart` | highest expected movement over the whole roll sequence, computed exactly from the remaining dice and clamped, plus a bonus for topping out (it earns a continuation), 0 rows by default; ties go to the lower number |
+| `highest` | the highest legal target |
+| `sum` | the highest `matches` x target, so 2 x 7 (14) beats 1 x 12 (12); ties go to the higher number |
+| `rarest` | the combination least likely to be thrown again: lowest `odds ^ matches`, with 1/6 per target of 1 to 6 and the pair-sum odds for 7 to 12 (6/36 down to 1/36), so 1 x 12 ties 2 x 7 at 1/36 and the tie goes to 12 |
+| `sloppy` | plays its sequences by hand: on every roll it takes uniformly among the valid `takes`, so it may take fewer matches than it could, and never stops early |
 
-- All three choose themselves as first player.
+- All of them choose themselves as first player.
+- `sloppy` is the only `HandStrategy`, and the only one that plays imperfectly; as a plain `Strategy` its `choose_target` names the target of a random take.
+- `sloppy` draws uniformly over `takes` entries, so a target with more ways to pick its dice is more likely.
 - `smart` is a first version and may change, its bonus included.
   A flat bonus measured worse: against greedy over 1000 `CLASSIC` games, smart won 631 with no bonus and 464 with 1 row.
 - `SmartStrategy(topping_bonus=...)` sets the bonus, and `expected_value(observation, target)` returns a target's exact value as a `Fraction`.
+
+## Ranking
+
+`opaprikkie tournament STRATEGIES...` plays a seeded round robin of two-player games, every pair head to head for `-n` games (default 1000), in-process or over HTTP with `--url` like `simulate`.
+Each pair is a batch seeded `<seed>:<first>:<second>` that alternates the first player, and the output is the head-to-head win-rate matrix and a ranking by overall win rate.
+Ties in the ranking keep the order given.
+
+The ranking at seed 42 and 1000 games per pair, from `uv run opaprikkie tournament random greedy smart highest sum rarest sloppy -n 1000 -s 42`:
+
+| Rank | Strategy | Win rate | Wins |
+| -- | -- | -- | -- |
+| 1 | `sum` | 76.9% | 4613 / 6000 |
+| 2 | `highest` | 69.7% | 4184 / 6000 |
+| 3 | `rarest` | 67.3% | 4037 / 6000 |
+| 4 | `smart` | 46.6% | 2796 / 6000 |
+| 5 | `random` | 36.0% | 2161 / 6000 |
+| 6 | `greedy` | 32.2% | 1932 / 6000 |
+| 7 | `sloppy` | 21.3% | 1277 / 6000 |
+
+- The three simple target rules beat `smart`, which only maximizes the expected movement of one sequence.
+- `sloppy` places last, below `random`.
 
 ## Seat controllers
 
 - Each game gives each seat a `controller`: `human` (the caller decides) or `ai` (a built-in strategy).
   A simulator over HTTP plays its seats as `human`.
 - The engine knows nothing about controllers.
-- After any caller action, the backend plays every following `ai` seat within the same request (first-player pick, targets, continuations) until the next human choice point or the game end, and returns all logs ([HTTP API](http_api.md#ai-seats)).
+- After any caller action, the backend plays every following `ai` seat within the same request (first-player pick, targets or takes, continuations) until the next human choice point or the game end, and returns all logs ([HTTP API](http_api.md#ai-seats)).
 - Outside dev mode the backend picks the AI's strategy uniformly among the built-ins using the game seed, and never reveals it.
   In dev mode the caller may pick it, and the state shows it.
 

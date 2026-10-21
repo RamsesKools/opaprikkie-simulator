@@ -19,3 +19,4 @@ The user decided this on 2026-10-20 in [#52](https://github.com/RamsesKools/opap
 - The engine gets per-roll actions, `take` and `stop`, and a `choosing_dice` phase, next to `choose_target`, which stays the automatic path for strategies, the AI, and the simulator, with unchanged results.
 - A manual sequence still logs one `roll_sequence` when it ends, so logs keep their shape; a stop shows as a last roll with nothing set aside.
 - Strategies only ever choose targets, so they can't play imperfectly; a simulation may test later whether passing or stopping early ever pays, and revisit this.
+  [ADR 0007](0007_strategies_that_play_by_hand.md) lets a strategy opt in to choosing its takes.

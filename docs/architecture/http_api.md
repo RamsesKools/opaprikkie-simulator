@@ -39,7 +39,8 @@ Choices, observations, and rejections follow the [strategy contract](strategy_co
 
 - After every caller action, the backend plays the `ai` seats until the next `human` choice or the game end.
 - The AI's strategy is drawn uniformly from the built-ins with `Random(f"{seed}:strategy")`.
-- Each AI target choice gets `Random(f"{seed}:strategy:{roll_index}")`, so a seed and the human choices replay a game exactly.
+- Each AI choice gets `Random(f"{seed}:strategy:{roll_index}")`, so a seed and the human choices replay a game exactly.
+- A strategy that plays by hand (`sloppy`) takes dice roll by roll through the engine's `take`; any other plays its sequences automatically.
 
 ## Dev mode
 
