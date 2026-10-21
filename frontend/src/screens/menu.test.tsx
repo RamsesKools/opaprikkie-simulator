@@ -19,8 +19,7 @@ function show({ initial = {}, dev = null, pending = false }: Shown = {}) {
   return { onStart };
 }
 
-const switchMode = (from: string) =>
-  fireEvent.click(screen.getByRole("button", { name: strings.menu.mode(from) }));
+const switchTo = (label: string) => fireEvent.click(screen.getByRole("radio", { name: label }));
 
 test("starts a game versus the AI by default", () => {
   const { onStart } = show();
@@ -33,10 +32,10 @@ test("starts a game versus the AI by default", () => {
 test("switches to a hot-seat game with the default names", () => {
   const { onStart } = show();
 
-  switchMode(strings.menu.versusAi);
-  expect(
-    screen.getByRole("button", { name: strings.menu.mode(strings.menu.hotSeat) }),
-  ).toBeVisible();
+  switchTo(strings.menu.hotSeat);
+  expect(screen.getByRole("radiogroup", { name: strings.menu.mode })).toBeVisible();
+  expect(screen.getByRole("radio", { name: strings.menu.hotSeat })).toBeChecked();
+  expect(screen.getByRole("radio", { name: strings.menu.versusAi })).not.toBeChecked();
   fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
 
   expect(onStart).toHaveBeenCalledWith({ mode: "hot_seat", names: ["Player 1", "Player 2"] });
@@ -54,7 +53,7 @@ test("defaults the AI's name to Opa and trims names", () => {
 
 test("blocks blank names but allows duplicates", () => {
   const { onStart } = show();
-  switchMode(strings.menu.versusAi);
+  switchTo(strings.menu.hotSeat);
   const start = screen.getByRole("button", { name: strings.menu.start });
 
   fireEvent.change(screen.getByLabelText(strings.menu.player(0)), { target: { value: " " } });
@@ -91,12 +90,12 @@ test("keeps player 1 across modes, and player 2 and the AI apart", () => {
 
   fireEvent.change(screen.getByLabelText(strings.menu.you), { target: { value: "Ann" } });
   fireEvent.change(screen.getByLabelText(strings.menu.opponent), { target: { value: "Oma" } });
-  switchMode(strings.menu.versusAi);
+  switchTo(strings.menu.hotSeat);
   expect(screen.getByLabelText(strings.menu.player(0))).toHaveValue("Ann");
   expect(screen.getByLabelText(strings.menu.player(1))).toHaveValue("Player 2");
   fireEvent.change(screen.getByLabelText(strings.menu.player(1)), { target: { value: "Bob" } });
   start();
-  switchMode(strings.menu.hotSeat);
+  switchTo(strings.menu.versusAi);
   expect(screen.getByLabelText(strings.menu.opponent)).toHaveValue("Oma");
   start();
 
@@ -143,7 +142,7 @@ test("offers the AI strategy versus the AI only", () => {
   const { onStart } = show({ dev: { strategies: ["greedy"] } });
 
   fireEvent.change(screen.getByLabelText(strings.menu.strategy), { target: { value: "greedy" } });
-  switchMode(strings.menu.versusAi);
+  switchTo(strings.menu.hotSeat);
   expect(screen.queryByLabelText(strings.menu.strategy)).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
 

@@ -1,12 +1,13 @@
+import { Slider } from "../components/slider.tsx";
 import type { GameSetup, Mode } from "../game/model.ts";
 import { nameProblem, seatNames, withSeat, type Draft } from "../lib/names.ts";
 import { seatStyle } from "../lib/palette.ts";
 import { strings } from "../lib/strings.ts";
 
-const modeLabels: Record<Mode, string> = {
-  versus_ai: strings.menu.versusAi,
-  hot_seat: strings.menu.hotSeat,
-};
+const modes = [
+  { value: "versus_ai", label: strings.menu.versusAi },
+  { value: "hot_seat", label: strings.menu.hotSeat },
+] as const satisfies { value: Mode; label: string }[];
 
 type Props = {
   draft: Draft;
@@ -42,20 +43,12 @@ export function Menu({ draft, onChange, dev, pending, onStart }: Props) {
         }
       }}
     >
-      <button
-        type="button"
-        className="mode-switch wood"
-        aria-label={strings.menu.mode(modeLabels[mode])}
-        onClick={() =>
-          onChange({ ...draft, mode: mode === "versus_ai" ? "hot_seat" : "versus_ai" })
-        }
-      >
-        {(["versus_ai", "hot_seat"] as const).map((option) => (
-          <span key={option} className={option === mode ? "option on" : "option"}>
-            {modeLabels[option]}
-          </span>
-        ))}
-      </button>
+      <Slider
+        label={strings.menu.mode}
+        options={modes}
+        value={mode}
+        onChange={(chosen) => onChange({ ...draft, mode: chosen })}
+      />
       {current.map((name, seat) => (
         <label key={`${mode}:${seat}`} className="name" style={seatStyle(seat)}>
           <span className="swatch" />

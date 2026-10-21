@@ -37,7 +37,7 @@ The target can't change during a roll sequence.
 ## Roll sequence
 
 - Automatic: every match of every roll is set aside.
-  Strategies, the AI, and human players with automatic turns play this way.
+  Strategies, the AI, and human players who play automatically play this way.
 - By hand: the player picks the dice to set aside, every one of them part of a match for the target.
   - The first pick, from the opening roll, chooses the target.
   - They may take fewer matches than rolled; the dice they leave are rerolled with the rest.

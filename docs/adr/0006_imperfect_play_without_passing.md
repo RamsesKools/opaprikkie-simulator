@@ -4,7 +4,7 @@ status: accepted
 
 # Imperfect play, but no passing
 
-Human players who turn "Play turns automatically" off play their own roll sequences: they pick the dice to set aside, may take fewer matches than they rolled, and may stop a sequence early.
+Human players in a manual play mode ("Play without hints" or "Play with hints") play their own roll sequences: they pick the dice to set aside, may take fewer matches than they rolled, and may stop a sequence early.
 What they can't do is pass: when the opening roll has a legal target, they must take at least one match.
 The user decided this on 2026-10-20 in [#52](https://github.com/RamsesKools/opaprikkie-simulator/issues/52).
 

@@ -5,6 +5,7 @@ import {
   type Game,
   type GameClient,
   type LogEntry,
+  type PlayMode,
   type TakeOption,
 } from "../game/model.ts";
 import { timing } from "../game/timing.ts";
@@ -52,25 +53,24 @@ const game: Game = {
 function show(
   chooseTarget: GameClient["chooseTarget"],
   logs: LogEntry[] = [],
-  autoPlay = true,
+  playMode: PlayMode = "automatic",
   shown: Game = game,
-  { hints = true, client = {} }: { hints?: boolean; client?: Partial<GameClient> } = {},
+  { client = {} }: { client?: Partial<GameClient> } = {},
 ) {
   const onFinished = vi.fn<(game: Game) => void>();
   const onError = vi.fn<(error: unknown) => void>();
-  const screenWith = (settings: { autoPlay: boolean; hints: boolean }) => (
+  const screenWith = (mode: PlayMode) => (
     <GameScreen
       client={{ chooseTarget, ...client } as GameClient}
       initial={{ game: shown, logs }}
-      {...settings}
+      playMode={mode}
       onFinished={onFinished}
       onError={onError}
     />
   );
-  const { rerender } = render(screenWith({ autoPlay, hints }));
-  const toggle = (settings: { autoPlay: boolean; hints: boolean }) =>
-    rerender(screenWith(settings));
-  return { onFinished, onError, toggle };
+  const { rerender } = render(screenWith(playMode));
+  const slide = (mode: PlayMode) => rerender(screenWith(mode));
+  return { onFinished, onError, slide };
 }
 
 const advance = (ms: number) => act(() => vi.advanceTimersByTimeAsync(ms));
@@ -207,7 +207,7 @@ test("recovers from a failed choice on the next pick", async () => {
 });
 
 test("throws from the stack when turns don't play automatically", async () => {
-  show(vi.fn<GameClient["chooseTarget"]>(), [annGoesForOne], false);
+  show(vi.fn<GameClient["chooseTarget"]>(), [annGoesForOne], "with_hints");
 
   expect(screen.queryByRole("button", { name: /^Throw/ })).not.toBeInTheDocument();
   await advance(timing.roll);
@@ -235,7 +235,7 @@ test("throws from the stack when turns don't play automatically", async () => {
 
 test("shows the seed and the AI strategy in dev mode", () => {
   const dev: Game = { ...game, controllers: ["human", "ai"], seed: "abc", strategy: "greedy" };
-  show(vi.fn<GameClient["chooseTarget"]>(), [], true, dev);
+  show(vi.fn<GameClient["chooseTarget"]>(), [], "automatic", dev);
 
   expect(screen.getByText(strings.game.seed("abc"))).toBeInTheDocument();
   expect(screen.getByText(strings.game.strategy("greedy"))).toBeInTheDocument();
@@ -374,6 +374,8 @@ const selected = () =>
     .map((die, index) => (die.getAttribute("aria-pressed") === "true" ? index : -1))
     .filter((index) => index >= 0);
 const reroll = (label: string) => screen.queryByRole("button", { name: label });
+const choices = () =>
+  screen.queryAllByRole("button", { name: /^Choose/ }).map((button) => button.textContent);
 const ghosts = () =>
   Object.fromEntries(
     [...anns().querySelectorAll(".column")]
@@ -390,11 +392,12 @@ const pegRow = (target: number) =>
       [target - 1]!.style.getPropertyValue("--row"),
   );
 
-async function throwManually(shown: Game, hints = true, client: Partial<GameClient> = {}) {
-  const shownScreen = show(vi.fn<GameClient["chooseTarget"]>(), [], false, shown, {
-    hints,
-    client,
-  });
+async function throwManually(
+  shown: Game,
+  playMode: PlayMode = "with_hints",
+  client: Partial<GameClient> = {},
+) {
+  const shownScreen = show(vi.fn<GameClient["chooseTarget"]>(), [], playMode, shown, { client });
   fireEvent.click(screen.getByRole("button", { name: /^Throw/ }));
   await advance(0);
   return shownScreen;
@@ -417,7 +420,7 @@ test("selects a die only while the selection still fits a take", async () => {
 
 test("lights the lanes the selection can be taken for, marks where the peg lands, and takes for the clicked lane", async () => {
   const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
-  await throwManually(twoSixes, true, { take });
+  await throwManually(twoSixes, "with_hints", { take });
 
   selectDie(0);
   selectDie(1);
@@ -446,7 +449,7 @@ test("lights nothing for a selection that isn't a whole take yet", async () => {
 
 test("with hints on, lights every legal lane up front, and a click selects its most matches", async () => {
   const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
-  await throwManually(twoSixes, true, { take });
+  await throwManually(twoSixes, "with_hints", { take });
   expect(screen.getByText(strings.game.selectDice("Ann", true))).toBeInTheDocument();
   expect(lit()).toEqual([1, 6, 7, 12]);
   expect(ghosts()).toEqual({});
@@ -460,9 +463,44 @@ test("with hints on, lights every legal lane up front, and a click selects its m
   expect(take).toHaveBeenCalledExactlyOnceWith(7, [0, 2, 4, 5]);
 });
 
+test("with hints, offers a choose button per take the selection fits, in the stack's place", async () => {
+  const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
+  await throwManually(twoSixes, "with_hints", { take });
+  expect(choices()).toEqual([]);
+
+  selectDie(0);
+  expect(choices()).toEqual(["Choose 1 x 6 Reroll 5 dice"]);
+  selectDie(1);
+  expect(choices()).toEqual(["Choose 2 x 6 Reroll 4 dice", "Choose 1 x 12 Reroll 4 dice"]);
+  const button = screen.getByRole("button", { name: /^Choose 1 x 12/ });
+  expect(button.closest(".stack-slot")).not.toBeNull();
+
+  fireEvent.click(button);
+  expect(take).toHaveBeenCalledExactlyOnceWith(12, [0, 1]);
+});
+
+test.each([
+  ["reset", 6, "Reroll all"],
+  ["topped", 6, "Finish peg"],
+  ["ends", 0, "End turn"],
+  ["wins", 0, "Win!"],
+] as const)("says what a %s choice leads to", async (outcome, nextDice, label) => {
+  const takes = twoSixes.observation!.takes.map((option) =>
+    option.target === 6 && option.matches === 2
+      ? { ...option, outcome, next_dice: nextDice }
+      : option,
+  );
+  await throwManually({ ...twoSixes, observation: { ...twoSixes.observation!, takes } });
+
+  selectDie(0);
+  selectDie(1);
+
+  expect(choices()).toEqual([`Choose 2 x 6 ${label}`, "Choose 1 x 12 Reroll 4 dice"]);
+});
+
 test("with hints off, lights nothing until dice are selected, then plays the same", async () => {
   const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
-  await throwManually(twoSixes, false, { take });
+  await throwManually(twoSixes, "without_hints", { take });
   expect(screen.getByText(strings.game.selectDice("Ann", false))).toBeInTheDocument();
   expect(lit()).toEqual([]);
   expect(column(6)).toBeDisabled();
@@ -472,13 +510,14 @@ test("with hints off, lights nothing until dice are selected, then plays the sam
 
   expect(lit()).toEqual([6, 12]);
   expect(ghosts()).toEqual({ 6: 2, 12: 1 });
+  expect(choices()).toEqual([]);
   fireEvent.click(column(12));
   expect(take).toHaveBeenCalledExactlyOnceWith(12, [0, 1]);
 });
 
 test("in a later throw, keeps the locked lane lit and takes the selection from the stack's place", async () => {
   const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
-  show(vi.fn<GameClient["chooseTarget"]>(), [], false, lockedToSix(), { client: { take } });
+  show(vi.fn<GameClient["chooseTarget"]>(), [], "with_hints", lockedToSix(), { client: { take } });
   expect(screen.getByRole("img", { name: strings.game.kept([6]) })).toBeInTheDocument();
   expect(ghosts()).toEqual({ 6: 1 });
 
@@ -495,14 +534,14 @@ test("in a later throw, keeps the locked lane lit and takes the selection from t
   expect(pegRow(6)).toBe(0);
   const button = reroll("Reroll 4 dice")!;
   expect(button.closest(".stack-slot")).not.toBeNull();
+  expect(choices()).toEqual([]);
   fireEvent.click(button);
   expect(take).toHaveBeenCalledExactlyOnceWith(6, [1]);
 });
 
 test("in a later throw, clicking the locked lane takes the selection too", async () => {
   const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
-  show(vi.fn<GameClient["chooseTarget"]>(), [], false, lockedToSix(), {
-    hints: false,
+  show(vi.fn<GameClient["chooseTarget"]>(), [], "without_hints", lockedToSix(), {
     client: { take },
   });
   fireEvent.click(throwStack(5)!);
@@ -514,8 +553,7 @@ test("in a later throw, clicking the locked lane takes the selection too", async
 
 test("with hints off, keeps the locked lane lit, and a click on it selects its most matches", async () => {
   const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
-  show(vi.fn<GameClient["chooseTarget"]>(), [], false, lockedToSix(), {
-    hints: false,
+  show(vi.fn<GameClient["chooseTarget"]>(), [], "without_hints", lockedToSix(), {
     client: { take },
   });
   fireEvent.click(throwStack(5)!);
@@ -529,17 +567,17 @@ test("with hints off, keeps the locked lane lit, and a click on it selects its m
   expect(take).toHaveBeenCalledExactlyOnceWith(6, [1]);
 });
 
-test("toggling automatic turns mid-sequence leaves the dice on the table until the take answers", async () => {
+test("switching to automatic play mid-sequence leaves the dice on the table until the take answers", async () => {
   const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
-  const { toggle } = show(vi.fn<GameClient["chooseTarget"]>(), [], false, lockedToSix(), {
+  const { slide } = show(vi.fn<GameClient["chooseTarget"]>(), [], "with_hints", lockedToSix(), {
     client: { take },
   });
   fireEvent.click(throwStack(5)!);
   const onTable = () => [...document.querySelectorAll(".throw-area .die")];
   const dice = onTable();
 
-  toggle({ autoPlay: false, hints: false });
-  toggle({ autoPlay: true, hints: false });
+  slide("without_hints");
+  slide("automatic");
   await advance(0);
 
   expect(take).toHaveBeenCalledExactlyOnceWith(6, [1]);
@@ -557,7 +595,7 @@ test.each([
   show(
     vi.fn<GameClient["chooseTarget"]>(),
     [],
-    false,
+    "with_hints",
     lockedToSix({
       ...sixTaken,
       outcome,
@@ -581,24 +619,26 @@ test("stops a sequence, with no stop before the first take", async () => {
   expect(screen.queryByRole("button", { name: strings.game.stop })).not.toBeInTheDocument();
   cleanup();
 
-  show(vi.fn<GameClient["chooseTarget"]>(), [], false, lockedToSix(), { client: { stop } });
+  show(vi.fn<GameClient["chooseTarget"]>(), [], "with_hints", lockedToSix(), { client: { stop } });
   fireEvent.click(throwStack(5)!);
   fireEvent.click(screen.getByRole("button", { name: strings.game.stop }));
 
   expect(stop).toHaveBeenCalledOnce();
 });
 
-test("toggling automatic turns leaves the dice on the table as they are", async () => {
+test("switching how to play leaves the dice on the table as they are", async () => {
   const take = vi.fn<GameClient["take"]>();
   const chooseTarget = vi.fn<GameClient["chooseTarget"]>();
-  const { toggle } = await throwManually(twoSixes, true, { take, chooseTarget });
+  const { slide } = await throwManually(twoSixes, "with_hints", { take, chooseTarget });
   const onTable = () => [...document.querySelectorAll(".throw-area .die")];
   const dice = onTable();
 
-  toggle({ autoPlay: true, hints: true });
+  slide("automatic");
   await advance(10_000);
   onTable().forEach((die, index) => expect(die).toBe(dice[index]));
-  toggle({ autoPlay: false, hints: true });
+  slide("without_hints");
+  onTable().forEach((die, index) => expect(die).toBe(dice[index]));
+  slide("with_hints");
 
   expect(onTable()).toHaveLength(6);
   onTable().forEach((die, index) => expect(die).toBe(dice[index]));
@@ -608,7 +648,7 @@ test("toggling automatic turns leaves the dice on the table as they are", async 
 
 test("plays the rest of a sequence by itself when turns play automatically", async () => {
   const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
-  show(vi.fn<GameClient["chooseTarget"]>(), [], true, lockedToSix(), { client: { take } });
+  show(vi.fn<GameClient["chooseTarget"]>(), [], "automatic", lockedToSix(), { client: { take } });
 
   await advance(timing.ready);
   await advance(0);
@@ -635,7 +675,7 @@ test("takes the options from the observation, without rules of its own", async (
 
 test("doesn't retry a failed automatic take, and leaves the sequence to the player", async () => {
   const take = vi.fn<GameClient["take"]>().mockRejectedValue(new GameError("network", "offline"));
-  show(vi.fn<GameClient["chooseTarget"]>(), [], true, lockedToSix(), { client: { take } });
+  show(vi.fn<GameClient["chooseTarget"]>(), [], "automatic", lockedToSix(), { client: { take } });
 
   await advance(timing.ready);
   await advance(10_000);
@@ -650,7 +690,7 @@ test("doesn't retry a failed automatic take, and leaves the sequence to the play
 
 test("keeps the choice on screen but disabled while a take is pending", async () => {
   const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
-  show(vi.fn<GameClient["chooseTarget"]>(), [], false, lockedToSix(), { client: { take } });
+  show(vi.fn<GameClient["chooseTarget"]>(), [], "with_hints", lockedToSix(), { client: { take } });
   fireEvent.click(throwStack(5)!);
   selectDie(1);
 
@@ -665,7 +705,7 @@ test("keeps the choice on screen but disabled while a take is pending", async ()
 
 test("clears an error once the selection changes", async () => {
   const take = vi.fn<GameClient["take"]>().mockRejectedValue(new GameError("network", "offline"));
-  await throwManually(twoSixes, false, { take });
+  await throwManually(twoSixes, "without_hints", { take });
   selectDie(2);
   fireEvent.click(column(1));
   await advance(0);
@@ -683,7 +723,7 @@ test("catches up with the session after a choice in another tab", async () => {
   };
   const take = vi.fn<GameClient["take"]>().mockRejectedValue(new GameError("wrong_phase", "x"));
   const session = vi.fn<GameClient["session"]>().mockResolvedValue({ names: [], game: elsewhere });
-  await throwManually(twoSixes, true, { take, session });
+  await throwManually(twoSixes, "with_hints", { take, session });
   selectDie(0);
 
   fireEvent.click(column(6));
@@ -711,7 +751,7 @@ test("hands a hot-seat game to the next human, who plays by hand too", async () 
     },
   ];
   const stop = vi.fn<GameClient["stop"]>().mockResolvedValue({ game: bobs, logs });
-  show(vi.fn<GameClient["chooseTarget"]>(), [], false, lockedToSix(), { client: { stop } });
+  show(vi.fn<GameClient["chooseTarget"]>(), [], "with_hints", lockedToSix(), { client: { stop } });
   fireEvent.click(throwStack(5)!);
 
   fireEvent.click(screen.getByRole("button", { name: strings.game.stop }));
@@ -724,21 +764,21 @@ test("hands a hot-seat game to the next human, who plays by hand too", async () 
   expect(screen.getByText(strings.game.selectDice("Bob", true))).toBeInTheDocument();
 });
 
-test("follows the toggles mid-sequence", async () => {
+test("follows the slider mid-sequence", async () => {
   const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
-  const { toggle } = show(vi.fn<GameClient["chooseTarget"]>(), [], false, lockedToSix(), {
+  const { slide } = show(vi.fn<GameClient["chooseTarget"]>(), [], "with_hints", lockedToSix(), {
     client: { take },
   });
   fireEvent.click(throwStack(5)!);
   expect(lit()).toEqual([6]);
 
-  toggle({ autoPlay: false, hints: false });
+  slide("without_hints");
   expect(lit()).toEqual([6]);
   expect(column(6)).toHaveClass("highlight");
   selectDie(1);
   expect(reroll("Reroll 4 dice")).toBeInTheDocument();
 
-  toggle({ autoPlay: true, hints: false });
+  slide("automatic");
   await advance(0);
   expect(take).toHaveBeenCalledExactlyOnceWith(6, [1]);
 });
@@ -753,7 +793,7 @@ test("empties the bowl for a six-dice reset by hand, keeping the count", () => {
       sequence: { ...sequence, dice: [6, 1, 2, 3, 4, 5], reset: true },
     },
   };
-  show(vi.fn<GameClient["chooseTarget"]>(), [], false, reset);
+  show(vi.fn<GameClient["chooseTarget"]>(), [], "with_hints", reset);
 
   expect(screen.getByText(strings.game.throwPrompt("Ann"))).toBeInTheDocument();
   expect(screen.getByRole("img", { name: strings.game.kept([]) })).toBeInTheDocument();
@@ -781,7 +821,7 @@ test("rolls again after topping a peg by hand", async () => {
     },
   ];
   const take = vi.fn<GameClient["take"]>().mockResolvedValue({ game: next, logs });
-  await throwManually(twoSixes, true, { take });
+  await throwManually(twoSixes, "with_hints", { take });
   selectDie(0);
   selectDie(1);
 
@@ -791,6 +831,19 @@ test("rolls again after topping a peg by hand", async () => {
   await advance(timing.move);
 
   expect(screen.getByText(strings.game.continuation(6))).toBeInTheDocument();
+});
+
+test("always shows the hints when playing automatically", async () => {
+  show(vi.fn<GameClient["chooseTarget"]>());
+  await advance(timing.ready);
+  const bob = screen.getByRole("region", { name: strings.game.board("Bob") });
+
+  expect(
+    [...bob.querySelectorAll(".column.legal .label")].map((label) => label.textContent),
+  ).toEqual(["1", "3"]);
+  expect(
+    [...bob.querySelectorAll(".column:enabled .label")].map((label) => label.textContent),
+  ).toEqual(["1", "3"]);
 });
 
 test("shows no landing marks up front in automatic turns", async () => {
@@ -805,7 +858,7 @@ test("plays on automatically after a failed take by hand once turns are automati
     .fn<GameClient["take"]>()
     .mockRejectedValueOnce(new GameError("network", "offline"))
     .mockImplementation(() => new Promise(() => {}));
-  const { toggle } = show(vi.fn<GameClient["chooseTarget"]>(), [], false, lockedToSix(), {
+  const { slide } = show(vi.fn<GameClient["chooseTarget"]>(), [], "with_hints", lockedToSix(), {
     client: { take },
   });
   fireEvent.click(throwStack(5)!);
@@ -813,7 +866,7 @@ test("plays on automatically after a failed take by hand once turns are automati
   fireEvent.click(reroll("Reroll 4 dice")!);
   await advance(0);
 
-  toggle({ autoPlay: true, hints: true });
+  slide("automatic");
   await advance(0);
 
   expect(take).toHaveBeenCalledTimes(2);

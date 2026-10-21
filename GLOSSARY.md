@@ -59,7 +59,10 @@ A decision-maker that selects one legal target from a game observation.
 Who decides for a seat: `human` (the caller) or `ai` (a built-in strategy played by the backend).
 
 **Hints**:
-The UI's help in picking: glowing legal columns before any dice are selected, and the hover preview in automatic turns; a frontend setting only.
+The UI's help in picking: glowing legal columns before any dice are selected, the "Choose" buttons in the opening roll, and the hover preview when playing automatically.
+
+**Play mode**:
+How human turns play, picked on a slider in the header: without hints, with hints, or automatically (always with hints); a frontend setting only.
 
 **Hot-seat game**:
 A game where two human players take turns using the same browser.

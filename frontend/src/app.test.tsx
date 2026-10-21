@@ -48,8 +48,7 @@ async function renderApp(client: GameClient = createFixtureClient(), menu = true
   if (menu) await until(() => screen.queryByRole("button", { name: strings.menu.start }));
 }
 
-const hotSeat = () =>
-  fireEvent.click(screen.getByRole("button", { name: strings.menu.mode(strings.menu.versusAi) }));
+const hotSeat = () => fireEvent.click(screen.getByRole("radio", { name: strings.menu.hotSeat }));
 
 test("clicks a hot-seat game through from the menu to the victory screen", async () => {
   await renderApp();
@@ -103,44 +102,35 @@ test("lets an AI dice-off winner start by itself", async () => {
   expect(await until(() => screen.queryByText(strings.game.aiThinking("Opa")))).toBeInTheDocument();
 });
 
-test("toggles automatic turns from the header during the game", async () => {
+test("switches how to play from the header during the game", async () => {
   await renderApp();
-  const toggle = () => screen.queryByRole("checkbox", { name: strings.autoPlay });
-  expect(toggle()).not.toBeInTheDocument();
+  const slider = () => screen.queryByRole("radiogroup", { name: strings.play.label });
+  const mode = (label: string) => screen.getByRole("radio", { name: label });
+  const lit = () => document.querySelectorAll(".column.legal");
+  expect(slider()).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
   fireEvent.click(
     await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") })),
   );
 
   await until(() => screen.queryByText(strings.game.pick("Player 1")));
-  expect(toggle()).toBeChecked();
-  fireEvent.click(toggle()!);
+  expect(mode(strings.play.automatic)).toBeChecked();
+  expect(lit()).not.toHaveLength(0);
+  fireEvent.click(mode(strings.play.withoutHints));
+  expect(screen.getByText(strings.game.selectDice("Player 1", false))).toBeInTheDocument();
+  expect(lit()).toHaveLength(0);
+  fireEvent.click(mode(strings.play.withHints));
   expect(screen.getByText(strings.game.selectDice("Player 1", true))).toBeInTheDocument();
-  fireEvent.click(toggle()!);
+  expect(lit()).not.toHaveLength(0);
+  fireEvent.keyDown(mode(strings.play.withHints), { key: "ArrowRight" });
+  expect(mode(strings.play.automatic)).toBeChecked();
   fireEvent.click(legalTarget()!);
-  fireEvent.click(toggle()!);
+  fireEvent.click(mode(strings.play.withoutHints));
 
   const throwStack = () => screen.queryByRole("button", { name: /^Throw/ });
   await until(throwStack);
-  fireEvent.click(toggle()!);
+  fireEvent.click(mode(strings.play.automatic));
   expect(throwStack()).not.toBeInTheDocument();
-}, 60_000);
-
-test("toggles hints from the header during the game", async () => {
-  await renderApp();
-  const toggle = () => screen.queryByRole("checkbox", { name: strings.hints });
-  expect(toggle()).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
-  fireEvent.click(
-    await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") })),
-  );
-
-  await until(() => screen.queryByText(strings.game.pick("Player 1")));
-  expect(toggle()).toBeChecked();
-  expect(document.querySelectorAll(".column.legal")).not.toHaveLength(0);
-  fireEvent.click(toggle()!);
-
-  expect(document.querySelectorAll(".column.legal")).toHaveLength(0);
 }, 60_000);
 
 test("opens and closes the rules booklet", async () => {
@@ -386,7 +376,7 @@ test("resumes a sequence in progress on reload, playing it on automatically", as
   expect(take).toHaveBeenCalledExactlyOnceWith(2, [0]);
 });
 
-test("resumes a sequence in progress by hand with automatic turns off", async () => {
+test("resumes a sequence in progress by hand when playing without hints", async () => {
   const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
   const opened = scriptedGame.branches[0]!.steps[0]!.game;
   const game = {
@@ -409,9 +399,11 @@ test("resumes a sequence in progress by hand with automatic turns off", async ()
     },
   };
   await resumeWith(saved(game), { take });
-  const toggle = await until(() => screen.queryByRole("checkbox", { name: strings.autoPlay }));
+  const manual = await until(() =>
+    screen.queryByRole("radio", { name: strings.play.withoutHints }),
+  );
 
-  fireEvent.click(toggle);
+  fireEvent.click(manual);
   fireEvent.click(
     await until(() => screen.queryByRole("button", { name: strings.game.throwStack(5) })),
   );
@@ -470,7 +462,7 @@ test("starts over with New Game, keeping every name", async () => {
 
   expect(screen.getByLabelText(strings.menu.player(0))).toHaveValue("Ann");
   expect(screen.getByLabelText(strings.menu.player(1))).toHaveValue("Bob");
-  fireEvent.click(screen.getByRole("button", { name: strings.menu.mode(strings.menu.hotSeat) }));
+  fireEvent.click(screen.getByRole("radio", { name: strings.menu.versusAi }));
   expect(screen.getByLabelText(strings.menu.you)).toHaveValue("Ann");
   expect(screen.getByLabelText(strings.menu.opponent)).toHaveValue("Oma");
   expect(newGame()).not.toBeInTheDocument();

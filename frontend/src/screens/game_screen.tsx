@@ -7,6 +7,7 @@ import {
   type Game,
   type GameClient,
   type GameUpdate,
+  type PlayMode,
 } from "../game/model.ts";
 import { errorMessage } from "../game/errors.ts";
 import { bowl, buildScenes, throwKey, type Scene } from "../game/scenes.ts";
@@ -23,13 +24,14 @@ const sameDice = (a: number[], b: number[]) =>
 type Props = {
   client: GameClient;
   initial: GameUpdate;
-  autoPlay: boolean;
-  hints: boolean;
+  playMode: PlayMode;
   onFinished: (game: Game) => void;
   onError: (error: unknown) => void;
 };
 
-export function GameScreen({ client, initial, autoPlay, hints, onFinished, onError }: Props) {
+export function GameScreen({ client, initial, playMode, onFinished, onError }: Props) {
+  const autoPlay = playMode === "automatic";
+  const hints = playMode !== "without_hints";
   const [playback, setPlayback] = useState<Playback>(() => ({
     game: initial.game,
     scenes: buildScenes(emptyPegs(initial.game.pegs), initial.logs, initial.game),
@@ -130,7 +132,6 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
 
   const pegs = scene?.pegs ?? game.pegs;
   const own = pegs[player]!;
-  const targets = Object.keys(own).map(Number);
   const dice = sequence?.dice ?? observation?.opening_roll ?? [];
   const takes = manual ? observation.takes : [];
   const options = takes.filter((option) => sameDice(option.dice, selected));
@@ -165,7 +166,7 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
     else if (hints) lit = legal;
     raised = selected;
     for (const option of options) landing.set(option.target, option.row);
-  } else if (humanChoice && hints) {
+  } else if (humanChoice) {
     lit = legal;
     const hint = observation.legal_targets.find(({ target }) => target === hovered);
     if (hint) {
@@ -175,8 +176,8 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
   }
   let onPick = pick;
   if (manual) onPick = selected.length ? (target: number) => take(target, selected) : selectMost;
-  const pickable = manual || hints ? lit : targets;
   const next = sequence ? options[0] : undefined;
+  const choices = hints && !sequence ? options : [];
 
   let message = scene?.message ?? "";
   if (humanChoice) message = strings.game.pick(name);
@@ -232,6 +233,22 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
                 </button>
               ),
             })}
+            {...(choices.length > 0 && {
+              action: choices.map((option) => (
+                <button
+                  key={option.target}
+                  type="button"
+                  className="primary choice"
+                  disabled={busy}
+                  onClick={() => take(option.target, selected)}
+                >
+                  <span>{strings.game.choose(option.matches, option.target)}</span>{" "}
+                  <span className="then">
+                    {strings.game.chooseNext(option.outcome, option.next_dice)}
+                  </span>
+                </button>
+              )),
+            })}
           />
         )}
         <div className="actions">
@@ -268,7 +285,7 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
             {...(humanChoice && seat === player
               ? {
                   legal: lit,
-                  pickable: busy ? [] : pickable,
+                  pickable: busy ? [] : lit,
                   onPick,
                   ...(!busy && !manual && { onHover: setHovered }),
                 }

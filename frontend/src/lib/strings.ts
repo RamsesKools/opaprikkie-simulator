@@ -8,17 +8,29 @@ const nextStep: Record<TakeOutcome, (dice: number, target: number) => string> = 
   wins: () => "Finish peg and win",
 };
 
+const shortStep: Record<TakeOutcome, (dice: number) => string> = {
+  throw: (dice) => `Reroll ${dice} ${dice === 1 ? "die" : "dice"}`,
+  reset: () => "Reroll all",
+  topped: () => "Finish peg",
+  ends: () => "End turn",
+  wins: () => "Win!",
+};
+
 export const strings = {
   title: "Opa Prikkie",
   rules: "Rules",
   newGame: "New Game",
-  autoPlay: "Play turns automatically",
-  hints: "Show hints",
+  play: {
+    label: "How to play",
+    withoutHints: "Play without hints",
+    withHints: "Play with hints",
+    automatic: "Play automatically",
+  },
   close: "Close",
   stale: "A new version of Opa Prikkie is out.",
   reload: "Reload",
   menu: {
-    mode: (label: string) => `Mode: ${label}`,
+    mode: "Mode",
     hotSeat: "Player vs Player",
     versusAi: "Player vs AI",
     player: (seat: number) => `Player ${seat + 1}`,
@@ -47,6 +59,9 @@ export const strings = {
     selectDice: (name: string, hints: boolean) =>
       hints ? `${name}, select dice to take.` : `${name}, select dice, then click their column.`,
     takeMore: (name: string, target: number) => `${name}, take more for ${target} or stop.`,
+    /** With hints, the opening roll's buttons, one per take the selection fits. */
+    choose: (matches: number, target: number) => `Choose ${matches} x ${target}`,
+    chooseNext: (outcome: TakeOutcome, dice: number) => shortStep[outcome](dice),
     /** The button that takes the selection, saying what happens next. */
     next: (outcome: TakeOutcome, dice: number, target: number) => nextStep[outcome](dice, target),
     stop: "Stop",

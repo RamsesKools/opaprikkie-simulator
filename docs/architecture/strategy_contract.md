@@ -72,7 +72,7 @@ class Strategy(Protocol):
   - `illegal_dice` for a take, with a reason: `not_dice` (not a list of distinct places in the roll on the table), `empty`, or `no_match` (a die that isn't part of a match for the target); the target is checked first
   - `invalid_names` with the failing `rule`: `type`, `count`, or `blank` (names are stripped, and duplicates are fine)
   - `invalid_player` for a first player that isn't an int in the game, with the number of `players`
-- With hints on, the UI only offers legal choices; with hints off, it shows the rejection's message.
+- The UI only offers legal choices in every play mode; a rejection that still gets through, like after another tab moved the game on, shows its message.
 - The simulator treats a rejection as a strategy bug and fails fast: no retry, no fallback.
 
 ## Seeds

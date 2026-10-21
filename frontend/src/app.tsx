@@ -1,7 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RulesBooklet } from "./components/rules_booklet.tsx";
+import { Slider } from "./components/slider.tsx";
 import { errorMessage, isLost, isNetwork } from "./game/errors.ts";
-import type { Game, GameClient, GameSetup, GameUpdate, Health, Session } from "./game/model.ts";
+import type {
+  Game,
+  GameClient,
+  GameSetup,
+  GameUpdate,
+  Health,
+  PlayMode,
+  Session,
+} from "./game/model.ts";
 import { newDraft, withSeats, type Draft } from "./lib/names.ts";
 import { strings } from "./lib/strings.ts";
 import { version } from "./lib/version.ts";
@@ -32,6 +41,12 @@ function resumed(game: Game | null): Screen {
   return { kind: "menu" };
 }
 
+const playModes = [
+  { value: "without_hints", label: strings.play.withoutHints },
+  { value: "with_hints", label: strings.play.withHints },
+  { value: "automatic", label: strings.play.automatic },
+] as const satisfies { value: PlayMode; label: string }[];
+
 type Props = { client: GameClient };
 
 export function App({ client }: Props) {
@@ -43,8 +58,7 @@ export function App({ client }: Props) {
   const [rules, setRules] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
-  const [autoPlay, setAutoPlay] = useState(true);
-  const [hints, setHints] = useState(true);
+  const [playMode, setPlayMode] = useState<PlayMode>("automatic");
 
   // Runs again after every failure, so a redeploy behind an open tab shows the reload banner.
   const handshake = useCallback(() => {
@@ -134,24 +148,12 @@ export function App({ client }: Props) {
         </div>
         <div className="controls">
           {screen.kind === "game" && (
-            <>
-              <label className="auto-play">
-                <input
-                  type="checkbox"
-                  checked={autoPlay}
-                  onChange={(event) => setAutoPlay(event.target.checked)}
-                />
-                {strings.autoPlay}
-              </label>
-              <label className="auto-play">
-                <input
-                  type="checkbox"
-                  checked={hints}
-                  onChange={(event) => setHints(event.target.checked)}
-                />
-                {strings.hints}
-              </label>
-            </>
+            <Slider
+              label={strings.play.label}
+              options={playModes}
+              value={playMode}
+              onChange={setPlayMode}
+            />
           )}
           <button type="button" onClick={() => setRules(true)}>
             {strings.rules}
@@ -187,8 +189,7 @@ export function App({ client }: Props) {
           <GameScreen
             client={client}
             initial={screen.update}
-            autoPlay={autoPlay}
-            hints={hints}
+            playMode={playMode}
             onFinished={finished}
             onError={gameFailed}
           />

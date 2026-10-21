@@ -7,6 +7,8 @@ export const TOP_ROW = 5;
 export type Phase = Schemas["Phase"];
 export type Controller = Schemas["Controller"];
 export type Mode = "hot_seat" | "versus_ai";
+/** How human turns play: by hand without or with hints, or automatically with hints. */
+export type PlayMode = "without_hints" | "with_hints" | "automatic";
 
 export type Pegs = Schemas["Game"]["pegs"][number];
 export type LegalTarget = Schemas["LegalTarget"];

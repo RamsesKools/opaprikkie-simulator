@@ -12,7 +12,6 @@ export const isNetwork = (error: unknown) => error instanceof GameError && error
 export function errorMessage(error: unknown): string {
   if (isLost(error)) return strings.errors.lost;
   if (isNetwork(error)) return strings.errors.network;
-  // With hints off, the player learns the rules from the engine's rejections.
   if (error instanceof GameError && rejections.has(error.code)) {
     return `${error.message.charAt(0).toUpperCase()}${error.message.slice(1)}.`;
   }

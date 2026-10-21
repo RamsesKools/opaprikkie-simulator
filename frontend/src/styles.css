@@ -57,8 +57,20 @@ body::before {
   height: 200px;
 }
 
+.table .stack-slot.action {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .table .stack-slot.action button {
   max-width: 100%;
+}
+
+button.choice .then {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
 }
 
 .table .throw-area .dice {
@@ -224,14 +236,6 @@ header .title {
   gap: 12px;
 }
 
-header .auto-play {
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgb(0 0 0 / 30%);
-  color: white;
-  text-shadow: 1px 1px 0 var(--hole);
-}
-
 header button {
   border-color: var(--hole);
   background: var(--paper);
@@ -283,9 +287,10 @@ button.primary:disabled {
   width: min(360px, 100%);
 }
 
-.mode-switch {
+.slider {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
   gap: 6px;
   padding: 6px;
   border: 4px solid var(--wood-dark);
@@ -295,16 +300,21 @@ button.primary:disabled {
     0 6px 12px rgb(0 0 0 / 25%);
 }
 
-.mode-switch:active {
+.slider:active {
   transform: translateY(2px);
   box-shadow:
     0 2px 0 var(--hole),
     0 3px 6px rgb(0 0 0 / 25%);
 }
 
-.mode-switch .option {
+.slider .option,
+.slider .option:active {
   padding: 14px 8px;
+  border: 0;
   border-radius: 8px;
+  background: none;
+  box-shadow: none;
+  transform: none;
   color: rgb(255 255 255 / 70%);
   font-size: 1.1rem;
   font-weight: 700;
@@ -314,24 +324,29 @@ button.primary:disabled {
     color 200ms;
 }
 
-.mode-switch .option.on {
+.slider .option.on {
   background: url("./assets/felt.svg") 0 0 / 48px;
   color: white;
   box-shadow: inset 0 0 10px rgb(0 0 0 / 50%);
 }
 
-.auto-play {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
+.slider .option:focus-visible {
+  outline: 3px solid white;
+  outline-offset: 1px;
 }
 
-.auto-play input {
-  width: 18px;
-  height: 18px;
-  margin: 0;
-  accent-color: #2f6b4a;
+header .slider {
+  gap: 4px;
+  padding: 4px;
+  border-width: 3px;
+  border-radius: 12px;
+  box-shadow: 0 3px 0 var(--hole);
+}
+
+header .slider .option,
+header .slider .option:active {
+  padding: 6px 12px;
+  font-size: 0.9rem;
 }
 
 .name {
@@ -886,6 +901,17 @@ button.die:focus-visible {
 
 /* Below this the thirds don't fit, so the stack waits inside the empty throw area. */
 @media (max-width: 540px) {
+  header .controls:has(.slider),
+  header .slider {
+    flex: 1 1 100%;
+  }
+
+  header .slider .option,
+  header .slider .option:active {
+    padding: 4px;
+    font-size: 0.8rem;
+  }
+
   .table {
     grid-template-columns: auto auto;
     justify-content: center;
