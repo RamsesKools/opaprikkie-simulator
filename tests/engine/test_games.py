@@ -156,3 +156,11 @@ def test_the_final_turn_number_counts_every_turn_including_dead_ones(seed):
 
     turns = [e for e in entries if isinstance(e, (RollSequence, NoMove)) and not e.continuation]
     assert states[-1].turn == len(turns)
+
+
+def test_a_state_built_without_new_game_starts_from_zero_dice_counts():
+    state, _ = new_game(CLASSIC, "fresh")
+
+    rebuilt = GameState(CLASSIC, "fresh", Phase.NAMING, state.pegs)
+
+    assert rebuilt.dice_counts == ((0,) * 6, (0,) * 6)

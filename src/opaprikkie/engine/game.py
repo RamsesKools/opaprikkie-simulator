@@ -110,7 +110,9 @@ def _resolve(
     board[target] += movement
     pegs = tuple(board if seat == player else rows for seat, rows in enumerate(state.pegs))
     throws = (roll.dice for roll in rolls[1:])
-    state = replace(state, pegs=pegs, sequence=None, dice_counts=_counted(state, player, *throws))
+    state = replace(
+        state, pegs=pegs, sequence=None, dice_counts=_counted(state.dice_counts, player, *throws)
+    )
     log = (sequence,)
     if all(row == state.ruleset.rows for row in board.values()):
         finished = replace(state, phase=Phase.FINISHED, winner=player, opening_roll=())
@@ -149,10 +151,11 @@ def _open(
     ruleset = state.ruleset
     entries = list(log)
     roll_index = state.roll_index
+    counts = state.dice_counts
     while True:
         dice = roll(state.seed, roll_index, ruleset.dice_count, ruleset.dice_faces)
         roll_index += 1
-        state = replace(state, dice_counts=_counted(state, player, dice))
+        counts = _counted(counts, player, dice)
         if legal_targets(ruleset, state.pegs[player], dice):
             break
         entries.append(NoMove(player, turn, continuation, dice))
@@ -165,6 +168,7 @@ def _open(
         turn=turn,
         continuation=continuation,
         opening_roll=dice,
+        dice_counts=counts,
     )
     return opened, tuple(entries)
 
@@ -203,15 +207,15 @@ def _throw_rest(
     return dice, outcome is TakeOutcome.RESET, state.roll_index + 1
 
 
-def _counted(state: GameState, player: int, *throws: Sequence[int]) -> tuple[tuple[int, ...], ...]:
-    """The state's dice counts with every die of `throws` added to `player`'s."""
-    faces = list(state.dice_counts[player])
+def _counted(
+    counts: tuple[tuple[int, ...], ...], player: int, *throws: Sequence[int]
+) -> tuple[tuple[int, ...], ...]:
+    """`counts` with every die of `throws` added to `player`'s."""
+    faces = list(counts[player])
     for dice in throws:
         for die in dice:
             faces[die - 1] += 1
-    return tuple(
-        tuple(faces) if seat == player else counts for seat, counts in enumerate(state.dice_counts)
-    )
+    return tuple(tuple(faces) if seat == player else other for seat, other in enumerate(counts))
 
 
 def _validate_names(ruleset: Ruleset, names: Sequence[str]) -> tuple[str, ...]:

@@ -95,7 +95,7 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 
 ## Celebrations
 
-- Great turn: a short confetti burst, in the seat's colour with gold, white, and green, falls from the top of the screen for about two seconds when a roll sequence moves one peg far for its lane, for any player including the AI.
+- Great turn: a short confetti burst, in the seat's colour with gold, white, and green, falls from the top of the screen for 2.4 s when a roll sequence moves one peg far for its lane, for any player including the AI.
   - The cutoff is the steps in one sequence per lane, from simulating 40,000 sequences per lane with every match taken, given an opening roll with a match for it, and picking the step count whose chance of being reached is closest to 10%, comparing by ratio.
     A peg going from the bottom to the top (5 steps) is always great, since no cutoff is higher.
 
@@ -115,7 +115,7 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
   - The table lives in `frontend/src/game/great_turns.ts`.
 - Win: confetti on the victory screen, in the winner's colour.
 - Confetti never blocks input: it ignores clicks and isn't announced to assistive tech.
-  Reduced motion makes it vanish at once.
+  Reduced motion makes it vanish after 0.2 s.
 
 ## Board
 

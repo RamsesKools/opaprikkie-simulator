@@ -54,3 +54,6 @@ class GameState:
     def __post_init__(self) -> None:
         pegs = tuple(rows if isinstance(rows, FrozenMap) else FrozenMap(rows) for rows in self.pegs)
         object.__setattr__(self, "pegs", pegs)
+        if not self.dice_counts:
+            zeros = (0,) * self.ruleset.dice_faces
+            object.__setattr__(self, "dice_counts", (zeros,) * len(self.pegs))
