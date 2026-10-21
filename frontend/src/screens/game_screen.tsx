@@ -145,7 +145,7 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
     setError(null);
     setSelected(chosen);
   };
-  // With hints on and nothing selected, a lit lane selects its take with the most matches.
+  // With nothing selected, a lit lane selects its take with the most matches.
   const selectMost = (target: number) => {
     const most = takes
       .filter((option) => option.target === target)
@@ -160,7 +160,9 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
   const landing = new Map<number, number>();
   if (sequence) landing.set(sequence.target, own[sequence.target]! + sequence.matches);
   if (manual) {
-    lit = selected.length ? options.map(({ target }) => target) : hints ? legal : [];
+    if (selected.length) lit = options.map(({ target }) => target);
+    else if (sequence) lit = [sequence.target];
+    else if (hints) lit = legal;
     raised = selected;
     for (const option of options) landing.set(option.target, option.row);
   } else if (humanChoice && hints) {

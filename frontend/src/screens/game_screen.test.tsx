@@ -506,12 +506,45 @@ test("in a later throw, clicking the locked lane takes the selection too", async
     client: { take },
   });
   fireEvent.click(throwStack(5)!);
-  expect(column(6)).toBeDisabled();
-
   selectDie(1);
   fireEvent.click(column(6));
 
   expect(take).toHaveBeenCalledExactlyOnceWith(6, [1]);
+});
+
+test("with hints off, keeps the locked lane lit, and a click on it selects its most matches", async () => {
+  const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
+  show(vi.fn<GameClient["chooseTarget"]>(), [], false, lockedToSix(), {
+    hints: false,
+    client: { take },
+  });
+  fireEvent.click(throwStack(5)!);
+  expect(lit()).toEqual([6]);
+
+  fireEvent.click(column(6));
+  expect(selected()).toEqual([1]);
+  expect(take).not.toHaveBeenCalled();
+
+  fireEvent.click(column(6));
+  expect(take).toHaveBeenCalledExactlyOnceWith(6, [1]);
+});
+
+test("toggling automatic turns mid-sequence leaves the dice on the table until the take answers", async () => {
+  const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
+  const { toggle } = show(vi.fn<GameClient["chooseTarget"]>(), [], false, lockedToSix(), {
+    client: { take },
+  });
+  fireEvent.click(throwStack(5)!);
+  const onTable = () => [...document.querySelectorAll(".throw-area .die")];
+  const dice = onTable();
+
+  toggle({ autoPlay: false, hints: false });
+  toggle({ autoPlay: true, hints: false });
+  await advance(0);
+
+  expect(take).toHaveBeenCalledExactlyOnceWith(6, [1]);
+  expect(onTable()).toHaveLength(5);
+  onTable().forEach((die, index) => expect(die).toBe(dice[index]));
 });
 
 test.each([
@@ -700,7 +733,7 @@ test("follows the toggles mid-sequence", async () => {
   expect(lit()).toEqual([6]);
 
   toggle({ autoPlay: false, hints: false });
-  expect(lit()).toEqual([]);
+  expect(lit()).toEqual([6]);
   expect(column(6)).toHaveClass("highlight");
   selectDie(1);
   expect(reroll("Reroll 4 dice")).toBeInTheDocument();

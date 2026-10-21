@@ -115,9 +115,9 @@ A pile of the dice the player has left to throw, left of the throw area, in a py
 - Manual turns play the same either way: dice only select into a valid take, and a whole take lights its lanes with their ghost pegs.
 - On: in manual turns, every legal lane also glows before any dice are selected; clicking one selects its take with the most matches, and clicking it again takes them.
   In automatic turns, legal columns glow and hovering previews a pick.
-- Off: in manual turns, no lane lights up until dice are selected.
+- Off: in manual turns, no lane in the opening roll lights up until dice are selected.
   In automatic turns, no glowing columns and no preview; every column on the player's board is clickable, the API judges the choice, and a rejection shows its message, like "2 isn't a legal target."
-- The locked lane of a sequence in progress stays lit either way, with its ghost peg for the matches taken so far.
+- The locked lane of a sequence in progress stays lit either way, with its ghost peg for the matches taken so far; with nothing selected, a click on it selects its most matches, and a second click takes them.
 
 ## Rules booklet
 
