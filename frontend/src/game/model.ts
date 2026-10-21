@@ -34,6 +34,7 @@ export const emptyPegs = (pegs: Pegs[]): Pegs[] =>
 export type GameSetup = {
   mode: Mode;
   names: [string, string];
+  playMode?: PlayMode;
   seed?: string;
   strategy?: string;
 };
@@ -59,4 +60,6 @@ export interface GameClient {
   /** Sets aside the dice at these places in the throw for `target`, then throws the rest. */
   take(target: number, dice: number[]): Promise<GameUpdate>;
   stop(): Promise<GameUpdate>;
+  /** Tells the backend how the human plays, which decides how an AI drawn as `sloppy` plays. */
+  setPlayMode(playMode: PlayMode): Promise<GameUpdate>;
 }
