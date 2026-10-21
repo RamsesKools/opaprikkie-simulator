@@ -66,15 +66,17 @@ test.each([
   expect(radio(label)).toHaveFocus();
 });
 
-test("wraps around at either end, and ignores other keys", () => {
+test("stops at either end, and ignores other keys", () => {
   const onChange = show();
 
   fireEvent.keyDown(radio("Beta"), { key: "ArrowRight" });
   fireEvent.keyDown(radio("Gamma"), { key: "ArrowRight" });
-  expect(radio("Alpha")).toBeChecked();
-  fireEvent.keyDown(radio("Alpha"), { key: "ArrowLeft" });
   expect(radio("Gamma")).toBeChecked();
-  fireEvent.keyDown(radio("Gamma"), { key: "a" });
+  expect(radio("Gamma")).toHaveFocus();
+  fireEvent.keyDown(radio("Gamma"), { key: "Home" });
+  fireEvent.keyDown(radio("Alpha"), { key: "ArrowLeft" });
+  expect(radio("Alpha")).toBeChecked();
+  fireEvent.keyDown(radio("Alpha"), { key: "a" });
 
-  expect(onChange.mock.calls).toEqual([["c"], ["a"], ["c"]]);
+  expect(onChange.mock.calls).toEqual([["c"], ["a"]]);
 });

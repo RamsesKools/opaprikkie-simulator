@@ -9,7 +9,7 @@ type Props<T extends string> = {
   onChange: (value: T) => void;
 };
 
-/** A radio group drawn as a wooden slider; the arrow keys move and select, wrapping around. */
+/** A radio group drawn as a wooden slider; the arrow keys move and select, stopping at the ends. */
 export function Slider<T extends string>({ label, options, value, onChange }: Props<T>) {
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
   const current = options.findIndex((option) => option.value === value);
@@ -22,7 +22,7 @@ export function Slider<T extends string>({ label, options, value, onChange }: Pr
     if (event.key === "Home") index = 0;
     else if (event.key === "End") index = options.length - 1;
     else if (event.key in steps)
-      index = (current + steps[event.key]! + options.length) % options.length;
+      index = Math.min(Math.max(current + steps[event.key]!, 0), options.length - 1);
     else return;
     event.preventDefault();
     select(index);

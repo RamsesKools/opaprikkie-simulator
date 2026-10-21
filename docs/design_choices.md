@@ -49,7 +49,7 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
        - "Finish peg and reroll all dice" when it tops the peg (a continuation);
        - "Move peg and end turn" when too few dice are left for a match;
        - "Finish peg and win" when it tops the last peg.
-     - In a later throw, clicking the locked lane takes the selection too; with nothing selected, a first click selects its most matches, and a second takes them.
+     - In a later throw, clicking the locked lane takes the selection too; with nothing selected, or only part of a match (one die of a pair), a first click selects its most matches, and a second takes them.
      - After the first take, a "Stop" button under the throw area ends the sequence, and the peg moves by the matches taken.
        There's no stop before the first take, since a turn with a legal target can't pass.
      - A ghost peg marks where the peg will land, while the peg itself only moves once the sequence ends:
@@ -115,7 +115,7 @@ A pile of the dice the player has left to throw, left of the throw area, in a py
 ## Sliders
 
 - The menu's "Player vs AI" / "Player vs Player" mode and the header's [play mode](#play-modes) use one slider (`components/slider.tsx`): wood around felt-lined options, the chosen one sunk in.
-- It's a radio group: Tab reaches the chosen option, the arrow keys move and select, wrapping around, and Home and End jump to the ends.
+- It's a radio group: Tab reaches the chosen option, the arrow keys move and select, stopping at the ends rather than wrapping, so an extra press mid-turn never lands on "Play automatically" by surprise, and Home and End jump to the ends.
 
 ## Play modes
 
@@ -128,7 +128,7 @@ It starts on "Play automatically" and keeps its position for the next game, but 
 - Play automatically: the player only picks the target and the sequence plays itself, always with the hints: legal columns glow and hovering previews a pick.
   There's no automatic play without hints.
 - Both manual modes otherwise play the same: dice only select into a valid take, and a whole take lights its lanes with their ghost pegs.
-- In both manual modes, the locked lane of a sequence in progress stays lit, with its ghost peg for the matches taken so far.
+- In both manual modes, the locked lane of a sequence in progress stays lit whatever is selected, with its ghost peg for the matches taken so far.
 
 ## Rules booklet
 

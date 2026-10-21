@@ -567,6 +567,42 @@ test("with hints off, keeps the locked lane lit, and a click on it selects its m
   expect(take).toHaveBeenCalledExactlyOnceWith(6, [1]);
 });
 
+test("keeps the locked lane lit for part of a pair, and a click on it tops the selection up", async () => {
+  const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
+  const locked = lockedToSix();
+  const pair = (dice: number[], matches: number): TakeOption => ({
+    target: 8,
+    dice,
+    matches,
+    row: matches,
+    outcome: "throw",
+    next_dice: 5 - dice.length,
+  });
+  const lockedToEight: Game = {
+    ...locked,
+    observation: {
+      ...locked.observation!,
+      legal_targets: [{ target: 8, matches: 2, guaranteed_moves: 2, set_aside: [0, 1, 3, 4] }],
+      sequence: { ...locked.observation!.sequence!, target: 8, dice: [4, 4, 1, 2, 6] },
+      takes: [pair([0, 1], 1), pair([3, 4], 1), pair([0, 1, 3, 4], 2)],
+    },
+  };
+  show(vi.fn<GameClient["chooseTarget"]>(), [], "without_hints", lockedToEight, {
+    client: { take },
+  });
+  fireEvent.click(throwStack(5)!);
+
+  selectDie(0);
+  expect(selected()).toEqual([0]);
+  expect(lit()).toEqual([8]);
+  fireEvent.click(column(8));
+  expect(selected()).toEqual([0, 1, 3, 4]);
+  expect(take).not.toHaveBeenCalled();
+
+  fireEvent.click(column(8));
+  expect(take).toHaveBeenCalledExactlyOnceWith(8, [0, 1, 3, 4]);
+});
+
 test("switching to automatic play mid-sequence leaves the dice on the table until the take answers", async () => {
   const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
   const { slide } = show(vi.fn<GameClient["chooseTarget"]>(), [], "with_hints", lockedToSix(), {

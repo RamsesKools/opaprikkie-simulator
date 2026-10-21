@@ -161,8 +161,8 @@ export function GameScreen({ client, initial, playMode, onFinished, onError }: P
   const landing = new Map<number, number>();
   if (sequence) landing.set(sequence.target, own[sequence.target]! + sequence.matches);
   if (manual) {
-    if (selected.length) lit = options.map(({ target }) => target);
-    else if (sequence) lit = [sequence.target];
+    if (sequence) lit = [sequence.target];
+    else if (selected.length) lit = options.map(({ target }) => target);
     else if (hints) lit = legal;
     raised = selected;
     for (const option of options) landing.set(option.target, option.row);
@@ -175,7 +175,13 @@ export function GameScreen({ client, initial, playMode, onFinished, onError }: P
     }
   }
   let onPick = pick;
-  if (manual) onPick = selected.length ? (target: number) => take(target, selected) : selectMost;
+  // A lane that can't take the selection as it is selects its most matches instead.
+  if (manual) {
+    onPick = (target: number) =>
+      options.some((option) => option.target === target)
+        ? take(target, selected)
+        : selectMost(target);
+  }
   const next = sequence ? options[0] : undefined;
   const choices = hints && !sequence ? options : [];
 
