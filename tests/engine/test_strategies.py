@@ -9,30 +9,47 @@ from opaprikkie.engine import (
     CLASSIC,
     EndRule,
     GreedyStrategy,
+    HandStrategy,
+    HighestStrategy,
     Phase,
     RandomStrategy,
+    RarestStrategy,
     Ruleset,
+    SloppyStrategy,
     SmartStrategy,
     StartRule,
     Strategy,
+    SumStrategy,
     choose_first_player,
     choose_target,
     name_players,
     new_game,
     observe,
+    take,
 )
 
 from .helpers import choosing_target
 
 
 def test_builtins_are_registered_by_name():
-    assert set(BUILTIN_STRATEGIES) == {"random", "greedy", "smart"}
+    assert set(BUILTIN_STRATEGIES) == {
+        "random",
+        "greedy",
+        "smart",
+        "highest",
+        "sum",
+        "rarest",
+        "sloppy",
+    }
     for name, strategy in BUILTIN_STRATEGIES.items():
         assert isinstance(strategy, Strategy)
         assert strategy.name == name
 
 
-@pytest.mark.parametrize("name", ["random", "greedy", "smart"])
+ALL = ["random", "greedy", "smart", "highest", "sum", "rarest", "sloppy"]
+
+
+@pytest.mark.parametrize("name", ALL)
 def test_builtins_choose_themselves_as_first_player(name):
     observation = observe(choosing_target((1, 2, 3, 4, 5, 6)))
 
@@ -191,7 +208,7 @@ def test_smart_values_the_six_dice_reset_that_greedy_ignores():
     assert SmartStrategy().choose_target(observation, Random(0)) == 7
 
 
-@pytest.mark.parametrize("name", ["random", "greedy", "smart"])
+@pytest.mark.parametrize("name", ALL)
 def test_builtins_finish_a_classic_game_in_both_seats(name):
     strategy = BUILTIN_STRATEGIES[name]
     rng = Random(name)
@@ -202,3 +219,102 @@ def test_builtins_finish_a_classic_game_in_both_seats(name):
         state, _ = choose_target(state, strategy.choose_target(observe(state), rng))
 
     assert state.winner is not None
+
+
+def play_by_hand(strategy: HandStrategy, seed: str):
+    rng = Random(seed)
+    state, _ = new_game(CLASSIC, seed)
+    state, _ = name_players(state, ["Ada", "Bob"])
+    state, _ = choose_first_player(state, strategy.choose_first_player(observe(state)))
+    while state.phase is not Phase.FINISHED:
+        choice = strategy.choose_take(observe(state), rng)
+        state, _ = take(state, choice.target, choice.dice)
+    return state
+
+
+# Two 7s (1+6, 2+5), one 12 (6+6), three 6s, and single 1, 2 and 5.
+DISAGREE = (1, 6, 2, 5, 6, 6)
+
+
+@pytest.mark.parametrize(
+    ("strategy", "rows", "expected"),
+    [
+        pytest.param(HighestStrategy(), {}, 12, id="highest takes the top number"),
+        pytest.param(
+            HighestStrategy(), only_open({1: 0, 5: 0, 6: 0}), 6, id="highest of what is legal"
+        ),
+        pytest.param(SumStrategy(), only_open({7: 0, 12: 0}), 7, id="2 x 7 beats 1 x 12"),
+        pytest.param(SumStrategy(), {}, 6, id="3 x 6 beats 2 x 7"),
+        pytest.param(RarestStrategy(), only_open({7: 0, 12: 0}), 12, id="1 x 12 ties 2 x 7"),
+        pytest.param(RarestStrategy(), only_open({6: 0, 12: 0}), 6, id="3 x 6 is rarer than 12"),
+        pytest.param(RarestStrategy(), {}, 6, id="rarest of all"),
+    ],
+)
+def test_simple_strategies_pick_by_their_own_rule(strategy, rows, expected):
+    observation = observe(choosing_target(DISAGREE, rows))
+
+    assert strategy.choose_target(observation, Random(0)) == expected
+
+
+def test_sum_breaks_ties_to_the_higher_number():
+    # 2 x 6 = 12 and 1 x 12 = 12.
+    observation = observe(choosing_target((6, 6, 3, 3, 4, 1), only_open({6: 0, 12: 0})))
+
+    assert SumStrategy().choose_target(observation, Random(0)) == 12
+
+
+def test_rarest_weighs_pair_odds_by_the_number_of_matches():
+    # 2 x 8 is (5/36)^2 = 25/1296, rarer than 1 x 12 at 36/1296.
+    observation = observe(choosing_target((2, 6, 3, 5, 6, 6), only_open({8: 0, 12: 0})))
+
+    assert [t.matches for t in observation.legal_targets] == [2, 1]
+    assert RarestStrategy().choose_target(observation, Random(0)) == 8
+
+
+def test_sloppy_plays_by_hand_not_by_the_automatic_path():
+    assert isinstance(SloppyStrategy(), HandStrategy)
+    assert not any(isinstance(BUILTIN_STRATEGIES[n], HandStrategy) for n in ALL if n != "sloppy")
+
+
+def test_sloppy_picks_uniformly_among_the_valid_takes():
+    observation = observe(choosing_target((6, 6, 1, 2, 3, 4), only_open({6: 0})))
+    rng = Random(0)
+
+    picks = Counter(SloppyStrategy().choose_take(observation, rng) for _ in range(3000))
+
+    assert set(picks) == set(observation.takes)
+    assert len(observation.takes) == 3
+    assert all(850 < count < 1150 for count in picks.values())
+
+
+def test_sloppy_may_take_fewer_matches_than_it_could():
+    observation = observe(choosing_target((6, 6, 1, 2, 3, 4), only_open({6: 0})))
+    rng = Random(0)
+
+    taken = {SloppyStrategy().choose_take(observation, rng).matches for _ in range(100)}
+
+    assert taken == {1, 2}
+
+
+def test_sloppy_as_a_target_chooser_names_the_target_of_a_take():
+    observation = observe(choosing_target((6, 6, 1, 2, 3, 4), only_open({6: 0, 1: 0})))
+
+    assert {SloppyStrategy().choose_target(observation, Random(n)) for n in range(50)} == {1, 6}
+
+
+def test_sloppy_chooses_from_the_throw_on_the_table_in_a_sequence():
+    for seed in range(200):
+        state, _ = take(choosing_target((6, 6, 1, 2, 3, 4), seed=seed), 6, (0,))
+        if state.phase is Phase.CHOOSING_DICE:
+            break
+    observation = observe(state)
+
+    choice = SloppyStrategy().choose_take(observation, Random(0))
+
+    assert choice in observation.takes
+    assert choice.target == 6
+
+
+@pytest.mark.parametrize("seed", ["a", "b", "c"])
+def test_sloppy_finishes_a_classic_game_in_both_seats(seed):
+    assert play_by_hand(SloppyStrategy(), seed).winner is not None

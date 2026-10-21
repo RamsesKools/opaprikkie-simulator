@@ -2,7 +2,14 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from random import Random
 
-from opaprikkie.engine import BUILTIN_STRATEGIES, IllegalAction, Observation, Strategy
+from opaprikkie.engine import (
+    BUILTIN_STRATEGIES,
+    HandStrategy,
+    IllegalAction,
+    Observation,
+    Strategy,
+    TakeOption,
+)
 from opaprikkie.sim.driver import GameDriver, InProcessDriver
 from opaprikkie.sim.stats import BatchStats, GameResult, game_result, summarize
 
@@ -62,9 +69,12 @@ class _Chooser:
         self.rngs = [Random(f"{game_seed}:strategy:{seat}") for seat in range(len(seats))]
         self.seat: int | None = None
 
-    def __call__(self, observation: Observation) -> int:
+    def __call__(self, observation: Observation) -> int | TakeOption:
         self.seat = observation.seat
-        return self.seats[self.seat].choose_target(observation, self.rngs[self.seat])
+        strategy, rng = self.seats[self.seat], self.rngs[self.seat]
+        if isinstance(strategy, HandStrategy):
+            return strategy.choose_take(observation, rng)
+        return strategy.choose_target(observation, rng)
 
     def blame(self, game_seed: str) -> str:
         if self.seat is None:

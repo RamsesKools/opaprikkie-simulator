@@ -8,13 +8,15 @@ from opaprikkie.engine import (
     Observation,
     Phase,
     Ruleset,
+    TakeOption,
     choose_target,
     name_players,
     new_game,
     observe,
+    take,
 )
 
-type Chooser = Callable[[Observation], int]
+type Chooser = Callable[[Observation], int | TakeOption]
 
 
 @dataclass(frozen=True)
@@ -24,7 +26,10 @@ class PlayedGame:
 
 
 class GameDriver(Protocol):
-    """Plays one game from `seed` with `first_player` starting, asking `choose` for every target."""
+    """Plays one game from `seed` with `first_player` starting, asking `choose` at every choice.
+
+    A target plays its sequence automatically; a take option plays it by hand, one take at a time.
+    """
 
     @property
     def ruleset(self) -> Ruleset: ...
@@ -42,7 +47,11 @@ class InProcessDriver:
         state, entries = name_players(state, names, first_player)
         log += entries
         while state.phase is not Phase.FINISHED:
-            state, entries = choose_target(state, choose(observe(state)))
+            choice = choose(observe(state))
+            if isinstance(choice, TakeOption):
+                state, entries = take(state, choice.target, choice.dice)
+            else:
+                state, entries = choose_target(state, choice)
             log += entries
         assert state.winner is not None
         return PlayedGame(state.winner, log)

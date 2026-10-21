@@ -3,7 +3,14 @@ from random import Random
 
 import pytest
 
-from opaprikkie.engine import CLASSIC, IllegalAction, Observation, RandomStrategy, Rejection
+from opaprikkie.engine import (
+    CLASSIC,
+    IllegalAction,
+    Observation,
+    RandomStrategy,
+    Rejection,
+    TakeOption,
+)
 from opaprikkie.sim import Chooser, InProcessDriver, PlayedGame, run_batch
 
 
@@ -105,3 +112,27 @@ def test_a_rejection_before_any_choice_names_only_the_game():
         run_batch(["random", "random"], games=1, seed="batch", driver=RejectingDriver())
 
     assert raised.value.__notes__ == ["game 'batch:0'"]
+
+
+class FirstTake(LowestTarget):
+    name = "first_take"
+
+    def choose_target(self, observation: Observation, rng: Random) -> int:
+        raise AssertionError("a hand strategy is never asked for a target")
+
+    def choose_take(self, observation: Observation, rng: Random) -> TakeOption:
+        return observation.takes[0]
+
+
+def test_a_hand_strategy_plays_by_take_not_by_target():
+    batch = run_batch([FirstTake(), "random"], games=3, seed="batch")
+
+    assert batch.strategies == ("first_take", "random")
+    assert len(batch.games) == 3
+
+
+def test_sloppy_batches_repeat_exactly_and_end_in_a_win():
+    batch = run_batch(["sloppy", "greedy"], games=10, seed="batch")
+
+    assert batch == run_batch(["sloppy", "greedy"], games=10, seed="batch")
+    assert sum(game.winner in (0, 1) for game in batch.games) == 10

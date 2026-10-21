@@ -14,6 +14,8 @@ from opaprikkie.engine import (
     Rejection,
     Roll,
     RollSequence,
+    SequenceInProgress,
+    TakeOption,
 )
 from opaprikkie.sim.driver import Chooser, PlayedGame
 
@@ -50,8 +52,12 @@ class HttpDriver:
             game = update["game"]
             if game["phase"] == Phase.FINISHED:
                 return PlayedGame(game["winner"], tuple(log))
-            target = choose(self._observation(game["observation"]))
-            update = self._send("POST", "/api/game/target", {"target": target})
+            choice = choose(self._observation(game["observation"]))
+            if isinstance(choice, TakeOption):
+                body = {"target": choice.target, "dice": list(choice.dice)}
+                update = self._send("POST", "/api/game/take", body)
+            else:
+                update = self._send("POST", "/api/game/target", {"target": choice})
 
     def _send(self, method: str, path: str, body: _Json | None = None) -> _Json:
         response = self.client.request(method, path, json=body)
@@ -76,6 +82,7 @@ class HttpDriver:
             ),
             turn=data["turn"],
             continuation=data["continuation"],
+            sequence=_sequence(data["sequence"]),
         )
 
 
@@ -88,13 +95,21 @@ def _json(response: httpx2.Response, method: str, path: str) -> _Json:
         ) from error
 
 
+def _roll(data: _Json) -> Roll:
+    return Roll(tuple(data["dice"]), tuple(data["set_aside"]), data["reset"], data["matches"])
+
+
+def _sequence(data: _Json | None) -> SequenceInProgress | None:
+    if data is None:
+        return None
+    rolls = tuple(map(_roll, data["rolls"]))
+    return SequenceInProgress(data["target"], rolls, tuple(data["dice"]), data["reset"])
+
+
 def _entry(data: _Json) -> LogEntry:
     match data["kind"]:
         case "roll_sequence":
-            rolls = tuple(
-                Roll(tuple(r["dice"]), tuple(r["set_aside"]), r["reset"], r["matches"])
-                for r in data["rolls"]
-            )
+            rolls = tuple(map(_roll, data["rolls"]))
             return RollSequence(
                 data["player"],
                 data["turn"],

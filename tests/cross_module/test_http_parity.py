@@ -78,3 +78,9 @@ def test_a_batch_plays_in_one_session_so_it_evicts_no_user():
     run_batch(["random", "random"], games=3, seed="batch", driver=HttpDriver(TestClient(app)))
 
     assert user.get("/api/session").status_code == 200
+
+
+def test_a_sloppy_batch_over_http_matches_in_process(driver):
+    over_http = run_batch(["sloppy", "greedy"], games=6, seed="batch", driver=driver)
+
+    assert over_http == run_batch(["sloppy", "greedy"], games=6, seed="batch")

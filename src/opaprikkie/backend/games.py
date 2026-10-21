@@ -71,18 +71,26 @@ def _act(game: Game, action: _Action) -> tuple[Game, engine.Log]:
         assert game.strategy is not None
         strategy = engine.BUILTIN_STRATEGIES[game.strategy]
         observation = engine.observe(state)
+        rng = Random(f"{state.seed}:strategy:{state.roll_index}")
         if state.phase is engine.Phase.CHOOSING_FIRST_PLAYER:
             player = strategy.choose_first_player(observation)
             state, more = engine.choose_first_player(state, player)
+        elif isinstance(strategy, engine.HandStrategy):
+            choice = strategy.choose_take(observation, rng)
+            state, more = engine.take(state, choice.target, choice.dice)
         else:
-            rng = Random(f"{state.seed}:strategy:{state.roll_index}")
             state, more = engine.choose_target(state, strategy.choose_target(observation, rng))
         log += more
     return replace(game, state=state), log
 
 
 def _ai_chooses(game: Game, state: engine.GameState) -> bool:
-    if state.phase not in (engine.Phase.CHOOSING_FIRST_PLAYER, engine.Phase.CHOOSING_TARGET):
+    choosing = (
+        engine.Phase.CHOOSING_FIRST_PLAYER,
+        engine.Phase.CHOOSING_TARGET,
+        engine.Phase.CHOOSING_DICE,
+    )
+    if state.phase not in choosing:
         return False
     assert state.current_player is not None
     return game.controllers[state.current_player] is Controller.AI
