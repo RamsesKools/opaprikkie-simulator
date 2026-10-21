@@ -119,8 +119,53 @@ button.choice .then {
   margin: 1px;
 }
 
+.stack .pile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--stack-gap);
+}
+
 button.stack {
   cursor: pointer;
+}
+
+/* A big round button around the dice, so it reads as something to press. */
+button.stack.throw {
+  --stack-die: 26px;
+  --ring: 150px;
+  justify-content: center;
+  gap: 6px;
+  width: var(--ring);
+  height: var(--ring);
+  padding: 0;
+  border: 5px solid var(--seat);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 30%, white, var(--seat-soft));
+  box-shadow:
+    0 5px 0 var(--seat),
+    0 9px 14px rgb(0 0 0 / 30%);
+  transition:
+    transform 120ms,
+    box-shadow 120ms;
+}
+
+button.stack.throw:hover {
+  transform: translateY(-2px);
+}
+
+button.stack.throw:active {
+  transform: translateY(3px);
+  box-shadow:
+    0 2px 0 var(--seat),
+    0 4px 8px rgb(0 0 0 / 30%);
+}
+
+.throw-label {
+  color: var(--seat);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
 button.stack .die {
@@ -139,9 +184,9 @@ button.stack:focus-visible {
 
 .stack .fill {
   position: absolute;
-  bottom: -4px;
-  left: calc(50% - var(--stack-die) / 2 - 6px);
-  width: calc(var(--stack-die) + 12px);
+  bottom: 12px;
+  left: calc(50% - 30px);
+  width: 60px;
   height: 6px;
   border-radius: 3px;
   background: var(--seat);
@@ -150,6 +195,7 @@ button.stack:focus-visible {
 }
 
 .throw-area {
+  position: relative;
   display: grid;
   place-items: center;
   width: min(380px, 100%);
@@ -340,7 +386,33 @@ header .slider {
   padding: 4px;
   border-width: 3px;
   border-radius: 12px;
-  box-shadow: 0 3px 0 var(--hole);
+  background-color: #6a4a22;
+  background-blend-mode: multiply;
+  box-shadow:
+    0 3px 0 var(--hole),
+    0 8px 14px rgb(0 0 0 / 55%);
+}
+
+header .slider .option {
+  color: #f6e6c6;
+}
+
+header .slider .option.on {
+  color: white;
+}
+
+.play-mode {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+header button.help {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  font-weight: 800;
 }
 
 header .slider .option,
@@ -518,6 +590,7 @@ header .slider .option:active {
 }
 
 .status {
+  position: relative;
   display: flex;
   width: 100%;
   flex-direction: column;
@@ -532,6 +605,84 @@ header .slider .option:active {
   background: var(--seat);
   color: white;
   font-weight: 600;
+}
+
+.combo {
+  position: absolute;
+  top: 8px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  z-index: 2;
+  color: gold;
+  font-size: 1.7rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-shadow:
+    2px 2px 0 var(--hole),
+    0 0 12px rgb(255 215 0 / 70%);
+  pointer-events: none;
+  animation: combo 1s ease-out both;
+}
+
+.popup {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  width: min(440px, 94%);
+  margin-inline: auto;
+  padding: 14px 20px;
+  border: 3px solid var(--seat);
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 35%);
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  animation: pop 350ms ease-out;
+}
+
+.popup.oh-no {
+  border-color: #b3261e;
+  color: #b3261e;
+}
+
+.confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.piece {
+  position: absolute;
+  top: -16px;
+  left: var(--left);
+  width: 10px;
+  height: 16px;
+  border-radius: 2px;
+  animation: confetti var(--fall) cubic-bezier(0.3, 0.6, 0.5, 1) var(--delay) both;
+}
+
+.piece.c0 {
+  background: var(--seat);
+}
+
+.piece.c1 {
+  background: gold;
+}
+
+.piece.c2 {
+  background: white;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 15%);
+}
+
+.piece.c3 {
+  background: #2e9e5b;
 }
 
 .message {
@@ -609,6 +760,8 @@ button.die:focus-visible {
 }
 
 .actions {
+  position: relative;
+  width: 100%;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -754,6 +907,7 @@ button.die:focus-visible {
 
 .backdrop {
   position: fixed;
+  z-index: 20;
   inset: 0;
   display: grid;
   place-items: center;
@@ -761,31 +915,164 @@ button.die:focus-visible {
   background: rgb(0 0 0 / 40%);
 }
 
-.booklet {
-  width: min(420px, 100%);
+.scroll {
+  display: flex;
+  flex-direction: column;
+  width: min(440px, 100%);
   max-height: 85vh;
-  overflow: auto;
-  padding: 20px 24px;
-  border-radius: 12px;
+  filter: drop-shadow(0 12px 24px rgb(0 0 0 / 40%));
+}
+
+.roll {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  margin-inline: 8px;
+  padding: 6px 20px;
+  border-radius: 23px;
+  background: linear-gradient(#cdb078, #f2e2b6 35%, #faf0d3 50%, #e2ca94 70%, #b3935a);
+}
+
+.roll::before,
+.roll::after {
+  content: "";
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  width: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--hole), var(--wood-dark) 50%, var(--hole));
+}
+
+.roll::before {
+  left: -8px;
+}
+
+.roll::after {
+  right: -8px;
+}
+
+.roll h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.roll button {
+  min-width: 120px;
+  border-color: var(--hole);
   background: var(--paper);
-  box-shadow: 0 12px 40px rgb(0 0 0 / 30%);
+  font-weight: 600;
+  box-shadow: 0 3px 0 var(--hole);
 }
 
-.booklet h2 {
-  margin-top: 0;
+.paper {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: -12px 18px;
+  padding: 28px 18px;
+  overflow: auto;
+  border-inline: 1px solid #c9ad72;
+  background: #f4e7c3;
+  box-shadow: inset 0 0 18px rgb(120 80 20 / 35%);
 }
 
-.booklet h3 {
+.paper:focus-visible {
+  outline: 3px solid var(--wood-dark);
+  outline-offset: -3px;
+}
+
+.paper h3 {
   margin: 12px 0 4px;
   font-size: 1rem;
 }
 
-.booklet p {
+.paper section:first-child h3 {
+  margin-top: 0;
+}
+
+.paper p {
   margin: 0;
 }
 
-.booklet button {
-  margin-top: 16px;
+.stats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.turns {
+  margin: 0;
+  font-weight: 600;
+}
+
+.stats h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.charts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+}
+
+.dice-chart {
+  margin: 0;
+  padding: 8px 12px;
+  border: 3px solid var(--seat);
+  border-radius: 12px;
+  background: rgb(255 255 255 / 70%);
+}
+
+.dice-chart figcaption {
+  color: var(--seat);
+  font-weight: 700;
+  text-align: center;
+}
+
+.faces {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 32px;
+}
+
+.bar-area {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  height: 70px;
+}
+
+.bar {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 3px 3px 0 0;
+  background: var(--seat);
+  transition: height 600ms;
+}
+
+.count {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.number {
+  font-weight: 700;
 }
 
 @media (max-width: 640px) {
@@ -811,6 +1098,11 @@ button.die:focus-visible {
 
   .stack {
     --stack-die: 24px;
+  }
+
+  button.stack.throw {
+    --stack-die: 24px;
+    --ring: 140px;
   }
 
   .dice-off-stage {
@@ -844,6 +1136,31 @@ button.die:focus-visible {
   from {
     opacity: 0;
     transform: translateY(-40px) rotate(-200deg) scale(0.6);
+  }
+}
+
+@keyframes combo {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  25% {
+    transform: scale(1.25);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-18px) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes confetti {
+  85% {
+    opacity: 1;
+  }
+  to {
+    transform: translate(var(--drift), 105vh) rotate(var(--spin));
+    opacity: 0;
   }
 }
 
@@ -901,9 +1218,13 @@ button.die:focus-visible {
 
 /* Below this the thirds don't fit, so the stack waits inside the empty throw area. */
 @media (max-width: 540px) {
-  header .controls:has(.slider),
-  header .slider {
+  header .controls:has(.play-mode),
+  header .play-mode {
     flex: 1 1 100%;
+  }
+
+  header .play-mode .slider {
+    flex: 1 1 auto;
   }
 
   header .slider .option,

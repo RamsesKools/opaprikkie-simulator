@@ -11,6 +11,11 @@ const game = (phase: Game["phase"]): Game => ({
   names: ["Ann", "Opa"],
   controllers: ["human", "ai"],
   pegs: [{ 1: 0 }, { 1: 0 }],
+  turns: 0,
+  dice_counts: [
+    [0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0],
+  ],
   observation: null,
   winner: null,
   seed: null,

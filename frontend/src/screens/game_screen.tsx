@@ -1,9 +1,11 @@
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import { Board } from "../components/board.tsx";
+import { Confetti } from "../components/confetti.tsx";
 import { Table } from "../components/table.tsx";
 import {
   emptyPegs,
   GameError,
+  TOP_ROW,
   type Game,
   type GameClient,
   type GameUpdate,
@@ -41,6 +43,7 @@ export function GameScreen({ client, initial, playMode, onFinished, onError }: P
   const [error, setError] = useState<string | null>(null);
   const [hovered, setHovered] = useState<number | null>(null);
   const [selected, setSelected] = useState<number[]>([]);
+  const [confetti, setConfetti] = useState<{ id: number; seat: number } | null>(null);
   // The game whose automatic take failed; the player finishes that sequence by hand.
   const [stalled, setStalled] = useState<Game | null>(null);
   // A pick can land after New Game has left this screen.
@@ -79,6 +82,14 @@ export function GameScreen({ client, initial, playMode, onFinished, onError }: P
     return () => clearTimeout(timer);
   }, [scene, waiting, game, onFinished]);
 
+  // A great turn bursts into confetti once as its scene starts, and the burst outlives the scene.
+  const [celebrated, setCelebrated] = useState<Scene | undefined>();
+  if (scene?.great && scene !== celebrated) {
+    setCelebrated(scene);
+    setConfetti((burst) => ({ id: (burst?.id ?? 0) + 1, seat: scene.player }));
+  }
+  const clearConfetti = useCallback(() => setConfetti(null), []);
+
   // Throws on the table before the answer; their replay starts at the last one.
   const thrown = (sequence?.rolls.length ?? 0) + 1;
 
@@ -96,14 +107,14 @@ export function GameScreen({ client, initial, playMode, onFinished, onError }: P
       () => {},
     );
 
-  const respond = (request: () => Promise<GameUpdate>, automatic = false) => {
+  const respond = (request: () => Promise<GameUpdate>, automatic = false, stopped = false) => {
     setHovered(null);
     setBusy(true);
     setError(null);
     request().then(
       (update) => {
         if (!mounted.current) return;
-        show(update.game, buildScenes(game.pegs, update.logs, update.game, thrown));
+        show(update.game, buildScenes(game.pegs, update.logs, update.game, thrown, stopped));
         setBusy(false);
       },
       (failure: unknown) => {
@@ -118,7 +129,7 @@ export function GameScreen({ client, initial, playMode, onFinished, onError }: P
   };
   const pick = (target: number) => respond(() => client.chooseTarget(target));
   const take = (target: number, dice: number[]) => respond(() => client.take(target, dice));
-  const stop = () => respond(() => client.stop());
+  const stop = () => respond(() => client.stop(), false, true);
 
   const locked = autoTake ? observation.legal_targets[0] : undefined;
   const takeAll = useEffectEvent((target: number, dice: number[]) =>
@@ -135,6 +146,10 @@ export function GameScreen({ client, initial, playMode, onFinished, onError }: P
   const dice = sequence?.dice ?? observation?.opening_roll ?? [];
   const takes = manual ? observation.takes : [];
   const options = takes.filter((option) => sameDice(option.dice, selected));
+  const mostFor = (target: number) =>
+    takes
+      .filter((option) => option.target === target)
+      .reduce((best, option) => (option.matches > best.matches ? option : best));
   const legal = humanChoice ? observation.legal_targets.map(({ target }) => target) : [];
 
   // A die only selects while the selection still fits some take.
@@ -148,11 +163,8 @@ export function GameScreen({ client, initial, playMode, onFinished, onError }: P
   };
   // With nothing selected, a lit lane selects its take with the most matches.
   const selectMost = (target: number) => {
-    const most = takes
-      .filter((option) => option.target === target)
-      .reduce((best, option) => (option.matches > best.matches ? option : best));
     setError(null);
-    setSelected(most.dice);
+    setSelected(mostFor(target).dice);
   };
 
   let lit: number[] = [];
@@ -160,12 +172,19 @@ export function GameScreen({ client, initial, playMode, onFinished, onError }: P
   // Where pegs would land, one ghost per target; the pegs only move once the sequence ends.
   const landing = new Map<number, number>();
   if (sequence) landing.set(sequence.target, own[sequence.target]! + sequence.matches);
+  else if (scene && !scene.moved && scene.target !== null && scene.count > 0) {
+    landing.set(scene.target, Math.min(own[scene.target]! + scene.count, TOP_ROW));
+  }
   if (manual) {
     if (sequence) lit = [sequence.target];
     else if (selected.length) lit = options.map(({ target }) => target);
     else if (hints) lit = legal;
     raised = selected;
     for (const option of options) landing.set(option.target, option.row);
+    // With hints, hovering a lit lane previews taking its most matches at once.
+    if (hints && !selected.length && hovered !== null && lit.includes(hovered)) {
+      landing.set(hovered, mostFor(hovered).row);
+    }
   } else if (humanChoice) {
     lit = legal;
     const hint = observation.legal_targets.find(({ target }) => target === hovered);
@@ -175,15 +194,17 @@ export function GameScreen({ client, initial, playMode, onFinished, onError }: P
     }
   }
   let onPick = pick;
-  // A lane that can't take the selection as it is selects its most matches instead.
+  // With hints and nothing selected, a lit lane takes its most matches at once. Otherwise a lane
+  // that can't take the selection as it is selects its most matches instead.
   if (manual) {
-    onPick = (target: number) =>
-      options.some((option) => option.target === target)
-        ? take(target, selected)
-        : selectMost(target);
+    onPick = (target: number) => {
+      if (options.some((option) => option.target === target)) take(target, selected);
+      else if (hints && !selected.length) take(target, mostFor(target).dice);
+      else selectMost(target);
+    };
   }
   const next = sequence ? options[0] : undefined;
-  const choices = hints && !sequence ? options : [];
+  const choices = sequence ? [] : options;
 
   let message = scene?.message ?? "";
   if (humanChoice) message = strings.game.pick(name);
@@ -193,10 +214,12 @@ export function GameScreen({ client, initial, playMode, onFinished, onError }: P
       : strings.game.selectDice(name, hints);
   }
   if (waiting) message = strings.game.throwPrompt(name);
+  if (scene?.popup && scene.tone === "oh_no") message = "";
   if (error) message = error;
 
   return (
     <div className="game">
+      {confetti && <Confetti key={confetti.id} seat={confetti.seat} onDone={clearConfetti} />}
       <div className="status" style={seatStyle(player)}>
         <p className="turn">{strings.game.turn(scene?.turn ?? observation?.turn ?? 0, name)}</p>
         {scene ? (
@@ -210,6 +233,7 @@ export function GameScreen({ client, initial, playMode, onFinished, onError }: P
             kept={scene.kept}
             count={scene.count}
             target={scene.target}
+            {...(scene.combo !== undefined && { combo: scene.combo })}
             {...(waiting && { onThrow: () => setPlayback(nextScene) })}
           />
         ) : (
@@ -226,6 +250,7 @@ export function GameScreen({ client, initial, playMode, onFinished, onError }: P
             kept={sequence ? bowl(sequence.rolls, sequence.reset) : []}
             count={sequence?.matches ?? 0}
             target={sequence?.target ?? null}
+            {...(sequence && sequence.rolls.length >= 2 && { combo: sequence.rolls.length + 1 })}
             {...(manual && { onToggle: toggle, disabled: busy })}
             {...(next && {
               action: (
@@ -258,9 +283,18 @@ export function GameScreen({ client, initial, playMode, onFinished, onError }: P
           />
         )}
         <div className="actions">
+          {scene?.popup && (
+            <div
+              className={scene.tone === "oh_no" ? "popup oh-no" : "popup"}
+              role="status"
+              onClick={() => setPlayback(nextScene)}
+            >
+              {scene.popup}
+            </div>
+          )}
           {manual && sequence && (
             <button type="button" disabled={busy} onClick={stop}>
-              {strings.game.stop}
+              {strings.game.endTurn}
             </button>
           )}
         </div>
@@ -293,7 +327,7 @@ export function GameScreen({ client, initial, playMode, onFinished, onError }: P
                   legal: lit,
                   pickable: busy ? [] : lit,
                   onPick,
-                  ...(!busy && !manual && { onHover: setHovered }),
+                  ...(!busy && (!manual || (hints && !sequence)) && { onHover: setHovered }),
                 }
               : {})}
           />

@@ -2,6 +2,7 @@ import { expect, test } from "vitest";
 import { strings } from "../lib/strings.ts";
 import type { Game, LogEntry, Roll, RollSequence } from "./model.ts";
 import { buildScenes, openingKey } from "./scenes.ts";
+import { timing } from "./timing.ts";
 
 const board = (rows: Record<number, number> = {}) => ({ 1: 0, 7: 0, ...rows });
 
@@ -11,6 +12,11 @@ const game = (at: { seat: number; continuation?: number } | null): Game => ({
   names: ["Ann", "Opa"],
   controllers: ["human", "ai"],
   pegs: [board(), board()],
+  turns: 0,
+  dice_counts: [
+    [0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0],
+  ],
   observation: at && {
     ruleset: "classic",
     seat: at.seat,
@@ -328,4 +334,86 @@ test("empties the bowl when a manual sequence takes every die", () => {
   const [scene] = buildScenes([board(), board()], [], manual(rolls, [1, 2, 3, 4, 5, 6], true));
 
   expect(scene).toMatchObject({ message: strings.game.reset, hand: 6, kept: [], count: 6 });
+});
+
+const rollWith = (matches: number): Roll => ({
+  dice: [1, 2, 3, 4],
+  set_aside: matches ? [0] : [],
+  reset: false,
+  matches,
+});
+
+test("marks a combo from the third throw with a match, not before or after a miss", () => {
+  const rolls = [rollWith(1), rollWith(1), rollWith(1), rollWith(2), rollWith(0)];
+  const scenes = buildScenes(
+    [board(), board()],
+    [sequence({ rolls, matches: 5, movement: 5 })],
+    game({ seat: 1 }),
+  );
+
+  expect(scenes.filter((scene) => scene.combo !== undefined).map((scene) => scene.combo)).toEqual([
+    3, 4,
+  ]);
+});
+
+test("keeps the combo of a throw already shown by hand out of the replay", () => {
+  const rolls = [rollWith(1), rollWith(1), rollWith(1), rollWith(0)];
+  const scenes = buildScenes(
+    [board(), board()],
+    [sequence({ rolls, matches: 3, movement: 3 })],
+    game({ seat: 1 }),
+    4,
+  );
+
+  expect(scenes.some((scene) => scene.combo !== undefined)).toBe(false);
+});
+
+test("pops up what a sequence did when its last throw has no match", () => {
+  const scenes = buildScenes([board(), board()], [sequence()], game({ seat: 1 }));
+
+  expect(scenes.at(-1)).toMatchObject({
+    popup: strings.game.noMore("Ann", true, 1, 2, 2),
+    ms: timing.popup,
+  });
+  expect(scenes.filter((scene) => scene.popup).length).toBe(1);
+});
+
+test("says an end turn when the first sequence was stopped by hand", () => {
+  const scenes = buildScenes([board(), board()], [sequence()], game({ seat: 1 }), 1, true);
+
+  expect(scenes.at(-1)?.popup).toBe(strings.game.ended("Ann", true, 1, 2, 2));
+});
+
+test("doesn't pop up a sequence that ended with a match", () => {
+  const rolls = [rollWith(1), rollWith(1)];
+  const scenes = buildScenes(
+    [board(), board()],
+    [sequence({ rolls, matches: 2, movement: 2 })],
+    game({ seat: 1 }),
+  );
+
+  expect(scenes.some((scene) => scene.popup)).toBe(false);
+  expect(scenes.at(-1)?.ms).toBe(timing.move);
+});
+
+test("marks a great turn on the move scene only", () => {
+  const rolls = [{ dice: [6, 6, 6, 6, 1, 2], set_aside: [0, 1, 2, 3], reset: false, matches: 2 }];
+  const scenes = buildScenes(
+    [board({ 12: 0 }), board()],
+    [sequence({ target: 12, rolls, matches: 2, movement: 2 })],
+    game({ seat: 1 }),
+  );
+
+  expect(scenes.map((scene) => scene.great ?? false)).toEqual([false, true]);
+  expect(scenes.map((scene) => scene.moved ?? false)).toEqual([false, true]);
+});
+
+test("makes the no legal target scene a pop-up", () => {
+  const scenes = buildScenes(
+    [board(), board()],
+    [{ kind: "no_move", player: 0, turn: 1, continuation: 0, opening_roll: [2, 2, 2, 2, 2, 2] }],
+    game({ seat: 1 }),
+  );
+
+  expect(scenes.at(-1)).toMatchObject({ popup: strings.game.ohNo("Ann", true), tone: "oh_no" });
 });

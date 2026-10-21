@@ -65,6 +65,29 @@ test("plays a hot-seat game to the end", async () => {
   expect(logs.some((entry) => entry.kind === "roll_sequence")).toBe(true);
 });
 
+test("counts the turns and each player's dice in the game", async () => {
+  const client = browser();
+  await client.session();
+  const started = await client.start(hotSeat);
+  expect(started.game).toMatchObject({
+    turns: 0,
+    dice_counts: [Array(6).fill(0), Array(6).fill(0)],
+  });
+
+  const { game, logs } = await playToTheEnd(client, started);
+
+  const thrown = [Array(6).fill(0), Array(6).fill(0)];
+  for (const entry of logs) {
+    if (entry.kind === "dice_off") continue;
+    const throws = entry.kind === "no_move" ? [entry.opening_roll] : entry.rolls.map((r) => r.dice);
+    for (const die of throws.flat()) thrown[entry.player]![die - 1]++;
+  }
+  expect(game.dice_counts).toEqual(thrown);
+  expect(game.turns).toBe(
+    logs.filter((entry) => entry.kind !== "dice_off" && entry.continuation === 0).length,
+  );
+});
+
 test("plays a game versus the AI to the end, with its turns in the logs", async () => {
   const client = browser();
   const { strategies } = await client.health();

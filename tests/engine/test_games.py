@@ -120,3 +120,39 @@ def test_pegs_move_by_the_logged_movement_and_the_game_ends_with_one_winner(seed
         CLASSIC.rows not in set(final.pegs[1 - final.winner].values())
         or len(set(final.pegs[1 - final.winner].values())) > 1
     )
+
+
+def thrown_by_log(entries: list[LogEntry]) -> list[list[int]]:
+    """How often each face was thrown per player, counted from the log alone."""
+    counts = [[0] * CLASSIC.dice_faces for _ in range(2)]
+    for entry in entries:
+        if isinstance(entry, DiceOffRound):
+            continue
+        throws = (
+            [entry.opening_roll] if isinstance(entry, NoMove) else [r.dice for r in entry.rolls]
+        )
+        for dice in throws:
+            for die in dice:
+                counts[entry.player][die - 1] += 1
+    return counts
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+def test_the_game_counts_every_face_each_player_threw(seed):
+    states, entries = play(seed)
+
+    assert [list(counts) for counts in states[-1].dice_counts] == thrown_by_log(entries)
+
+
+def test_a_new_game_has_thrown_nothing():
+    state, _ = new_game(CLASSIC, "fresh")
+
+    assert state.dice_counts == ((0,) * 6, (0,) * 6)
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+def test_the_final_turn_number_counts_every_turn_including_dead_ones(seed):
+    states, entries = play(seed)
+
+    turns = [e for e in entries if isinstance(e, (RollSequence, NoMove)) and not e.continuation]
+    assert states[-1].turn == len(turns)

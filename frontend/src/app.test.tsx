@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { App } from "./app.tsx";
 import { createFixtureClient, scriptedGame, type Script } from "./game/fixture_client.ts";
@@ -142,6 +142,8 @@ test("opens and closes the rules booklet", async () => {
   expect(screen.getByRole("dialog", { name: strings.booklet.title })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: strings.close })).toHaveFocus();
   fireEvent.keyDown(window, { key: "Tab" });
+  expect(screen.getByRole("region", { name: strings.booklet.title })).toHaveFocus();
+  fireEvent.keyDown(window, { key: "Tab" });
   expect(screen.getByRole("button", { name: strings.close })).toHaveFocus();
   fireEvent.keyDown(window, { key: "Enter" });
   expect(screen.getByRole("dialog")).toBeInTheDocument();
@@ -158,6 +160,31 @@ test("opens and closes the rules booklet", async () => {
   open();
   fireEvent.click(screen.getByRole("dialog").parentElement!);
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});
+
+test("explains the play modes in a scroll from the ? button, next to the slider", async () => {
+  await resumeWith(saved(scriptedGame.branches[0]!.steps[0]!.game));
+  const open = await until(() => screen.queryByRole("button", { name: strings.play.helpLabel }));
+  expect(open).toHaveTextContent("?");
+
+  open.focus();
+  fireEvent.click(open);
+  const dialog = screen.getByRole("dialog", { name: strings.play.helpTitle });
+  for (const { heading, text } of strings.play.helpModes) {
+    expect(within(dialog).getByRole("heading", { name: heading })).toBeInTheDocument();
+    expect(within(dialog).getByText(text)).toBeInTheDocument();
+  }
+  expect(within(dialog).getByRole("button", { name: strings.close })).toHaveFocus();
+
+  fireEvent.keyDown(window, { key: "Escape" });
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(open).toHaveFocus();
+});
+
+test("only shows the ? button while a game is on", async () => {
+  await renderApp();
+
+  expect(screen.queryByRole("button", { name: strings.play.helpLabel })).not.toBeInTheDocument();
 });
 
 const down = () => Promise.reject(new GameError("internal_error", "down"));
@@ -409,7 +436,7 @@ test("resumes a sequence in progress by hand when playing without hints", async 
   );
 
   expect(screen.getByText(strings.game.takeMore("Ann", 2))).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: strings.game.stop })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: strings.game.endTurn })).toBeInTheDocument();
   expect(take).not.toHaveBeenCalled();
 });
 

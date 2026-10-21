@@ -18,6 +18,8 @@ def test_a_new_game_waits_for_names(client):
             "names": [],
             "controllers": ["human", "human"],
             "pegs": [EMPTY_BOARD, EMPTY_BOARD],
+            "turns": 0,
+            "dice_counts": [[0] * 6, [0] * 6],
             "observation": None,
             "winner": None,
             "seed": None,

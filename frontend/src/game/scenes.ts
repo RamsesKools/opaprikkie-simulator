@@ -1,6 +1,7 @@
 import { strings } from "../lib/strings.ts";
 import type { Game, LogEntry, Pegs, Roll, RollSequence } from "./model.ts";
-import { timing } from "./timing.ts";
+import { isGreatTurn } from "./great_turns.ts";
+import { popupMs, timing } from "./timing.ts";
 
 export type Tone = "info" | "oh_no" | "cue";
 
@@ -21,6 +22,14 @@ export type Scene = {
   target: number | null;
   message: string;
   tone: Tone;
+  /** The peg has moved, so no ghost peg marks where the sequence so far would put it. */
+  moved?: boolean;
+  /** Text for the pop-up over the table, shown for the scene's whole time. */
+  popup?: string;
+  /** The throw's place in a run of throws with a match, from the third on: "Combo x3". */
+  combo?: number;
+  /** The sequence moved a peg far for its lane, so confetti. */
+  great?: boolean;
   /** The next throw waits in the stack, for a human's click with automatic turns off. */
   ready: boolean;
   ms: number;
@@ -67,8 +76,17 @@ const readyScene = (scene: Ready): Scene => ({
   ms: timing.ready,
 });
 
-/** `thrown` counts the throws of the first sequence already on the table, from a manual turn. */
-export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game, thrown = 0): Scene[] {
+/**
+ * `thrown` counts the throws of the first sequence already on the table, from a manual turn;
+ * `stopped` says the first sequence ended by hand, since a stop looks like a throw without a match.
+ */
+export function buildScenes(
+  start: Pegs[],
+  logs: LogEntry[],
+  next: Game,
+  thrown = 0,
+  stopped = false,
+): Scene[] {
   const scenes: Scene[] = [];
   let pegs = start;
   const turnLog = logs.filter((entry) => entry.kind !== "dice_off");
@@ -103,7 +121,7 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game, thrown 
     }
     if (entry.kind === "no_move") {
       const message = strings.game.ohNo(name, human);
-      scenes.push({ ...still, message, tone: "oh_no", ms: timing.ohNo });
+      scenes.push({ ...still, message, popup: message, tone: "oh_no", ms: popupMs() });
       return;
     }
     const { target, rolls, movement } = entry;
@@ -126,6 +144,7 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game, thrown 
           slots: allSlots(roll.dice),
           setAside: roll.set_aside,
           hand: 0,
+          ...(throwIndex >= 2 && roll.matches > 0 && { combo: throwIndex + 1 }),
           ms: timing.roll,
         });
       kept = [...kept, ...roll.set_aside.map((index) => roll.dice[index]!)];
@@ -148,8 +167,17 @@ export function buildScenes(start: Pegs[], logs: LogEntry[], next: Game, thrown 
       kept,
       count,
       target,
+      moved: true,
     };
-    scenes.push({ ...shown, message: strings.game.moves(target, movement), ms: timing.move });
+    const missed = last.set_aside.length === 0;
+    const wrapUp = index === 0 && stopped ? strings.game.ended : strings.game.noMore;
+    scenes.push({
+      ...shown,
+      message: strings.game.moves(target, movement),
+      ...(missed && { popup: wrapUp(name, human, target, entry.matches, movement) }),
+      ...(isGreatTurn(target, movement) && { great: true }),
+      ms: missed ? popupMs() : timing.move,
+    });
     const following = turnLog[index + 1] ?? nextPosition;
     if (isContinuation(entry, following)) {
       const message = strings.game.continuation(target);

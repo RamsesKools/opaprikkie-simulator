@@ -16,6 +16,12 @@ const shortStep: Record<TakeOutcome, (dice: number) => string> = {
   wins: () => "Win!",
 };
 
+const steps = (count: number) => `${count} ${count === 1 ? "step" : "steps"}`;
+const took = (count: number, target: number) =>
+  `${count} ${count === 1 ? "match" : "matches"} for ${target}`;
+const summary = (name: string, human: boolean, count: number, target: number, movement: number) =>
+  `${human ? "You" : name} took ${took(count, target)}, ${human ? "your" : `${name}'s`} peg moves ${steps(movement)}.`;
+
 export const strings = {
   title: "Opa Prikkie",
   rules: "Rules",
@@ -25,6 +31,23 @@ export const strings = {
     withoutHints: "Play without hints",
     withHints: "Play with hints",
     automatic: "Play automatically",
+    help: "?",
+    helpLabel: "What the play modes mean",
+    helpTitle: "Play modes",
+    helpModes: [
+      {
+        heading: "Play without hints",
+        text: "You pick the dice yourself. Nothing lights up until you select dice, so you have to spot the matches.",
+      },
+      {
+        heading: "Play with hints",
+        text: "You still pick the dice, but every column you can play lights up, and clicking one takes its most matches at once.",
+      },
+      {
+        heading: "Play automatically",
+        text: "You only pick the column. The game takes every match and rolls on for you.",
+      },
+    ],
   },
   close: "Close",
   stale: "A new version of Opa Prikkie is out.",
@@ -58,13 +81,14 @@ export const strings = {
     pick: (name: string) => `${name}, pick a target.`,
     selectDice: (name: string, hints: boolean) =>
       hints ? `${name}, select dice to take.` : `${name}, select dice, then click their column.`,
-    takeMore: (name: string, target: number) => `${name}, take more for ${target} or stop.`,
+    takeMore: (name: string, target: number) =>
+      `${name}, take more for ${target} or end your turn.`,
     /** With hints, the opening roll's buttons, one per take the selection fits. */
     choose: (matches: number, target: number) => `Choose ${matches} x ${target}`,
     chooseNext: (outcome: TakeOutcome, dice: number) => shortStep[outcome](dice),
     /** The button that takes the selection, saying what happens next. */
     next: (outcome: TakeOutcome, dice: number, target: number) => nextStep[outcome](dice, target),
-    stop: "Stop",
+    endTurn: "End turn",
     throwPrompt: (name: string) => `${name}, throw the dice!`,
     throws: (name: string) => `${name} throws the dice.`,
     aiThinking: (name: string) => `${name} is thinking...`,
@@ -85,7 +109,14 @@ export const strings = {
     dice: (values: number[]) => `Dice: ${values.join(", ")}`,
     die: (value: number) => `Die ${value}`,
     stack: (count: number) => `${count} ${count === 1 ? "die" : "dice"} left to throw`,
-    throwStack: (count: number) => `Throw ${count === 1 ? "the die" : `${count} dice`}`,
+    throwStack: (count: number) => `Throw dice, ${count} left`,
+    throwDice: "Throw dice",
+    combo: (throws: number) => `Combo x${throws}`,
+    noMore: (name: string, human: boolean, target: number, count: number, movement: number) =>
+      `No more ${target}s. ${summary(name, human, count, target, movement)}`,
+    ended: (name: string, human: boolean, target: number, count: number, movement: number) =>
+      `${human ? "You ended your turn" : `${name} ended the turn`}. ${summary(name, human, count, target, movement)}`,
+    skipPopup: "Click to dismiss",
     seed: (seed: number | string) => `Seed: ${seed}`,
     strategy: (strategy: string) => `AI strategy: ${strategy}`,
   },
@@ -97,6 +128,10 @@ export const strings = {
   victory: {
     wins: (name: string) => `${name} wins!`,
     again: "Play again",
+    turns: (turns: number) => `The game took ${turns} ${turns === 1 ? "turn" : "turns"}.`,
+    dice: "Dice thrown",
+    chart: (name: string, counts: number[]) =>
+      `${name}'s dice: ${counts.map((count, face) => `${face + 1} thrown ${count} times`).join(", ")}`,
   },
   booklet: {
     title: "How to play",
@@ -111,7 +146,7 @@ export const strings = {
       },
       {
         heading: "Your turn",
-        text: "You roll all six dice and pick one peg that matches. Then you keep rolling for that peg, or the game does it for you when turns play automatically. Playing by hand, you pick the dice to set aside: you may take fewer matches than you rolled, or stop after any roll, but you must take at least one match from your opening roll.",
+        text: "You roll all six dice and pick one peg that matches. Then you keep rolling for that peg, or the game does it for you when turns play automatically. Playing by hand, you pick the dice to set aside: you may take fewer matches than you rolled, or end your turn after any roll, but you must take at least one match from your opening roll.",
       },
       {
         heading: "Matching",

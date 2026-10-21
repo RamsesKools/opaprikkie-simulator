@@ -26,6 +26,11 @@ function update(phase: Phase, seat: number): GameUpdate {
       names: ["Ann", "Opa"],
       controllers: ["human", "ai"],
       pegs: [{}, {}],
+      turns: 0,
+      dice_counts: [
+        [0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0],
+      ],
       observation: {
         ruleset: "classic",
         seat,

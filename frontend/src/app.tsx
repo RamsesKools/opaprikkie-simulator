@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { PlayHelp } from "./components/play_help.tsx";
 import { RulesBooklet } from "./components/rules_booklet.tsx";
 import { Slider } from "./components/slider.tsx";
 import { errorMessage, isLost, isNetwork } from "./game/errors.ts";
@@ -56,6 +57,7 @@ export function App({ client }: Props) {
   const round = useRef(0);
   const [health, setHealth] = useState<Health | null>(null);
   const [rules, setRules] = useState(false);
+  const [help, setHelp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [playMode, setPlayMode] = useState<PlayMode>("automatic");
@@ -132,6 +134,7 @@ export function App({ client }: Props) {
   };
   const finished = useCallback((game: Game) => setScreen({ kind: "victory", game }), []);
   const closeRules = useCallback(() => setRules(false), []);
+  const closeHelp = useCallback(() => setHelp(false), []);
   const stale = health !== null && health.version !== version;
   const dev = health?.dev_mode ? { strategies: health.strategies ?? [] } : null;
 
@@ -148,12 +151,22 @@ export function App({ client }: Props) {
         </div>
         <div className="controls">
           {screen.kind === "game" && (
-            <Slider
-              label={strings.play.label}
-              options={playModes}
-              value={playMode}
-              onChange={setPlayMode}
-            />
+            <div className="play-mode">
+              <Slider
+                label={strings.play.label}
+                options={playModes}
+                value={playMode}
+                onChange={setPlayMode}
+              />
+              <button
+                type="button"
+                className="help"
+                aria-label={strings.play.helpLabel}
+                onClick={() => setHelp(true)}
+              >
+                {strings.play.help}
+              </button>
+            </div>
           )}
           <button type="button" onClick={() => setRules(true)}>
             {strings.rules}
@@ -199,6 +212,7 @@ export function App({ client }: Props) {
         )}
       </main>
       {rules && <RulesBooklet onClose={closeRules} />}
+      {help && <PlayHelp onClose={closeHelp} />}
     </>
   );
 }

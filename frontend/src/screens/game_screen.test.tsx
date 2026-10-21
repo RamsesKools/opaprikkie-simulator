@@ -6,6 +6,7 @@ import {
   type GameClient,
   type LogEntry,
   type PlayMode,
+  type Roll,
   type TakeOption,
 } from "../game/model.ts";
 import { timing } from "../game/timing.ts";
@@ -31,6 +32,11 @@ const game: Game = {
   names: ["Ann", "Bob"],
   controllers: ["human", "human"],
   pegs,
+  turns: 0,
+  dice_counts: [
+    [0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0],
+  ],
   observation: {
     ruleset: "classic",
     seat: 1,
@@ -181,7 +187,7 @@ test("plays a dead turn before handing over", async () => {
   await advance(timing.ready);
   expect(screen.getByText(strings.game.ohNo("Ann", true))).toBeInTheDocument();
   expect(screen.getByText(strings.game.turn(1, "Ann"))).toBeInTheDocument();
-  await advance(timing.ohNo);
+  await advance(timing.popup);
   await advance(timing.ready);
   expect(screen.getByText(strings.game.pick("Bob"))).toBeInTheDocument();
 });
@@ -220,7 +226,7 @@ test("throws from the stack when turns don't play automatically", async () => {
   expect(screen.getByRole("img", { name: strings.game.dice([2, 3, 4, 5]) })).toBeInTheDocument();
   expect(stack(4)).not.toBeInTheDocument();
   await advance(timing.roll);
-  await advance(timing.move);
+  await advance(timing.popup);
 
   expect(screen.getByText(strings.game.throwPrompt("Bob"))).toBeInTheDocument();
   const bob = screen.getByRole("region", { name: strings.game.board("Bob") });
@@ -447,17 +453,12 @@ test("lights nothing for a selection that isn't a whole take yet", async () => {
   expect(column(7)).toBeDisabled();
 });
 
-test("with hints on, lights every legal lane up front, and a click selects its most matches", async () => {
+test("with hints on, lights every legal lane up front, and a click takes its most matches at once", async () => {
   const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
   await throwManually(twoSixes, "with_hints", { take });
   expect(screen.getByText(strings.game.selectDice("Ann", true))).toBeInTheDocument();
   expect(lit()).toEqual([1, 6, 7, 12]);
   expect(ghosts()).toEqual({});
-
-  fireEvent.click(column(7));
-  expect(selected()).toEqual([0, 2, 4, 5]);
-  expect(lit()).toEqual([7]);
-  expect(take).not.toHaveBeenCalled();
 
   fireEvent.click(column(7));
   expect(take).toHaveBeenCalledExactlyOnceWith(7, [0, 2, 4, 5]);
@@ -498,7 +499,7 @@ test.each([
   expect(choices()).toEqual([`Choose 2 x 6 ${label}`, "Choose 1 x 12 Reroll 4 dice"]);
 });
 
-test("with hints off, lights nothing until dice are selected, then plays the same", async () => {
+test("with hints off, lights nothing until dice are selected, then offers the same takes", async () => {
   const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
   await throwManually(twoSixes, "without_hints", { take });
   expect(screen.getByText(strings.game.selectDice("Ann", false))).toBeInTheDocument();
@@ -510,7 +511,7 @@ test("with hints off, lights nothing until dice are selected, then plays the sam
 
   expect(lit()).toEqual([6, 12]);
   expect(ghosts()).toEqual({ 6: 2, 12: 1 });
-  expect(choices()).toEqual([]);
+  expect(choices()).toEqual(["Choose 2 x 6 Reroll 4 dice", "Choose 1 x 12 Reroll 4 dice"]);
   fireEvent.click(column(12));
   expect(take).toHaveBeenCalledExactlyOnceWith(12, [0, 1]);
 });
@@ -652,12 +653,12 @@ test("stops a sequence, with no stop before the first take", async () => {
   };
   const stop = vi.fn<GameClient["stop"]>().mockResolvedValue(update);
   await throwManually(twoSixes);
-  expect(screen.queryByRole("button", { name: strings.game.stop })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: strings.game.endTurn })).not.toBeInTheDocument();
   cleanup();
 
   show(vi.fn<GameClient["chooseTarget"]>(), [], "with_hints", lockedToSix(), { client: { stop } });
   fireEvent.click(throwStack(5)!);
-  fireEvent.click(screen.getByRole("button", { name: strings.game.stop }));
+  fireEvent.click(screen.getByRole("button", { name: strings.game.endTurn }));
 
   expect(stop).toHaveBeenCalledOnce();
 });
@@ -721,7 +722,7 @@ test("doesn't retry a failed automatic take, and leaves the sequence to the play
   selectDie(1);
   fireEvent.click(reroll("Reroll 4 dice")!);
   expect(take).toHaveBeenCalledTimes(2);
-  expect(screen.getByRole("button", { name: strings.game.stop })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: strings.game.endTurn })).toBeInTheDocument();
 });
 
 test("keeps the choice on screen but disabled while a take is pending", async () => {
@@ -733,7 +734,7 @@ test("keeps the choice on screen but disabled while a take is pending", async ()
   fireEvent.click(reroll("Reroll 4 dice")!);
 
   expect(reroll("Reroll 4 dice")).toBeDisabled();
-  expect(screen.getByRole("button", { name: strings.game.stop })).toBeDisabled();
+  expect(screen.getByRole("button", { name: strings.game.endTurn })).toBeDisabled();
   expect(toggles()[1]).toBeDisabled();
   expect(column(6)).toBeDisabled();
   expect(lit()).toEqual([6]);
@@ -790,10 +791,10 @@ test("hands a hot-seat game to the next human, who plays by hand too", async () 
   show(vi.fn<GameClient["chooseTarget"]>(), [], "with_hints", lockedToSix(), { client: { stop } });
   fireEvent.click(throwStack(5)!);
 
-  fireEvent.click(screen.getByRole("button", { name: strings.game.stop }));
+  fireEvent.click(screen.getByRole("button", { name: strings.game.endTurn }));
   await advance(0);
   await advance(timing.roll);
-  await advance(timing.move);
+  await advance(timing.popup);
 
   expect(screen.getByText(strings.game.throwPrompt("Bob"))).toBeInTheDocument();
   fireEvent.click(throwStack(6)!);
@@ -919,4 +920,240 @@ test("previews nothing while a pick is pending", async () => {
   fireEvent.mouseEnter(columnOf(3));
 
   expect(bob.querySelector(".ghost")).toBeNull();
+});
+
+const sequenceLog = (target: number, rolls: Roll[], movement: number, player = 0): LogEntry => ({
+  kind: "roll_sequence",
+  player,
+  turn: 1,
+  continuation: 0,
+  target,
+  rolls,
+  matches: rolls.reduce((sum, roll) => sum + roll.matches, 0),
+  movement,
+});
+
+const fourOnes = sequenceLog(
+  1,
+  [
+    { dice: [1, 2, 3, 4, 5, 1], set_aside: [0, 5], reset: false, matches: 2 },
+    { dice: [2, 3, 4, 1], set_aside: [3], reset: false, matches: 1 },
+    { dice: [2, 3, 1], set_aside: [2], reset: false, matches: 1 },
+    { dice: [2, 3], set_aside: [], reset: false, matches: 0 },
+  ],
+  4,
+);
+
+test("with hints, hovering a lit lane previews taking its most matches", async () => {
+  await throwManually(twoSixes, "with_hints");
+
+  fireEvent.mouseEnter(column(7));
+  expect(ghosts()).toEqual({ 7: 2 });
+  fireEvent.mouseLeave(column(7));
+  expect(ghosts()).toEqual({});
+
+  selectDie(0);
+  selectDie(1);
+  fireEvent.mouseEnter(column(6));
+  expect(ghosts()).toEqual({ 6: 2, 12: 1 });
+});
+
+test("without hints, no lane is lit to hover on the opening roll", async () => {
+  await throwManually(twoSixes, "without_hints");
+
+  fireEvent.mouseEnter(column(7));
+
+  expect(ghosts()).toEqual({});
+});
+
+test("keeps a ghost on the locked lane while the sequence replays, without hints too", async () => {
+  show(vi.fn<GameClient["chooseTarget"]>(), [fourOnes], "without_hints");
+  expect(ghosts()).toEqual({});
+
+  await advance(timing.roll);
+  expect(screen.getByText(strings.game.throwPrompt("Ann"))).toBeInTheDocument();
+  expect(ghosts()).toEqual({ 1: 2 });
+
+  fireEvent.click(throwStack(4)!);
+  await advance(timing.roll);
+  expect(ghosts()).toEqual({ 1: 3 });
+});
+
+test("flashes a combo from the third throw in a row with a match", async () => {
+  show(vi.fn<GameClient["chooseTarget"]>(), [fourOnes]);
+  const flash = () => document.querySelector(".combo")?.textContent ?? null;
+  expect(flash()).toBeNull();
+
+  await advance(timing.roll);
+  await advance(timing.ready);
+  expect(flash()).toBeNull();
+  await advance(timing.roll);
+  await advance(timing.ready);
+  expect(flash()).toBe(strings.game.combo(3));
+  await advance(timing.roll);
+  await advance(timing.ready);
+  expect(flash()).toBeNull();
+});
+
+test("flashes the combo of a throw made by hand, and never blocks input", async () => {
+  const third: Game = {
+    ...lockedToSix(),
+    observation: {
+      ...lockedToSix().observation!,
+      sequence: {
+        target: 6,
+        rolls: [
+          { dice: [6, 6, 1, 2, 3, 4], set_aside: [0], reset: false, matches: 1 },
+          { dice: [2, 6, 3, 5, 1], set_aside: [1], reset: false, matches: 1 },
+        ],
+        matches: 2,
+        dice: [2, 6, 3, 1],
+        reset: false,
+      },
+    },
+  };
+  show(vi.fn<GameClient["chooseTarget"]>(), [], "with_hints", third);
+  fireEvent.click(throwStack(4)!);
+
+  expect(document.querySelector(".combo")).toHaveTextContent(strings.game.combo(3));
+  expect(document.querySelector(".combo")).toHaveAttribute("aria-hidden", "true");
+  selectDie(1);
+  expect(selected()).toEqual([1]);
+});
+
+test("pops up what a sequence did when a throw has no match, and lets a click skip it", async () => {
+  show(vi.fn<GameClient["chooseTarget"]>(), [annGoesForOne]);
+  await advance(timing.roll);
+  await advance(timing.ready);
+  expect(screen.queryByText(/No more/)).not.toBeInTheDocument();
+
+  await advance(timing.roll);
+  const popup = screen.getByText(strings.game.noMore("Ann", true, 1, 2, 2));
+  expect(popup).toHaveAttribute("role", "status");
+  fireEvent.click(popup);
+  expect(screen.queryByText(strings.game.noMore("Ann", true, 1, 2, 2))).not.toBeInTheDocument();
+});
+
+test("the pop-up goes by itself", async () => {
+  show(vi.fn<GameClient["chooseTarget"]>(), [annGoesForOne]);
+  await advance(timing.roll);
+  await advance(timing.ready);
+  await advance(timing.roll);
+
+  expect(screen.getByText(strings.game.noMore("Ann", true, 1, 2, 2))).toBeInTheDocument();
+  await advance(timing.popup - 1);
+  expect(screen.getByText(strings.game.noMore("Ann", true, 1, 2, 2))).toBeInTheDocument();
+  await advance(1);
+  expect(screen.queryByText(strings.game.noMore("Ann", true, 1, 2, 2))).not.toBeInTheDocument();
+});
+
+test("names the AI in its pop-up", async () => {
+  const vsAi: Game = { ...game, controllers: ["human", "ai"] };
+  const ai = sequenceLog(
+    1,
+    [
+      { dice: [1, 2, 3, 4, 5, 1], set_aside: [0, 5], reset: false, matches: 2 },
+      { dice: [2, 3, 4, 5], set_aside: [], reset: false, matches: 0 },
+    ],
+    2,
+    1,
+  );
+  show(vi.fn<GameClient["chooseTarget"]>(), [ai], "automatic", vsAi);
+  for (const ms of [timing.ready, timing.aiThink, timing.roll, timing.ready, timing.roll]) {
+    await advance(ms);
+  }
+
+  expect(screen.getByText(strings.game.noMore("Bob", false, 1, 2, 2))).toBeInTheDocument();
+});
+
+test("explains an end turn in the pop-up, and an unlucky opening roll too", async () => {
+  const bobs: Game = { ...twoSixes, observation: { ...twoSixes.observation!, seat: 1, turn: 2 } };
+  const logs: LogEntry[] = [
+    sequenceLog(
+      6,
+      [
+        { dice: [6, 6, 1, 2, 3, 4], set_aside: [0], reset: false, matches: 1 },
+        { dice: [2, 6, 3, 5, 1], set_aside: [], reset: false, matches: 0 },
+      ],
+      1,
+    ),
+  ];
+  const stop = vi.fn<GameClient["stop"]>().mockResolvedValue({ game: bobs, logs });
+  show(vi.fn<GameClient["chooseTarget"]>(), [], "with_hints", lockedToSix(), { client: { stop } });
+  fireEvent.click(throwStack(5)!);
+
+  fireEvent.click(screen.getByRole("button", { name: strings.game.endTurn }));
+  await advance(0);
+  await advance(timing.roll);
+
+  expect(screen.getByText(strings.game.ended("Ann", true, 6, 1, 1))).toBeInTheDocument();
+});
+
+test("the no legal target pop-up replaces the message and goes by itself", async () => {
+  show(vi.fn<GameClient["chooseTarget"]>(), [
+    { kind: "no_move", player: 0, turn: 1, continuation: 0, opening_roll: [2, 2, 2, 2, 2, 2] },
+  ]);
+  await advance(timing.ready);
+
+  const ohNo = screen.getAllByText(strings.game.ohNo("Ann", true));
+  expect(ohNo).toHaveLength(1);
+  expect(ohNo[0]).toHaveAttribute("role", "status");
+  await advance(timing.popup);
+  expect(screen.queryByText(strings.game.ohNo("Ann", true))).not.toBeInTheDocument();
+});
+
+test("shortens the pop-up with reduced motion", async () => {
+  vi.stubGlobal("matchMedia", () => ({ matches: true }));
+  try {
+    show(vi.fn<GameClient["chooseTarget"]>(), [
+      { kind: "no_move", player: 0, turn: 1, continuation: 0, opening_roll: [2, 2, 2, 2, 2, 2] },
+    ]);
+    await advance(timing.ready);
+    expect(screen.getByText(strings.game.ohNo("Ann", true))).toBeInTheDocument();
+
+    await advance(timing.popupReduced);
+
+    expect(screen.queryByText(strings.game.ohNo("Ann", true))).not.toBeInTheDocument();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+const goesFor = (target: number, movement: number, player = 0) =>
+  sequenceLog(
+    target,
+    [
+      {
+        dice: [6, 6, 6, 6, 1, 2],
+        set_aside: [0, 1, 2, 3],
+        reset: false,
+        matches: movement,
+      },
+    ],
+    movement,
+    player,
+  );
+
+test("bursts confetti for a great turn, which outlives its scene and never blocks input", async () => {
+  show(vi.fn<GameClient["chooseTarget"]>(), [goesFor(12, 2)]);
+  expect(document.querySelector(".confetti")).toBeNull();
+
+  await advance(timing.roll);
+  await advance(timing.move);
+  await advance(timing.ready);
+  expect(document.querySelector(".confetti")).not.toBeNull();
+  expect(document.querySelector(".confetti")).toHaveAttribute("aria-hidden", "true");
+  expect(screen.getByText(strings.game.pick("Bob"))).toBeInTheDocument();
+
+  await advance(timing.confetti);
+  expect(document.querySelector(".confetti")).toBeNull();
+});
+
+test("keeps the confetti for turns that aren't far for their lane", async () => {
+  show(vi.fn<GameClient["chooseTarget"]>(), [goesFor(7, 2)]);
+
+  await advance(timing.roll);
+  await advance(timing.move);
+
+  expect(document.querySelector(".confetti")).toBeNull();
 });

@@ -13,6 +13,8 @@ type Props = {
   kept: number[];
   count: number;
   target: number | null;
+  /** Flashes "Combo xN" over the throw area for the throw at `rollKey`. */
+  combo?: number;
   /** Takes the stack's place, like the button that takes the selection and throws the rest. */
   action?: ReactNode;
   onThrow?: () => void;
@@ -30,6 +32,7 @@ export function Table({
   kept,
   count,
   target,
+  combo,
   action,
   onThrow,
   onToggle,
@@ -41,6 +44,11 @@ export function Table({
         {action ?? <Stack count={hand} player={player} {...(onThrow && { onThrow })} />}
       </div>
       <div className="throw-area felt">
+        {combo !== undefined && (
+          <span key={`${rollKey}:${combo}`} className="combo" aria-hidden="true">
+            {strings.game.combo(combo)}
+          </span>
+        )}
         <Dice
           values={dice}
           player={player}

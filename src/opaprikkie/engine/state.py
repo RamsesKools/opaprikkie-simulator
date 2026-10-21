@@ -31,7 +31,11 @@ class SequenceInProgress:
 
 @dataclass(frozen=True)
 class GameState:
-    """`pegs` holds each player's row per target; `current_player` is whoever chooses next."""
+    """`pegs` holds each player's row per target; `current_player` is whoever chooses next.
+
+    `dice_counts[player][face - 1]` is how often that player threw `face` in the game, the dice-off
+    left out.
+    """
 
     ruleset: Ruleset
     seed: int | str
@@ -45,6 +49,7 @@ class GameState:
     opening_roll: tuple[int, ...] = ()
     sequence: SequenceInProgress | None = None
     winner: int | None = None
+    dice_counts: tuple[tuple[int, ...], ...] = ()
 
     def __post_init__(self) -> None:
         pegs = tuple(rows if isinstance(rows, FrozenMap) else FrozenMap(rows) for rows in self.pegs)

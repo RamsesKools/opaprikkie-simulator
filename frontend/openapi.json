@@ -858,6 +858,20 @@
             "type": "array",
             "title": "Pegs"
           },
+          "turns": {
+            "type": "integer",
+            "title": "Turns"
+          },
+          "dice_counts": {
+            "items": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Dice Counts"
+          },
           "observation": {
             "anyOf": [
               {
@@ -912,13 +926,15 @@
           "names",
           "controllers",
           "pegs",
+          "turns",
+          "dice_counts",
           "observation",
           "winner",
           "seed",
           "strategy"
         ],
         "title": "Game",
-        "description": "The game state; `seed` and `strategy` are shown in dev mode only."
+        "description": "The game state; `seed` and `strategy` are shown in dev mode only.\n\n`turns` counts the turns so far, dead ones included. `dice_counts[player][face - 1]` is how\noften that player threw `face`."
       },
       "GameUpdate": {
         "properties": {
