@@ -12,6 +12,8 @@ export type Pegs = Schemas["Game"]["pegs"][number];
 export type LegalTarget = Schemas["LegalTarget"];
 export type Observation = Schemas["Observation"];
 export type SequenceInProgress = Schemas["SequenceInProgress"];
+export type TakeOption = Schemas["TakeOption"];
+export type TakeOutcome = Schemas["TakeOutcome"];
 export type Game = Schemas["Game"];
 export type DiceOffRound = Schemas["DiceOffRound"];
 export type Roll = Schemas["Roll"];
@@ -21,6 +23,10 @@ export type LogEntry = Schemas["LogEntry"];
 export type GameUpdate = Schemas["GameUpdate"];
 export type Health = Schemas["Health"];
 export type Session = Schemas["Session"];
+
+/** Every peg back on the bottom row, as at the start of a game. */
+export const emptyPegs = (pegs: Pegs[]): Pegs[] =>
+  pegs.map((board) => Object.fromEntries(Object.keys(board).map((target) => [target, 0])));
 
 /** `seed` and `strategy` are accepted in dev mode only. */
 export type GameSetup = {

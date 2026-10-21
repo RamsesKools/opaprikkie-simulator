@@ -1,3 +1,13 @@
+import type { TakeOutcome } from "../game/model.ts";
+
+const nextStep: Record<TakeOutcome, (dice: number, target: number) => string> = {
+  throw: (dice) => `Reroll ${dice} ${dice === 1 ? "die" : "dice"}`,
+  reset: (_, target) => `Reroll all for more ${target}'s`,
+  topped: () => "Finish peg and reroll all dice",
+  ends: () => "Move peg and end turn",
+  wins: () => "Finish peg and win",
+};
+
 export const strings = {
   title: "Opa Prikkie",
   rules: "Rules",
@@ -37,7 +47,8 @@ export const strings = {
     selectDice: (name: string, hints: boolean) =>
       hints ? `${name}, select dice to take.` : `${name}, select dice, then click their column.`,
     takeMore: (name: string, target: number) => `${name}, take more for ${target} or stop.`,
-    take: (matches: number, target: number) => `Take ${matches} x ${target}`,
+    /** The button that takes the selection, saying what happens next. */
+    next: (outcome: TakeOutcome, dice: number, target: number) => nextStep[outcome](dice, target),
     stop: "Stop",
     throwPrompt: (name: string) => `${name}, throw the dice!`,
     throws: (name: string) => `${name} throws the dice.`,

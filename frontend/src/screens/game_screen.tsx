@@ -2,19 +2,16 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { Board } from "../components/board.tsx";
 import { Table } from "../components/table.tsx";
 import {
+  emptyPegs,
   GameError,
   type Game,
   type GameClient,
   type GameUpdate,
-  type Pegs,
 } from "../game/model.ts";
 import { errorMessage } from "../game/errors.ts";
 import { bowl, buildScenes, throwKey, type Scene } from "../game/scenes.ts";
 import { seatStyle } from "../lib/palette.ts";
 import { strings } from "../lib/strings.ts";
-
-const emptyPegs = (pegs: Pegs[]): Pegs[] =>
-  pegs.map((board) => Object.fromEntries(Object.keys(board).map((target) => [target, 0])));
 
 type Playback = { game: Game; scenes: Scene[]; index: number };
 
@@ -131,21 +128,31 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
     return () => clearTimeout(timer);
   }, [locked]);
 
-  const toggle = (die: number) => {
-    setError(null);
-    setSelected((current) =>
-      current.includes(die)
-        ? current.filter((other) => other !== die)
-        : [...current, die].toSorted((a, b) => a - b),
-    );
-  };
-
   const pegs = scene?.pegs ?? game.pegs;
   const own = pegs[player]!;
   const targets = Object.keys(own).map(Number);
   const dice = sequence?.dice ?? observation?.opening_roll ?? [];
-  const options = manual ? observation.takes.filter((t) => sameDice(t.dice, selected)) : [];
+  const takes = manual ? observation.takes : [];
+  const options = takes.filter((option) => sameDice(option.dice, selected));
   const legal = humanChoice ? observation.legal_targets.map(({ target }) => target) : [];
+
+  // A die only selects while the selection still fits some take.
+  const toggle = (die: number) => {
+    const chosen = selected.includes(die)
+      ? selected.filter((other) => other !== die)
+      : [...selected, die].toSorted((a, b) => a - b);
+    if (!takes.some((option) => chosen.every((index) => option.dice.includes(index)))) return;
+    setError(null);
+    setSelected(chosen);
+  };
+  // With hints on and nothing selected, a lit lane selects its take with the most matches.
+  const selectMost = (target: number) => {
+    const most = takes
+      .filter((option) => option.target === target)
+      .reduce((best, option) => (option.matches > best.matches ? option : best));
+    setError(null);
+    setSelected(most.dice);
+  };
 
   let lit: number[] = [];
   let raised: number[] = [];
@@ -153,11 +160,9 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
   const landing = new Map<number, number>();
   if (sequence) landing.set(sequence.target, own[sequence.target]! + sequence.matches);
   if (manual) {
-    lit = options.map(({ target }) => target);
+    lit = selected.length ? options.map(({ target }) => target) : hints ? legal : [];
     raised = selected;
-    for (const option of options) {
-      if (hints || option.target === hovered) landing.set(option.target, option.row);
-    }
+    for (const option of options) landing.set(option.target, option.row);
   } else if (humanChoice && hints) {
     lit = legal;
     const hint = observation.legal_targets.find(({ target }) => target === hovered);
@@ -166,7 +171,10 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
       landing.set(hint.target, own[hint.target]! + hint.guaranteed_moves);
     }
   }
-  const onPick = manual ? (target: number) => take(target, selected) : pick;
+  let onPick = pick;
+  if (manual) onPick = selected.length ? (target: number) => take(target, selected) : selectMost;
+  const pickable = manual || hints ? lit : targets;
+  const next = sequence ? options[0] : undefined;
 
   let message = scene?.message ?? "";
   if (humanChoice) message = strings.game.pick(name);
@@ -210,21 +218,21 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
             count={sequence?.matches ?? 0}
             target={sequence?.target ?? null}
             {...(manual && { onToggle: toggle, disabled: busy })}
+            {...(next && {
+              action: (
+                <button
+                  type="button"
+                  className="primary"
+                  disabled={busy}
+                  onClick={() => take(next.target, selected)}
+                >
+                  {strings.game.next(next.outcome, next.next_dice, next.target)}
+                </button>
+              ),
+            })}
           />
         )}
-        <div className="takes">
-          {hints &&
-            options.map(({ target, matches }) => (
-              <button
-                key={target}
-                type="button"
-                className="primary"
-                disabled={busy}
-                onClick={() => take(target, selected)}
-              >
-                {strings.game.take(matches, target)}
-              </button>
-            ))}
+        <div className="actions">
           {manual && sequence && (
             <button type="button" disabled={busy} onClick={stop}>
               {strings.game.stop}
@@ -257,10 +265,10 @@ export function GameScreen({ client, initial, autoPlay, hints, onFinished, onErr
             })}
             {...(humanChoice && seat === player
               ? {
-                  legal: hints ? lit : [],
-                  pickable: busy ? [] : hints ? lit : targets,
+                  legal: lit,
+                  pickable: busy ? [] : pickable,
                   onPick,
-                  ...(!busy && { onHover: setHovered }),
+                  ...(!busy && !manual && { onHover: setHovered }),
                 }
               : {})}
           />

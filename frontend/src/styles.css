@@ -40,13 +40,14 @@ body::before {
   image-rendering: pixelated;
 }
 
+/* The stack, the throw area, and the bowl each get a third. */
 .table {
   --die: 50px;
   --kept-die: 30px;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: repeat(3, 1fr);
   width: 100%;
-  align-items: start;
+  place-items: center;
   column-gap: 16px;
 }
 
@@ -56,18 +57,8 @@ body::before {
   height: 200px;
 }
 
-.table .throwing {
-  position: relative;
-  grid-column: 2;
-  display: block;
-  width: 240px;
-}
-
-.table .stack-slot {
-  position: absolute;
-  top: 50%;
-  right: calc(100% + 12px);
-  transform: translateY(-50%);
+.table .stack-slot.action button {
+  max-width: 100%;
 }
 
 .table .throw-area .dice {
@@ -80,12 +71,6 @@ body::before {
   height: var(--die);
   padding: 7px;
   border-radius: 9px;
-}
-
-.throwing {
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 
 .stack {
@@ -167,7 +152,6 @@ button.stack:focus-visible {
 }
 
 .saved {
-  grid-column: 3;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -424,6 +408,7 @@ button.primary:disabled {
   color: #b3261e;
 }
 
+/* One central column, as wide as the two boards side by side. */
 .dice-off,
 .game,
 .victory {
@@ -431,7 +416,8 @@ button.primary:disabled {
   flex-direction: column;
   align-items: center;
   gap: 16px;
-  width: 100%;
+  width: max-content;
+  max-width: 100%;
 }
 
 .dice-off h2 {
@@ -588,14 +574,17 @@ button.primary:disabled {
 
 button.die {
   border: 0;
+}
+
+button.die:enabled {
   cursor: pointer;
 }
 
-button.die:hover {
+button.die:enabled:hover {
   transform: translateY(-3px);
 }
 
-button.die.set-aside:hover {
+button.die.set-aside:enabled:hover {
   transform: translateY(-6px);
 }
 
@@ -604,7 +593,7 @@ button.die:focus-visible {
   outline-offset: 2px;
 }
 
-.takes {
+.actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -800,10 +789,6 @@ button.die:focus-visible {
     height: 170px;
   }
 
-  .table .throwing {
-    width: 196px;
-  }
-
   .bowl {
     width: 136px;
     height: 136px;
@@ -899,16 +884,17 @@ button.die:focus-visible {
   }
 }
 
-/* Below this the side columns can't hold the stack, so it waits inside the empty throw area. */
+/* Below this the thirds don't fit, so the stack waits inside the empty throw area. */
 @media (max-width: 540px) {
   .table {
     grid-template-columns: auto auto;
     justify-content: center;
+    row-gap: 8px;
   }
 
-  .table .throwing {
-    grid-column: 1;
-    width: 190px;
+  .table .stack-slot,
+  .table .throw-area {
+    grid-area: 1 / 1;
   }
 
   .table .throw-area {
@@ -916,10 +902,7 @@ button.die:focus-visible {
   }
 
   .table .stack-slot {
-    right: auto;
-    left: 50%;
     z-index: 1;
-    transform: translate(-50%, -50%);
     pointer-events: none;
   }
 
@@ -927,8 +910,14 @@ button.die:focus-visible {
     pointer-events: auto;
   }
 
+  /* The button that takes the selection can't cover the dice, so it goes under them. */
+  .table .stack-slot.action {
+    grid-area: 2 / 1;
+    pointer-events: auto;
+  }
+
   .saved {
-    grid-column: 2;
+    grid-area: 1 / 2;
   }
 
   .bowl {

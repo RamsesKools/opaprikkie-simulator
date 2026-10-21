@@ -17,7 +17,13 @@ from opaprikkie.engine.log import (
     Roll,
     RollSequence,
 )
-from opaprikkie.engine.observation import LegalTarget, Observation, TakeOption, observe
+from opaprikkie.engine.observation import (
+    LegalTarget,
+    Observation,
+    TakeOption,
+    TakeOutcome,
+    observe,
+)
 from opaprikkie.engine.ruleset import CLASSIC, EndRule, Ruleset, StartRule
 from opaprikkie.engine.state import GameState, Phase, SequenceInProgress
 from opaprikkie.engine.strategies import (
@@ -53,6 +59,7 @@ __all__ = [
     "StartRule",
     "Strategy",
     "TakeOption",
+    "TakeOutcome",
     "choose_first_player",
     "choose_target",
     "count_matches",

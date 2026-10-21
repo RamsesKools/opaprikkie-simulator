@@ -105,6 +105,8 @@ test("plays a manual turn: takes fewer matches than rolled, then stops", async (
       dice: first,
       matches: 1,
       row: 1,
+      outcome: "throw",
+      next_dice: 5,
     });
     await expect(client.stop()).rejects.toMatchObject({ code: "wrong_phase" });
 
@@ -115,6 +117,10 @@ test("plays a manual turn: takes fewer matches than rolled, then stops", async (
     const takes = taken.game.observation!.takes;
     expect(takes.length).toBeGreaterThan(0);
     expect(takes.every(({ target, row }) => target === single.target && row >= 2)).toBe(true);
+    const everyDie = takes.filter(
+      ({ dice }) => dice.length === taken.game.observation!.sequence!.dice.length,
+    );
+    expect(everyDie.every(({ outcome }) => outcome === "reset" || outcome === "topped")).toBe(true);
     const stopped = await client.stop();
 
     expect(stopped.logs[0]).toMatchObject({ kind: "roll_sequence", matches: 1, movement: 1 });

@@ -138,3 +138,23 @@ test("hands over once an AI winner has started", async () => {
   await advance(timing.diceOffResult);
   expect(onAiStarts).toHaveBeenCalledExactlyOnceWith(started);
 });
+
+test("shows fresh boards, though an AI winner has already played on", () => {
+  const played = update("choosing_target", 0);
+  played.game.pegs = [
+    { 1: 0, 2: 0 },
+    { 1: 0, 2: 3 },
+  ];
+  render(
+    <DiceOff
+      update={played}
+      onChooseFirst={vi.fn<Choose>()}
+      onAiStarts={vi.fn<(update: GameUpdate) => void>()}
+    />,
+  );
+
+  const rows = [...document.querySelectorAll<HTMLElement>(".board .peg")].map((peg) =>
+    peg.style.getPropertyValue("--row"),
+  );
+  expect(rows).toEqual(["0", "0", "0", "0"]);
+});

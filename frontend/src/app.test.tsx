@@ -403,7 +403,9 @@ test("resumes a sequence in progress by hand with automatic turns off", async ()
         dice: [2, 3, 4, 5, 1],
         reset: false,
       },
-      takes: [{ target: 2, dice: [0], matches: 1, row: 2 }],
+      takes: [
+        { target: 2, dice: [0], matches: 1, row: 2, outcome: "throw" as const, next_dice: 4 },
+      ],
     },
   };
   await resumeWith(saved(game), { take });

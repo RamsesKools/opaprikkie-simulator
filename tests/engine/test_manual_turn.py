@@ -1,4 +1,5 @@
 import dataclasses
+from random import Random
 
 import pytest
 
@@ -8,18 +9,22 @@ from opaprikkie.engine import (
     IllegalAction,
     LegalTarget,
     Log,
+    NoMove,
     Phase,
     Roll,
     RollSequence,
     SequenceInProgress,
     TakeOption,
+    TakeOutcome,
     choose_target,
+    name_players,
+    new_game,
     observe,
     stop,
     take,
 )
 
-from .helpers import choosing_target
+from .helpers import choosing_target, topped_except
 
 TALL = dataclasses.replace(CLASSIC, name="tall", rows=20)
 
@@ -221,17 +226,18 @@ def test_the_observation_lists_every_take_the_opening_roll_allows():
 
     takes = observe(state).takes
 
+    topped = TakeOutcome.TOPPED, 6
     assert [t for t in takes if t.target == 6] == [
-        TakeOption(target=6, dice=(0,), matches=1, row=5),
-        TakeOption(target=6, dice=(1,), matches=1, row=5),
-        TakeOption(target=6, dice=(0, 1), matches=2, row=5),
+        TakeOption(6, (0,), 1, 5, *topped),
+        TakeOption(6, (1,), 1, 5, *topped),
+        TakeOption(6, (0, 1), 2, 5, *topped),
     ]
     assert [t for t in takes if t.dice == (0, 1)] == [
-        TakeOption(target=6, dice=(0, 1), matches=2, row=5),
-        TakeOption(target=12, dice=(0, 1), matches=1, row=1),
+        TakeOption(6, (0, 1), 2, 5, *topped),
+        TakeOption(12, (0, 1), 1, 1, TakeOutcome.THROW, 4),
     ]
-    assert TakeOption(target=7, dice=(0, 2), matches=1, row=1) in takes
-    assert TakeOption(target=7, dice=(0, 1, 2, 5), matches=2, row=2) not in takes
+    assert TakeOption(7, (0, 2), 1, 1, TakeOutcome.THROW, 4) in takes
+    assert not [t for t in takes if t.target == 7 and t.dice == (0, 1, 2, 5)]
     assert not [t for t in takes if t.target == 1]
     assert {t.target for t in takes} == {2, 3, 5, 6, 7, 8, 9, 11, 12}
 
@@ -251,3 +257,67 @@ def test_the_dice_off_winner_has_nothing_to_take():
     state = dataclasses.replace(choosing_target(()), phase=Phase.CHOOSING_FIRST_PLAYER)
 
     assert observe(state).takes == ()
+
+
+def outcome(takes: tuple[TakeOption, ...], target: int, dice: tuple[int, ...]):
+    found = next(t for t in takes if t.target == target and t.dice == dice)
+    return found.outcome, found.next_dice
+
+
+def test_each_take_says_what_it_leads_to_and_how_many_dice_are_thrown_next():
+    takes = observe(choosing_target((6, 6, 1, 2, 3, 5), rows={6: 3})).takes
+
+    assert outcome(takes, 6, (0,)) == (TakeOutcome.THROW, 5)
+    assert outcome(takes, 6, (0, 1)) == (TakeOutcome.TOPPED, 6)
+    every_die = observe(choosing_target((6, 1, 2, 5, 3, 4))).takes
+    assert outcome(every_die, 7, (0, 1, 2, 3, 4, 5)) == (TakeOutcome.RESET, 6)
+
+
+def test_topping_the_last_peg_wins():
+    takes = observe(choosing_target((6, 6, 1, 2, 3, 5), rows=topped_except(6, 4))).takes
+
+    assert outcome(takes, 6, (0,)) == (TakeOutcome.WINS, 0)
+
+
+def test_too_few_dice_left_for_a_pair_ends_the_sequence():
+    five_dice = dataclasses.replace(CLASSIC, name="five", dice_count=5)
+    takes = observe(choosing_target((6, 1, 2, 5, 3), ruleset=five_dice)).takes
+
+    assert outcome(takes, 7, (0, 1)) == (TakeOutcome.THROW, 3)
+    assert outcome(takes, 7, (0, 1, 2, 3)) == (TakeOutcome.ENDS, 0)
+
+
+def test_during_a_sequence_the_outcome_counts_the_matches_taken_so_far():
+    _, after, sequence = in_sequence((6, 6, 1, 2, 3, 4), 6, (0, 1), rows={6: 2})
+    six = sequence.dice.index(6)
+
+    assert outcome(observe(after).takes, 6, (six,)) == (TakeOutcome.TOPPED, 6)
+
+
+def test_every_take_option_leads_to_what_its_outcome_says():
+    seen = set()
+    for seed in range(40):
+        rng = Random(seed)
+        state, _ = new_game(CLASSIC, f"outcomes-{seed}")
+        state, _ = name_players(state, ["Ada", "Bob"], first_player=0)
+        while state.phase is not Phase.FINISHED:
+            player = state.current_player
+            assert player is not None
+            option = rng.choice(observe(state).takes)
+            after, log = take(state, option.target, option.dice)
+            seen.add(option.outcome)
+            match option.outcome:
+                case TakeOutcome.THROW | TakeOutcome.RESET:
+                    thrown = after.sequence or resolved(log).rolls[-1]
+                    assert len(thrown.dice) == option.next_dice
+                case TakeOutcome.TOPPED:
+                    assert after.pegs[player][option.target] == CLASSIC.rows
+                    following = log[1] if len(log) > 1 else after
+                    assert isinstance(following, NoMove | GameState)
+                    assert following.continuation == state.continuation + 1
+                    assert len(after.opening_roll) == option.next_dice
+                case TakeOutcome.WINS:
+                    assert after.phase is Phase.FINISHED
+            state = after
+
+    assert seen == {TakeOutcome.THROW, TakeOutcome.RESET, TakeOutcome.TOPPED, TakeOutcome.WINS}

@@ -15,37 +15,46 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
    - Start stays disabled while a name is out of range or the game is being created.
    - Versus AI, the human is seat 1 and the AI seat 2.
 2. Dice-off, animated and explained on screen.
-   - Both players' peg boards are visible, and they throw two dice in their colour from a [dice stack](#dice-stack) into the same fixed-size throw area; each player's dice stay in their own lane, and the winner is shown once all dice have landed.
+   - Both players' peg boards are visible, every peg on the bottom row (even when an AI winner has already played its first turn), and they throw two dice in their colour from a [dice stack](#dice-stack) into the same fixed-size throw area; each player's dice stay in their own lane, and the winner is shown once all dice have landed.
    - A human throws by clicking their stack, which throws by itself after 3 to 5 seconds, with a bar under it filling up for the countdown; the AI throws by itself after about a second.
    - On a tie, a message names the tied players, and only they throw again.
    - The winner's name shows larger and in their seat colour, as in "Roman wins the dice-off!", and their throw area glows in that colour.
    - A human winner chooses who starts with one button per player, directly under that line.
    - An AI winner starts by itself, and the game screen follows after a short pause.
 3. Game: boards, the current player, the opening roll, and only legal targets to choose from.
+   - The game sits in one central column, as wide as the two boards side by side; wider screens get more side padding.
+   - Under the pill, the dice stack, the throw area, and the bowl each take a third of that column.
    - A pill above the dice shows the turn number and the player in their colour; their board gets a border in that colour.
    - Dice show in the current player's colour.
    - Dice are thrown from a [dice stack](#dice-stack) into a throw area right of it: green velvet inside a wooden frame, with the dice in rows of three.
    - Every throw first shows its dice waiting in the stack with the throw area empty, also with automatic turns on and for the AI, so a roll reads as stack, throw, set aside, back to the stack, throw.
    - With "Play turns automatically" off, a human player clicks their stack for every throw: the opening roll, each roll after it, and a fresh roll after topping a peg.
      The AI always throws by itself.
-     Switching it off mid-game never hides dice already on the table; the next throw waits.
+     Switching it either way never throws, hides, or changes the dice already on the table, and they don't tumble in again; with it off, the next throw waits.
    - With automatic turns on, the player picks a target by clicking its column on their own board; with [hints](#hints) on, only legal columns are clickable and glow.
-   - With hints on, hovering or focusing a legal column raises the dice that form its matches, and shows a ghost peg on the row it's guaranteed to reach from the opening roll alone.
+   - In automatic turns with hints on, hovering or focusing a legal column raises the dice that form its matches, and shows a ghost peg on the row it's guaranteed to reach from the opening roll alone.
      When that row is the top, the dashed ghost also gets a gold halo.
    - With automatic turns off, a human plays the roll sequence by hand ([game rules](game_rules.md#roll-sequence)):
      - Clicking dice in the throw area selects them, raised and outlined; clicking again deselects.
-     - With hints on, a row under the throw area lists a "take" option for every target the selection can form, like "Take 2 x 6" and "Take 1 x 12" for two sixes, and those lanes glow; clicking either takes the dice for that target.
-       A target only counts when every selected die is part of one of its matches.
+       A die only selects while the selection still fits one of the observation's take options; otherwise the click does nothing.
+     - Opening roll: once the selection is a whole take, the lanes it can be taken for glow, each with a ghost peg where the peg would land, like lane 6 two rows up and lane 12 one row up for two sixes.
+       Clicking one of those lanes takes the dice for it and locks in the target.
      - Taking sets the dice aside into the bowl and locks the target: its lane stays lit in the seat colour while the player throws the rest from the stack, selects more matches, and takes them again.
-     - After the first take, a "Stop" button next to the options ends the sequence, and the peg moves by the matches taken.
+     - Later throws: once the selection is a whole take, a button in the stack's place takes it and says what happens next, from the take option's outcome:
+       - "Reroll 2 dice", with the number of dice left;
+       - "Reroll all for more 3's" when the take uses up every die (a six-dice reset);
+       - "Finish peg and reroll all dice" when it tops the peg (a continuation);
+       - "Move peg and end turn" when too few dice are left for a match;
+       - "Finish peg and win" when it tops the last peg.
+     - In a later throw, clicking the locked lane takes the selection too.
+     - After the first take, a "Stop" button under the throw area ends the sequence, and the peg moves by the matches taken.
        There's no stop before the first take, since a turn with a legal target can't pass.
      - A ghost peg marks where the peg will land, while the peg itself only moves once the sequence ends:
        - During a sequence, on the locked lane, one row up per match taken so far, so each take moves it further.
-       - For the selected dice, on every lane they can be taken for, at the row the take would reach; with hints off only on hovering that lane.
-       - Without a selection there's nothing to mark beyond the takes so far.
+       - For a selection that's a whole take, on every lane it can be taken for, at the row the take would reach.
      - Switching automatic turns on mid-sequence takes every match from then on.
        If such an automatic take fails, it isn't retried: the error shows and the player finishes the sequence by hand.
-     - While a take or stop is on its way, the selection, lit lanes, options, and Stop stay on screen, disabled.
+     - While a take or stop is on its way, the selection, lit lanes, the button in the stack's place, and Stop stay on screen, disabled.
      - Changing the selection clears an error from the last choice.
    - Each roll of the sequence shows in turn, with set-aside dice raised and outlined, then the peg slides up.
    - Set-aside dice move to a saved bowl next to the throw area, with the number of matches so far underneath, like "3 matches for 7".
@@ -81,9 +90,9 @@ A pile of the dice the player has left to throw, left of the throw area, in a py
 - It's clickable only while it waits for a human's throw, and then its dice pulse a white glow.
 - With automatic turns on, and for the AI, it's shown the same way but isn't clickable.
 - Its dice take the player's colour and show fixed faces; they never tumble.
-- Once thrown, it's empty while the dice are in the throw area, keeping its place so nothing shifts.
+- Once thrown, it's empty while the dice are in the throw area, keeping its place so nothing shifts; in a later throw of a manual sequence, the button that takes the selection shows there.
 - `components/stack.tsx` takes a dice count, a seat, an optional `onThrow`, and an optional auto-press time for the countdown bar.
-- Below 540 px, where the side columns can't hold it, the stack waits inside the empty throw area, so the throw area and the bowl stay on one line down to 360 px.
+- Below 540 px, where the thirds don't fit, the stack waits inside the empty throw area, so the throw area and the bowl stay on one line down to 360 px; the button that takes the selection goes under the throw area instead.
 
 ## Colours
 
@@ -103,11 +112,12 @@ A pile of the dice the player has left to throw, left of the throw area, in a py
 
 "Show hints" in the header turns the help in picking on or off; it's a frontend setting only.
 
-- On: legal columns glow, manual turns list "take" options and light their lanes, and hovering previews a pick.
-- Off: no glowing columns, no "take" options, and no preview in automatic turns.
-  Every column on the player's board is clickable: in automatic turns it chooses that target, in manual turns it takes the selected dice for it.
-  The API judges the choice, and a rejection shows its message, like "Not every chosen die is part of a match for 5."
-- The locked lane of a sequence in progress stays lit either way, with its ghost peg for the matches taken so far; the ghost peg for selected dice shows on hover.
+- Manual turns play the same either way: dice only select into a valid take, and a whole take lights its lanes with their ghost pegs.
+- On: in manual turns, every legal lane also glows before any dice are selected; clicking one selects its take with the most matches, and clicking it again takes them.
+  In automatic turns, legal columns glow and hovering previews a pick.
+- Off: in manual turns, no lane lights up until dice are selected.
+  In automatic turns, no glowing columns and no preview; every column on the player's board is clickable, the API judges the choice, and a rejection shows its message, like "2 isn't a legal target."
+- The locked lane of a sequence in progress stays lit either way, with its ghost peg for the matches taken so far.
 
 ## Rules booklet
 
@@ -157,7 +167,7 @@ A pile of the dice the player has left to throw, left of the throw area, in a py
   - waiting for a target: the game screen at that choice
   - no game, a finished one, or one never named: the menu, with the names prefilled
 - Unit tests use a fixture client that replays a game recorded from the engine; each choice point offers only the recorded target, and manual turns aren't scripted.
-- The "take" options, their lanes, and the ghost peg's row are looked up for the selected dice in the observation's `takes`; the frontend has no matching rules of its own.
+- Which dice may be selected, the lanes a selection lights, the ghost peg's row, and the label of the button that takes it are looked up in the observation's `takes`, whose `outcome` and `next_dice` say what each take leads to; the frontend has no matching rules of its own.
 - A rejection of a choice (`wrong_phase`, `illegal_target`, `illegal_dice`) shows the API's message as a sentence, so hints off can teach the rules.
 - After a `wrong_phase` rejection, for example when another tab moved the game on, the game screen reloads the game from the session.
 

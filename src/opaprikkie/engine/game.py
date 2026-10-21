@@ -12,7 +12,7 @@ from opaprikkie.engine.log import (
     Roll,
     RollSequence,
 )
-from opaprikkie.engine.observation import legal_targets
+from opaprikkie.engine.observation import TakeOutcome, legal_targets, take_outcome
 from opaprikkie.engine.ruleset import Ruleset
 from opaprikkie.engine.state import GameState, Phase, SequenceInProgress
 
@@ -191,14 +191,11 @@ def _throw_rest(
 ) -> tuple[tuple[int, ...], bool, int] | None:
     """The next throw of a sequence with its reset flag and roll index, or `None` when it ends."""
     ruleset = state.ruleset
-    if matches >= ruleset.rows - state.pegs[player][target]:
-        return None
-    reset = remaining == 0
-    count = ruleset.dice_count if reset else remaining
-    if count < ruleset.targets[target]:
+    outcome, count = take_outcome(ruleset, state.pegs[player], target, matches, remaining)
+    if outcome not in (TakeOutcome.THROW, TakeOutcome.RESET):
         return None
     dice = roll(state.seed, state.roll_index, count, ruleset.dice_faces)
-    return dice, reset, state.roll_index + 1
+    return dice, outcome is TakeOutcome.RESET, state.roll_index + 1
 
 
 def _validate_names(ruleset: Ruleset, names: Sequence[str]) -> tuple[str, ...]:

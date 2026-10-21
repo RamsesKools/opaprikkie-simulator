@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { strings } from "../lib/strings.ts";
 import { Dice } from "./dice.tsx";
 import { Stack } from "./stack.tsx";
@@ -12,6 +13,8 @@ type Props = {
   kept: number[];
   count: number;
   target: number | null;
+  /** Takes the stack's place, like the button that takes the selection and throws the rest. */
+  action?: ReactNode;
   onThrow?: () => void;
   onToggle?: (index: number) => void;
   disabled?: boolean;
@@ -27,26 +30,26 @@ export function Table({
   kept,
   count,
   target,
+  action,
   onThrow,
   onToggle,
   disabled,
 }: Props) {
   return (
     <div className="table">
-      <div className="throwing">
-        <div className="stack-slot">
-          <Stack count={hand} player={player} {...(onThrow && { onThrow })} />
-        </div>
-        <div className="throw-area felt">
-          <Dice
-            values={dice}
-            player={player}
-            setAside={setAside}
-            rollKey={rollKey}
-            slots={slots}
-            {...(onToggle && { onToggle, disabled })}
-          />
-        </div>
+      <div className={action ? "stack-slot action" : "stack-slot"}>
+        {action ?? <Stack count={hand} player={player} {...(onThrow && { onThrow })} />}
+      </div>
+      <div className="throw-area felt">
+        <Dice
+          values={dice}
+          player={player}
+          setAside={setAside}
+          rollKey={rollKey}
+          slots={slots}
+          buttons
+          {...(onToggle && { onToggle, disabled })}
+        />
       </div>
       <div className="saved">
         <div className="bowl felt">

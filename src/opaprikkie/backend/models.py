@@ -21,12 +21,15 @@ class Roll(BaseModel):
 
 
 class TakeOption(BaseModel):
-    """Dice that may be taken for `target`, by their place in the roll, and the row reached."""
+    """Dice that may be taken for `target`, by their place in the roll, the row reached, what the
+    take leads to, and how many dice are thrown next."""
 
     target: int
     dice: list[int]
     matches: int
     row: int
+    outcome: engine.TakeOutcome
+    next_dice: int
 
 
 class SequenceInProgress(BaseModel):

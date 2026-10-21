@@ -1,5 +1,6 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
+from enum import StrEnum
 from functools import cached_property
 from itertools import combinations
 
@@ -34,15 +35,44 @@ def _legal_target(
     return LegalTarget(target, matches, min(matches, ruleset.rows - row), taken)
 
 
+class TakeOutcome(StrEnum):
+    """What a take leads to: the rest are thrown, all dice are thrown again, the peg is topped,
+    the sequence ends because too few dice are left, or the game is won."""
+
+    THROW = "throw"
+    RESET = "reset"
+    TOPPED = "topped"
+    ENDS = "ends"
+    WINS = "wins"
+
+
+def take_outcome(
+    ruleset: Ruleset, pegs: Mapping[int, int], target: int, matches: int, remaining: int
+) -> tuple[TakeOutcome, int]:
+    """The outcome once `matches` are taken in the sequence so far with `remaining` dice left
+    on the table, and how many dice are thrown next."""
+    if matches >= ruleset.rows - pegs[target]:
+        if all(row == ruleset.rows for other, row in pegs.items() if other != target):
+            return TakeOutcome.WINS, 0
+        return TakeOutcome.TOPPED, ruleset.dice_count
+    if remaining == 0:
+        return TakeOutcome.RESET, ruleset.dice_count
+    if remaining < ruleset.targets[target]:
+        return TakeOutcome.ENDS, 0
+    return TakeOutcome.THROW, remaining
+
+
 @dataclass(frozen=True)
 class TakeOption:
-    """Dice the player may take for `target`, as places in the roll on the table, and the row
-    the peg would then reach."""
+    """Dice the player may take for `target`, as places in the roll on the table, the row the peg
+    would then reach, what the take leads to, and how many dice are thrown next."""
 
     target: int
     dice: tuple[int, ...]
     matches: int
     row: int
+    outcome: TakeOutcome
+    next_dice: int
 
 
 @dataclass(frozen=True)
@@ -68,14 +98,17 @@ class Observation:
         found = []
         for legal in self.legal_targets:
             combo_size = self.ruleset.targets[legal.target]
-            start = self.pegs[self.seat][legal.target] + taken
+            pegs = self.pegs[self.seat]
             for count in range(combo_size, len(legal.set_aside) + 1, combo_size):
+                total = taken + count // combo_size
+                row = min(pegs[legal.target] + total, self.ruleset.rows)
+                outcome = take_outcome(self.ruleset, pegs, legal.target, total, len(dice) - count)
                 for chosen in combinations(range(len(dice)), count):
                     values = [dice[i] for i in chosen]
                     if len(set_aside(self.ruleset, legal.target, values)) == count:
-                        matches = count // combo_size
-                        row = min(start + matches, self.ruleset.rows)
-                        found.append(TakeOption(legal.target, chosen, matches, row))
+                        found.append(
+                            TakeOption(legal.target, chosen, count // combo_size, row, *outcome)
+                        )
         return tuple(found)
 
 

@@ -20,7 +20,7 @@ Choices, observations, and rejections follow the [strategy contract](strategy_co
 
 - Each game route is one engine action: `new_game`, `name_players`, `choose_first_player`, `choose_target`, `take`, `stop`.
 - A take that leaves the sequence going returns phase `choosing_dice` and no logs; the sequence's `roll_sequence` log comes with the take or stop that ends it.
-- Each `observation` lists the valid `takes` for the roll on the table ([strategy contract](strategy_contract.md#observation)), so a client offers takes by looking up the selected dice, with no extra call.
+- Each `observation` lists the valid `takes` for the roll on the table, each with its `outcome` and `next_dice` ([strategy contract](strategy_contract.md#observation)), so a client offers takes and says what each leads to by looking up the selected dice, with no extra call.
 - `POST /api/game` takes one `controller` per seat: `["human", "human"]` is hot-seat, `["human", "ai"]` is versus AI.
 - `GameUpdate` is `{game, logs}`: the state after the action and every log entry it produced, including the AI's.
 - `Game` holds the phase, names, controllers, pegs, winner, and an `observation` at choice points (`null` while naming or finished).

@@ -28,7 +28,7 @@ Setting aside chosen dice from the roll on the table for the target, each part o
 A player may take fewer matches than they rolled, but must take at least one from an opening roll with a legal target.
 
 **Take option**:
-One valid take for the roll on the table: a target, the dice, its matches, and the row the peg would reach; the observation lists them all.
+One valid take for the roll on the table: a target, the dice, its matches, the row the peg would reach, and its outcome (the rest are thrown, all dice again, the peg is topped, the sequence ends, or the game is won) with the number of dice thrown next; the observation lists them all.
 
 **Stop**:
 Ending a roll sequence played by hand before it ends by itself; the peg moves by the matches taken so far.
@@ -59,7 +59,7 @@ A decision-maker that selects one legal target from a game observation.
 Who decides for a seat: `human` (the caller) or `ai` (a built-in strategy played by the backend).
 
 **Hints**:
-The UI's help in picking: glowing legal columns, "take" options, and the hover preview; a frontend setting only.
+The UI's help in picking: glowing legal columns before any dice are selected, and the hover preview in automatic turns; a frontend setting only.
 
 **Hot-seat game**:
 A game where two human players take turns using the same browser.

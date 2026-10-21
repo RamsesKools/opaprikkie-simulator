@@ -24,7 +24,9 @@ type Props = {
   /** Keys for the dice, so dice taken away don't remount the rest. */
   slots?: number[];
   label?: string;
-  /** Makes each die a toggle button; the raised `setAside` dice are the selected ones. */
+  /** Renders each die as a button, so turning `onToggle` on or off doesn't throw them again. */
+  buttons?: boolean;
+  /** Makes each die a toggle; the raised `setAside` dice are the selected ones. */
   onToggle?: (index: number) => void;
   disabled?: boolean | undefined;
 };
@@ -36,6 +38,7 @@ export function Dice({
   rollKey = "",
   slots,
   label,
+  buttons = false,
   onToggle,
   disabled = false,
 }: Props) {
@@ -52,15 +55,16 @@ export function Dice({
           style: { animationDelay: `${index * 40}ms` },
         };
         const key = `${rollKey}:${slots?.[index] ?? index}`;
-        return onToggle ? (
+        return buttons || onToggle ? (
           <button
             key={key}
             type="button"
             {...props}
             aria-label={strings.game.die(value)}
-            aria-pressed={setAside.includes(index)}
-            disabled={disabled}
-            onClick={() => onToggle(index)}
+            {...(onToggle
+              ? { "aria-pressed": setAside.includes(index), onClick: () => onToggle(index) }
+              : { tabIndex: -1 })}
+            disabled={!onToggle || disabled}
           >
             <Pips value={value} />
           </button>

@@ -384,7 +384,8 @@ export interface components {
         };
         /**
          * TakeOption
-         * @description Dice that may be taken for `target`, by their place in the roll, and the row reached.
+         * @description Dice that may be taken for `target`, by their place in the roll, the row reached, what the
+         *     take leads to, and how many dice are thrown next.
          */
         TakeOption: {
             /** Target */
@@ -395,7 +396,17 @@ export interface components {
             matches: number;
             /** Row */
             row: number;
+            outcome: components["schemas"]["TakeOutcome"];
+            /** Next Dice */
+            next_dice: number;
         };
+        /**
+         * TakeOutcome
+         * @description What a take leads to: the rest are thrown, all dice are thrown again, the peg is topped,
+         *     the sequence ends because too few dice are left, or the game is won.
+         * @enum {string}
+         */
+        TakeOutcome: "throw" | "reset" | "topped" | "ends" | "wins";
         /** Target */
         Target: {
             /** Target */

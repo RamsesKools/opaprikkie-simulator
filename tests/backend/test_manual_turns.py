@@ -129,7 +129,14 @@ def test_the_observation_lists_the_takes_for_the_dice_on_the_table(dev_client):
     legal = single(game)
     target = legal["target"]
 
-    option = {"target": target, "dice": legal["set_aside"][:1], "matches": 1, "row": 1}
+    option = {
+        "target": target,
+        "dice": legal["set_aside"][:1],
+        "matches": 1,
+        "row": 1,
+        "outcome": "throw",
+        "next_dice": 5,
+    }
     assert option in game["observation"]["takes"]
     assert {t["target"] for t in update["game"]["observation"]["takes"]} == {target}
     assert all(t["row"] == 1 + t["matches"] for t in update["game"]["observation"]["takes"])
@@ -143,3 +150,15 @@ def test_a_die_chosen_twice_is_not_dice(dev_client):
     response = dev_client.post("/api/game/take", json={"target": legal["target"], "dice": dice})
 
     assert response.json()["reason"] == "not_dice"
+
+
+def test_a_take_that_uses_every_die_says_all_dice_are_thrown_again(dev_client):
+    for seed in range(200):
+        game = opened(dev_client, HOT_SEAT, f"reset:{seed}")
+        every = [t for t in game["observation"]["takes"] if len(t["dice"]) == 6]
+        if every and every[0]["row"] < 5:
+            break
+    else:
+        pytest.fail("no seed with a take of every die")
+
+    assert {(t["outcome"], t["next_dice"]) for t in every if t["row"] < 5} == {("reset", 6)}

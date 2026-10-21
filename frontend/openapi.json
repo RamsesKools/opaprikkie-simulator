@@ -1426,6 +1426,13 @@
           "row": {
             "type": "integer",
             "title": "Row"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/TakeOutcome"
+          },
+          "next_dice": {
+            "type": "integer",
+            "title": "Next Dice"
           }
         },
         "type": "object",
@@ -1433,10 +1440,24 @@
           "target",
           "dice",
           "matches",
-          "row"
+          "row",
+          "outcome",
+          "next_dice"
         ],
         "title": "TakeOption",
-        "description": "Dice that may be taken for `target`, by their place in the roll, and the row reached."
+        "description": "Dice that may be taken for `target`, by their place in the roll, the row reached, what the\ntake leads to, and how many dice are thrown next."
+      },
+      "TakeOutcome": {
+        "type": "string",
+        "enum": [
+          "throw",
+          "reset",
+          "topped",
+          "ends",
+          "wins"
+        ],
+        "title": "TakeOutcome",
+        "description": "What a take leads to: the rest are thrown, all dice are thrown again, the peg is topped,\nthe sequence ends because too few dice are left, or the game is won."
       },
       "Target": {
         "properties": {
