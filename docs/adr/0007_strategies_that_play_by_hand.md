@@ -18,5 +18,8 @@ It still can't pass or stop, as in [ADR 0006](0006_imperfect_play_without_passin
 
 - The strategy contract gets a `HandStrategy` protocol: a `Strategy` that also has `choose_take(observation, rng)`, returning one of the observation's `takes`.
 - Callers (the backend's AI seats and the simulator drivers) check for it: a hand strategy is asked for a take at every choice point, including `choosing_dice`, and is never asked for a target.
+- A regular game draws the AI from every built-in, so a player who plays automatically could meet an opponent that plays by hand.
+  The backend learns the human's play mode ([HTTP API](../architecture/http_api.md#play-mode)): while it is `automatic`, a drawn hand strategy plays as `random`, and in both manual modes it plays by hand.
+  A strategy picked in dev mode, and the simulator's, always play as themselves.
 - A hand sequence logs one `roll_sequence` as before, so logs and statistics keep their shape.
 - A simulation can now test whether imperfect play ever pays, which ADR 0006 left open.

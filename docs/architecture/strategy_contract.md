@@ -59,10 +59,12 @@ class HandStrategy(Strategy, Protocol):
 | `highest` | the highest legal target |
 | `sum` | the highest `matches` x target, so 2 x 7 (14) beats 1 x 12 (12); ties go to the higher number |
 | `rarest` | the combination least likely to be thrown again: lowest `odds ^ matches`, with 1/6 per target of 1 to 6 and the pair-sum odds for 7 to 12 (6/36 down to 1/36), so 1 x 12 ties 2 x 7 at 1/36 and the tie goes to 12 |
+| `bounty` | the most points: `matches` x the lane's points, where points = (1/6) / odds, so 1 to 6 and 7 are 1, 8 is 6/5, 9 is 3/2, 10 is 2, 11 is 3, and 12 is 6; exact fractions, raw `matches`, ties go to the higher number |
 | `sloppy` | plays its sequences by hand: on every roll it takes uniformly among the valid `takes`, so it may take fewer matches than it could, and never stops early |
 
 - All of them choose themselves as first player.
 - `sloppy` is the only `HandStrategy`, and the only one that plays imperfectly; as a plain `Strategy` its `choose_target` names the target of a random take.
+- `sum`, `rarest`, and `bounty` count raw `matches`, not the moves clamped to the rows left on the peg.
 - `sloppy` draws uniformly over `takes` entries, so a target with more ways to pick its dice is more likely.
 - `smart` is a first version and may change, its bonus included.
   A flat bonus measured worse: against greedy over 1000 `CLASSIC` games, smart won 631 with no bonus and 464 with 1 row.
@@ -72,21 +74,22 @@ class HandStrategy(Strategy, Protocol):
 
 `opaprikkie tournament STRATEGIES...` plays a seeded round robin of two-player games, every pair head to head for `-n` games (default 1000), in-process or over HTTP with `--url` like `simulate`.
 Each pair is a batch seeded `<seed>:<first>:<second>` that alternates the first player, and the output is the head-to-head win-rate matrix and a ranking by overall win rate.
-Ties in the ranking keep the order given.
+Ties in the ranking keep the order given, and the order of the arguments changes the pair seeds, so `tournament a b` and `tournament b a` give different numbers.
 
-The ranking at seed 42 and 1000 games per pair, from `uv run opaprikkie tournament random greedy smart highest sum rarest sloppy -n 1000 -s 42`:
+The ranking at seed 42 and 1000 games per pair, from `uv run opaprikkie tournament random greedy smart highest sum rarest bounty sloppy -n 1000 -s 42`:
 
 | Rank | Strategy | Win rate | Wins |
 | -- | -- | -- | -- |
-| 1 | `sum` | 76.9% | 4613 / 6000 |
-| 2 | `highest` | 69.7% | 4184 / 6000 |
-| 3 | `rarest` | 67.3% | 4037 / 6000 |
-| 4 | `smart` | 46.6% | 2796 / 6000 |
-| 5 | `random` | 36.0% | 2161 / 6000 |
-| 6 | `greedy` | 32.2% | 1932 / 6000 |
-| 7 | `sloppy` | 21.3% | 1277 / 6000 |
+| 1 | `bounty` | 84.9% | 5941 / 7000 |
+| 2 | `sum` | 70.7% | 4949 / 7000 |
+| 3 | `highest` | 62.1% | 4349 / 7000 |
+| 4 | `rarest` | 62.1% | 4345 / 7000 |
+| 5 | `smart` | 41.7% | 2922 / 7000 |
+| 6 | `random` | 31.7% | 2216 / 7000 |
+| 7 | `greedy` | 28.3% | 1980 / 7000 |
+| 8 | `sloppy` | 18.5% | 1298 / 7000 |
 
-- The three simple target rules beat `smart`, which only maximizes the expected movement of one sequence.
+- The four simple target rules beat `smart`, which only maximizes the expected movement of one sequence.
 - `sloppy` places last, below `random`.
 
 ## Seat controllers
@@ -95,8 +98,11 @@ The ranking at seed 42 and 1000 games per pair, from `uv run opaprikkie tourname
   A simulator over HTTP plays its seats as `human`.
 - The engine knows nothing about controllers.
 - After any caller action, the backend plays every following `ai` seat within the same request (first-player pick, targets or takes, continuations) until the next human choice point or the game end, and returns all logs ([HTTP API](http_api.md#ai-seats)).
-- Outside dev mode the backend picks the AI's strategy uniformly among the built-ins using the game seed, and never reveals it.
+- Outside dev mode the backend draws the AI's strategy uniformly among the built-ins using the game seed, and never reveals it.
   In dev mode the caller may pick it, and the state shows it.
+- The caller also tells the backend its play mode (`without_hints`, `with_hints`, or `automatic`) at game creation and whenever it changes ([HTTP API](http_api.md#play-mode)).
+  A drawn strategy that is a `HandStrategy` plays as `random` while the mode is `automatic`, and by hand in both manual modes.
+  A picked strategy always plays as itself, and so does the simulator's, which never sends a mode.
 
 ## Rejections
 
