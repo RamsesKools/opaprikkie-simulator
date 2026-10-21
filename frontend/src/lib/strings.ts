@@ -1,13 +1,36 @@
+import type { TakeOutcome } from "../game/model.ts";
+
+const nextStep: Record<TakeOutcome, (dice: number, target: number) => string> = {
+  throw: (dice) => `Reroll ${dice} ${dice === 1 ? "die" : "dice"}`,
+  reset: (_, target) => `Reroll all for more ${target}'s`,
+  topped: () => "Finish peg and reroll all dice",
+  ends: () => "Move peg and end turn",
+  wins: () => "Finish peg and win",
+};
+
+const shortStep: Record<TakeOutcome, (dice: number) => string> = {
+  throw: (dice) => `Reroll ${dice} ${dice === 1 ? "die" : "dice"}`,
+  reset: () => "Reroll all",
+  topped: () => "Finish peg",
+  ends: () => "End turn",
+  wins: () => "Win!",
+};
+
 export const strings = {
   title: "Opa Prikkie",
   rules: "Rules",
   newGame: "New Game",
-  autoPlay: "Play turns automatically",
+  play: {
+    label: "How to play",
+    withoutHints: "Play without hints",
+    withHints: "Play with hints",
+    automatic: "Play automatically",
+  },
   close: "Close",
   stale: "A new version of Opa Prikkie is out.",
   reload: "Reload",
   menu: {
-    mode: (label: string) => `Mode: ${label}`,
+    mode: "Mode",
     hotSeat: "Player vs Player",
     versusAi: "Player vs AI",
     player: (seat: number) => `Player ${seat + 1}`,
@@ -33,6 +56,15 @@ export const strings = {
   game: {
     turn: (turn: number, name: string) => `Turn ${turn}: ${name}`,
     pick: (name: string) => `${name}, pick a target.`,
+    selectDice: (name: string, hints: boolean) =>
+      hints ? `${name}, select dice to take.` : `${name}, select dice, then click their column.`,
+    takeMore: (name: string, target: number) => `${name}, take more for ${target} or stop.`,
+    /** With hints, the opening roll's buttons, one per take the selection fits. */
+    choose: (matches: number, target: number) => `Choose ${matches} x ${target}`,
+    chooseNext: (outcome: TakeOutcome, dice: number) => shortStep[outcome](dice),
+    /** The button that takes the selection, saying what happens next. */
+    next: (outcome: TakeOutcome, dice: number, target: number) => nextStep[outcome](dice, target),
+    stop: "Stop",
     throwPrompt: (name: string) => `${name}, throw the dice!`,
     throws: (name: string) => `${name} throws the dice.`,
     aiThinking: (name: string) => `${name} is thinking...`,
@@ -51,6 +83,7 @@ export const strings = {
     board: (name: string) => `${name}'s board`,
     column: (target: number, row: number) => `Target ${target}, row ${row}`,
     dice: (values: number[]) => `Dice: ${values.join(", ")}`,
+    die: (value: number) => `Die ${value}`,
     stack: (count: number) => `${count} ${count === 1 ? "die" : "dice"} left to throw`,
     throwStack: (count: number) => `Throw ${count === 1 ? "the die" : `${count} dice`}`,
     seed: (seed: number | string) => `Seed: ${seed}`,
@@ -78,7 +111,7 @@ export const strings = {
       },
       {
         heading: "Your turn",
-        text: "You roll all six dice and pick one peg that matches. Then you keep rolling for that peg, or the game does it for you when turns play automatically.",
+        text: "You roll all six dice and pick one peg that matches. Then you keep rolling for that peg, or the game does it for you when turns play automatically. Playing by hand, you pick the dice to set aside: you may take fewer matches than you rolled, or stop after any roll, but you must take at least one match from your opening roll.",
       },
       {
         heading: "Matching",

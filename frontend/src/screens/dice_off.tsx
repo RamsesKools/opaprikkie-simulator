@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Board } from "../components/board.tsx";
 import { Dice } from "../components/dice.tsx";
 import { Stack } from "../components/stack.tsx";
-import type { DiceOffRound, GameUpdate } from "../game/model.ts";
+import { emptyPegs, type DiceOffRound, type GameUpdate } from "../game/model.ts";
 import { timing } from "../game/timing.ts";
 import { seatStyle } from "../lib/palette.ts";
 import { strings } from "../lib/strings.ts";
@@ -150,7 +150,8 @@ export function DiceOff({ update, onChooseFirst, onAiStarts }: Props) {
         </div>
       </div>
       <div className="boards">
-        {game.pegs.map((pegs, player) => (
+        {/* An AI winner has already played its first turn in the same answer. */}
+        {emptyPegs(game.pegs).map((pegs, player) => (
           <Board
             key={player}
             player={player}

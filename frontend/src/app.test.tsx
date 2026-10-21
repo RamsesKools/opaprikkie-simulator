@@ -48,8 +48,7 @@ async function renderApp(client: GameClient = createFixtureClient(), menu = true
   if (menu) await until(() => screen.queryByRole("button", { name: strings.menu.start }));
 }
 
-const hotSeat = () =>
-  fireEvent.click(screen.getByRole("button", { name: strings.menu.mode(strings.menu.versusAi) }));
+const hotSeat = () => fireEvent.click(screen.getByRole("radio", { name: strings.menu.hotSeat }));
 
 test("clicks a hot-seat game through from the menu to the victory screen", async () => {
   await renderApp();
@@ -103,24 +102,34 @@ test("lets an AI dice-off winner start by itself", async () => {
   expect(await until(() => screen.queryByText(strings.game.aiThinking("Opa")))).toBeInTheDocument();
 });
 
-test("toggles automatic turns from the header during the game", async () => {
+test("switches how to play from the header during the game", async () => {
   await renderApp();
-  const toggle = () => screen.queryByRole("checkbox", { name: strings.autoPlay });
-  expect(toggle()).not.toBeInTheDocument();
+  const slider = () => screen.queryByRole("radiogroup", { name: strings.play.label });
+  const mode = (label: string) => screen.getByRole("radio", { name: label });
+  const lit = () => document.querySelectorAll(".column.legal");
+  expect(slider()).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
   fireEvent.click(
     await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") })),
   );
 
   await until(() => screen.queryByText(strings.game.pick("Player 1")));
-  expect(toggle()).toBeChecked();
-  fireEvent.click(toggle()!);
-  expect(screen.getByText(strings.game.pick("Player 1"))).toBeInTheDocument();
+  expect(mode(strings.play.automatic)).toBeChecked();
+  expect(lit()).not.toHaveLength(0);
+  fireEvent.click(mode(strings.play.withoutHints));
+  expect(screen.getByText(strings.game.selectDice("Player 1", false))).toBeInTheDocument();
+  expect(lit()).toHaveLength(0);
+  fireEvent.click(mode(strings.play.withHints));
+  expect(screen.getByText(strings.game.selectDice("Player 1", true))).toBeInTheDocument();
+  expect(lit()).not.toHaveLength(0);
+  fireEvent.keyDown(mode(strings.play.withHints), { key: "ArrowRight" });
+  expect(mode(strings.play.automatic)).toBeChecked();
   fireEvent.click(legalTarget()!);
+  fireEvent.click(mode(strings.play.withoutHints));
 
   const throwStack = () => screen.queryByRole("button", { name: /^Throw/ });
   await until(throwStack);
-  fireEvent.click(toggle()!);
+  fireEvent.click(mode(strings.play.automatic));
   expect(throwStack()).not.toBeInTheDocument();
 }, 60_000);
 
@@ -341,6 +350,69 @@ test("resumes a game in play on reload", async () => {
   expect(chooseTarget).toHaveBeenCalledExactlyOnceWith(game.observation!.legal_targets[0]!.target);
 });
 
+test("resumes a sequence in progress on reload, playing it on automatically", async () => {
+  const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
+  const opened = scriptedGame.branches[0]!.steps[0]!.game;
+  const observation = opened.observation!;
+  const sequence = {
+    target: 2,
+    rolls: [{ dice: observation.opening_roll, set_aside: [0], reset: false, matches: 1 }],
+    matches: 1,
+    dice: [2, 3, 4, 5, 1],
+    reset: false,
+  };
+  const game = {
+    ...opened,
+    phase: "choosing_dice" as const,
+    observation: {
+      ...observation,
+      legal_targets: [{ target: 2, matches: 1, guaranteed_moves: 1, set_aside: [0] }],
+      sequence,
+    },
+  };
+  await resumeWith(saved(game), { take });
+
+  await until(() => (take.mock.calls.length ? true : null));
+  expect(take).toHaveBeenCalledExactlyOnceWith(2, [0]);
+});
+
+test("resumes a sequence in progress by hand when playing without hints", async () => {
+  const take = vi.fn<GameClient["take"]>(() => new Promise(() => {}));
+  const opened = scriptedGame.branches[0]!.steps[0]!.game;
+  const game = {
+    ...opened,
+    phase: "choosing_dice" as const,
+    observation: {
+      ...opened.observation!,
+      sequence: {
+        target: 2,
+        rolls: [
+          { dice: opened.observation!.opening_roll, set_aside: [0], reset: false, matches: 1 },
+        ],
+        matches: 1,
+        dice: [2, 3, 4, 5, 1],
+        reset: false,
+      },
+      takes: [
+        { target: 2, dice: [0], matches: 1, row: 2, outcome: "throw" as const, next_dice: 4 },
+      ],
+    },
+  };
+  await resumeWith(saved(game), { take });
+  const manual = await until(() =>
+    screen.queryByRole("radio", { name: strings.play.withoutHints }),
+  );
+
+  fireEvent.click(manual);
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.game.throwStack(5) })),
+  );
+
+  expect(screen.getByText(strings.game.takeMore("Ann", 2))).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: strings.game.stop })).toBeInTheDocument();
+  expect(take).not.toHaveBeenCalled();
+});
+
 test("resumes the dice-off winner's choice on reload", async () => {
   const chooseFirstPlayer = vi.fn<GameClient["chooseFirstPlayer"]>(() => new Promise(() => {}));
   await resumeWith(saved(scriptedGame.first_player_choice), { chooseFirstPlayer });
@@ -390,7 +462,7 @@ test("starts over with New Game, keeping every name", async () => {
 
   expect(screen.getByLabelText(strings.menu.player(0))).toHaveValue("Ann");
   expect(screen.getByLabelText(strings.menu.player(1))).toHaveValue("Bob");
-  fireEvent.click(screen.getByRole("button", { name: strings.menu.mode(strings.menu.hotSeat) }));
+  fireEvent.click(screen.getByRole("radio", { name: strings.menu.versusAi }));
   expect(screen.getByLabelText(strings.menu.you)).toHaveValue("Ann");
   expect(screen.getByLabelText(strings.menu.opponent)).toHaveValue("Oma");
   expect(newGame()).not.toBeInTheDocument();

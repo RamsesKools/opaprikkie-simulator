@@ -55,6 +55,15 @@ def choose_target(game: Game, target: object) -> tuple[Game, engine.Log]:
     return _act(game, lambda state: engine.choose_target(state, cast(int, target)))
 
 
+def take(game: Game, target: object, dice: object) -> tuple[Game, engine.Log]:
+    dice = cast(Sequence[int], dice)
+    return _act(game, lambda state: engine.take(state, cast(int, target), dice))
+
+
+def stop(game: Game) -> tuple[Game, engine.Log]:
+    return _act(game, engine.stop)
+
+
 def _act(game: Game, action: _Action) -> tuple[Game, engine.Log]:
     """Applies the caller's action, then plays the AI seats until a human choice or the end."""
     state, log = action(game.state)

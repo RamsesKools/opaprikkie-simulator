@@ -13,10 +13,14 @@ Choices, observations, and rejections follow the [strategy contract](strategy_co
 | `POST /api/game` | starts a new game, replacing the session's game | 201, `GameUpdate` in phase `naming` |
 | `POST /api/game/names` | `{names}`: names the players and runs the dice-off | `GameUpdate` |
 | `POST /api/game/first_player` | `{player}`: the dice-off winner picks who starts | `GameUpdate` |
-| `POST /api/game/target` | `{target}`: resolves the roll sequence | `GameUpdate` |
+| `POST /api/game/target` | `{target}`: resolves the roll sequence automatically | `GameUpdate` |
+| `POST /api/game/take` | `{target, dice}`: sets aside the dice at those places in the roll on the table, then rolls the rest | `GameUpdate` |
+| `POST /api/game/stop` | ends a sequence played by hand | `GameUpdate` |
 | `GET /api/game` | reads the state | `Game` |
 
-- Each game route is one engine action: `new_game`, `name_players`, `choose_first_player`, `choose_target`.
+- Each game route is one engine action: `new_game`, `name_players`, `choose_first_player`, `choose_target`, `take`, `stop`.
+- A take that leaves the sequence going returns phase `choosing_dice` and no logs; the sequence's `roll_sequence` log comes with the take or stop that ends it.
+- Each `observation` lists the valid `takes` for the roll on the table, each with its `outcome` and `next_dice` ([strategy contract](strategy_contract.md#observation)), so a client offers takes and says what each leads to by looking up the selected dice, with no extra call.
 - `POST /api/game` takes one `controller` per seat: `["human", "human"]` is hot-seat, `["human", "ai"]` is versus AI.
 - `GameUpdate` is `{game, logs}`: the state after the action and every log entry it produced, including the AI's.
 - `Game` holds the phase, names, controllers, pegs, winner, and an `observation` at choice points (`null` while naming or finished).
@@ -54,12 +58,12 @@ Every error body is `{code, message, ...hints}`:
 | 404 | `no_game` |  |
 | 404 | `not_found` |  |
 | 405 | `method_not_allowed` |  |
-| 422 | `wrong_phase`, `illegal_target`, `invalid_names`, `invalid_player` | as in the [strategy contract](strategy_contract.md#rejections) |
+| 422 | `wrong_phase`, `illegal_target`, `illegal_dice`, `invalid_names`, `invalid_player` | as in the [strategy contract](strategy_contract.md#rejections) |
 | 422 | `unknown_strategy` | `strategies` |
 | 422 | `invalid_request` | `errors`, each a Pydantic `{loc, msg}`, for a malformed body |
 | 500 | `internal_error` |  |
 
-Choice fields (`names`, `player`, `target`) are typed in the schema but passed to the engine as sent, so a wrong type is an engine rejection, not `invalid_request`.
+Choice fields (`names`, `player`, `target`, `dice`) are typed in the schema but passed to the engine as sent, so a wrong type is an engine rejection, not `invalid_request`.
 
 ## Schema
 

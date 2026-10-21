@@ -26,3 +26,16 @@ test("only lets legal targets be picked", () => {
 
   expect(onPick).toHaveBeenCalledExactlyOnceWith(9);
 });
+
+test("lets columns be picked without glowing", () => {
+  const onPick = vi.fn<(target: number) => void>();
+  const all = Object.keys(pegs).map(Number);
+  const { container } = render(
+    <Board player={0} name="Ann" pegs={pegs} pickable={all} onPick={onPick} active />,
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: strings.game.column(4, 3) }));
+
+  expect(onPick).toHaveBeenCalledExactlyOnceWith(4);
+  expect(container.querySelectorAll(".legal")).toHaveLength(0);
+});

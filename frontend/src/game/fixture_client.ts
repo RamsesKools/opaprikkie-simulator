@@ -85,5 +85,11 @@ export function createFixtureClient(script: Script = scriptedGame): GameClient {
     },
     chooseFirstPlayer: async (player) => respond(pickFirst(player)),
     chooseTarget: async (target) => respond(pickTarget(target)),
+    take: async () => {
+      throw new GameError("illegal_dice", "manual turns are not scripted");
+    },
+    stop: async () => {
+      throw new GameError("wrong_phase", "manual turns are not scripted");
+    },
   };
 }

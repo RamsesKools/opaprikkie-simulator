@@ -6,6 +6,7 @@ from types import MappingProxyType
 class Rejection(StrEnum):
     WRONG_PHASE = "wrong_phase"
     ILLEGAL_TARGET = "illegal_target"
+    ILLEGAL_DICE = "illegal_dice"
     INVALID_NAMES = "invalid_names"
     INVALID_PLAYER = "invalid_player"
 

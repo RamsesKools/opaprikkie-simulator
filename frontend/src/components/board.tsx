@@ -8,9 +8,12 @@ type Props = {
   name: string;
   pegs: Pegs;
   active?: boolean;
+  /** Columns that glow; they're also the pickable ones unless `pickable` says otherwise. */
   legal?: number[];
+  pickable?: number[];
   highlight?: number | null;
-  preview?: { target: number; row: number } | null;
+  /** Ghost pegs marking where pegs would land. */
+  landing?: { target: number; row: number }[];
   onPick?: (target: number) => void;
   onHover?: (target: number | null) => void;
 };
@@ -23,8 +26,9 @@ export function Board({
   pegs,
   active = false,
   legal = [],
+  pickable = legal,
   highlight,
-  preview,
+  landing = [],
   onPick,
   onHover,
 }: Props) {
@@ -41,9 +45,9 @@ export function Board({
       <div className="columns">
         {targets.map((target) => {
           const row = pegs[target]!;
-          const pickable = legal.includes(target) && onPick !== undefined;
+          const enabled = pickable.includes(target) && onPick !== undefined;
           const classes = ["column"];
-          if (pickable) classes.push("legal");
+          if (legal.includes(target)) classes.push("legal");
           if (highlight === target) classes.push("highlight");
           if (row === TOP_ROW) classes.push("topped");
           return (
@@ -51,23 +55,26 @@ export function Board({
               key={target}
               type="button"
               className={classes.join(" ")}
-              disabled={!pickable}
+              disabled={!enabled}
               aria-label={strings.game.column(target, row)}
               onClick={() => onPick?.(target)}
-              onMouseEnter={() => pickable && onHover?.(target)}
+              onMouseEnter={() => enabled && onHover?.(target)}
               onMouseLeave={() => onHover?.(null)}
-              onFocus={() => pickable && onHover?.(target)}
+              onFocus={() => enabled && onHover?.(target)}
               onBlur={() => onHover?.(null)}
             >
               {rows.map((cell) => (
                 <span key={cell} className="hole" />
               ))}
-              {preview?.target === target && (
-                <span
-                  className={preview.row === TOP_ROW ? "ghost finishing" : "ghost"}
-                  style={{ "--row": preview.row } as CSSProperties}
-                />
-              )}
+              {landing
+                .filter((mark) => mark.target === target)
+                .map((mark) => (
+                  <span
+                    key={mark.row}
+                    className={mark.row === TOP_ROW ? "ghost finishing" : "ghost"}
+                    style={{ "--row": mark.row } as CSSProperties}
+                  />
+                ))}
               <span className="peg" style={{ "--row": row } as CSSProperties} />
               <span className="label">{target}</span>
             </button>
