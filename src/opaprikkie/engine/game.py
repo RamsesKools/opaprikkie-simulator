@@ -21,7 +21,10 @@ _DICE_OFF_DICE = 2
 
 def new_game(ruleset: Ruleset, seed: int | str) -> tuple[GameState, Log]:
     board = dict.fromkeys(ruleset.targets, 0)
-    return GameState(ruleset, seed, Phase.NAMING, (board,) * ruleset.players), ()
+    thrown = ((0,) * ruleset.dice_faces,) * ruleset.players
+    return GameState(
+        ruleset, seed, Phase.NAMING, (board,) * ruleset.players, dice_counts=thrown
+    ), ()
 
 
 def name_players(
@@ -106,7 +109,10 @@ def _resolve(
     board = dict(state.pegs[player])
     board[target] += movement
     pegs = tuple(board if seat == player else rows for seat, rows in enumerate(state.pegs))
-    state = replace(state, pegs=pegs, sequence=None)
+    throws = (roll.dice for roll in rolls[1:])
+    state = replace(
+        state, pegs=pegs, sequence=None, dice_counts=_counted(state.dice_counts, player, *throws)
+    )
     log = (sequence,)
     if all(row == state.ruleset.rows for row in board.values()):
         finished = replace(state, phase=Phase.FINISHED, winner=player, opening_roll=())
@@ -145,9 +151,11 @@ def _open(
     ruleset = state.ruleset
     entries = list(log)
     roll_index = state.roll_index
+    counts = state.dice_counts
     while True:
         dice = roll(state.seed, roll_index, ruleset.dice_count, ruleset.dice_faces)
         roll_index += 1
+        counts = _counted(counts, player, dice)
         if legal_targets(ruleset, state.pegs[player], dice):
             break
         entries.append(NoMove(player, turn, continuation, dice))
@@ -160,6 +168,7 @@ def _open(
         turn=turn,
         continuation=continuation,
         opening_roll=dice,
+        dice_counts=counts,
     )
     return opened, tuple(entries)
 
@@ -196,6 +205,17 @@ def _throw_rest(
         return None
     dice = roll(state.seed, state.roll_index, count, ruleset.dice_faces)
     return dice, outcome is TakeOutcome.RESET, state.roll_index + 1
+
+
+def _counted(
+    counts: tuple[tuple[int, ...], ...], player: int, *throws: Sequence[int]
+) -> tuple[tuple[int, ...], ...]:
+    """`counts` with every die of `throws` added to `player`'s."""
+    faces = list(counts[player])
+    for dice in throws:
+        for die in dice:
+            faces[die - 1] += 1
+    return tuple(tuple(faces) if seat == player else other for seat, other in enumerate(counts))
 
 
 def _validate_names(ruleset: Ruleset, names: Sequence[str]) -> tuple[str, ...]:

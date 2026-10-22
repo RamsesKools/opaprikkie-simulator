@@ -62,10 +62,17 @@ A seeded round robin of head-to-head games between every pair of strategies, ran
 Who decides for a seat: `human` (the caller) or `ai` (a built-in strategy played by the backend).
 
 **Hints**:
-The UI's help in picking: glowing legal columns before any dice are selected, the "Choose" buttons in the opening roll, and the hover preview when playing automatically.
+The UI's help in picking: glowing legal columns before any dice are selected, a click on one taking its most matches at once, and a hover preview of where the peg lands.
+Playing automatically always has them.
 
 **Play mode**:
 How human turns play, picked on a slider in the header: without hints, with hints, or automatically (always with hints); a frontend setting only.
+
+**Combo**:
+Throws in a row with a match in one roll sequence; from the third, the UI flashes "Combo x3", "Combo x4", and so on.
+
+**Great turn**:
+A roll sequence that moves a peg at least its lane's cutoff in steps (rarer lanes need fewer), or from the bottom to the top; the UI celebrates it with confetti.
 
 **Hot-seat game**:
 A game where two human players take turns using the same browser.

@@ -36,3 +36,18 @@ test("throws when clicked", () => {
 
   expect(onThrow).toHaveBeenCalledOnce();
 });
+
+test("makes a clickable stack a round button labelled Throw dice", () => {
+  render(<Stack count={4} player={1} onThrow={() => {}} />);
+
+  const button = screen.getByRole("button", { name: strings.game.throwStack(4) });
+  expect(button).toHaveClass("throw");
+  expect(button).toHaveTextContent(strings.game.throwDice);
+});
+
+test("keeps a stack that can't be thrown plain, without the label", () => {
+  render(<Stack count={4} player={1} />);
+
+  expect(screen.getByRole("img", { name: strings.game.stack(4) })).not.toHaveClass("throw");
+  expect(screen.queryByText(strings.game.throwDice)).not.toBeInTheDocument();
+});

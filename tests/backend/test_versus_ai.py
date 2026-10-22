@@ -71,6 +71,32 @@ def test_outside_dev_mode_nothing_reveals_the_seed_or_strategy(client):
         assert all(name not in r.text for r in responses)
 
 
+def test_a_finished_game_reports_its_turns_and_each_players_dice(client):
+    client.post("/api/game", json=VERSUS_AI)
+    update = client.post("/api/game/names", json=NAMES).json()
+    if update["game"]["phase"] == "choosing_first_player":
+        update = client.post("/api/game/first_player", json={"player": 0}).json()
+
+    updates = play_human_turns(client, update)
+
+    game = updates[-1]["game"]
+    expected = [[0] * 6, [0] * 6]
+    turns = 0
+    for entry in (entry for update in updates for entry in update["logs"]):
+        if entry["kind"] == "dice_off":
+            continue
+        throws = (
+            [entry["opening_roll"]]
+            if entry["kind"] == "no_move"
+            else [r["dice"] for r in entry["rolls"]]
+        )
+        for die in (die for dice in throws for die in dice):
+            expected[entry["player"]][die - 1] += 1
+        turns += entry["continuation"] == 0
+    assert game["dice_counts"] == expected
+    assert game["turns"] == turns
+
+
 def test_a_sloppy_ai_plays_its_sequences_by_hand_and_never_stops(dev_client):
     dev_client.post("/api/game", json=VERSUS_AI | {"strategy": "sloppy", "first_player": 0})
     update = dev_client.post("/api/game/names", json=NAMES).json()

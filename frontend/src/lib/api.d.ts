@@ -221,6 +221,9 @@ export interface components {
         /**
          * Game
          * @description The game state; `seed` and `strategy` are shown in dev mode only.
+         *
+         *     `turns` counts the turns so far, dead ones included. `dice_counts[player][face - 1]` is how
+         *     often that player threw `face`.
          */
         Game: {
             /** Ruleset */
@@ -234,6 +237,10 @@ export interface components {
             pegs: {
                 [key: string]: number;
             }[];
+            /** Turns */
+            turns: number;
+            /** Dice Counts */
+            dice_counts: number[][];
             observation: components["schemas"]["Observation"] | null;
             /** Winner */
             winner: number | null;

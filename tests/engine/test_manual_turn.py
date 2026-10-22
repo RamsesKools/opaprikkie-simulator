@@ -5,6 +5,7 @@ import pytest
 
 from opaprikkie.engine import (
     CLASSIC,
+    DiceOffRound,
     GameState,
     IllegalAction,
     LegalTarget,
@@ -321,3 +322,28 @@ def test_every_take_option_leads_to_what_its_outcome_says():
             state = after
 
     assert seen == {TakeOutcome.THROW, TakeOutcome.RESET, TakeOutcome.TOPPED, TakeOutcome.WINS}
+
+
+def test_a_game_played_by_hand_with_stops_counts_every_face_thrown():
+    for seed in range(20):
+        rng = Random(seed)
+        state, _ = new_game(CLASSIC, f"counts-{seed}")
+        state, entries = name_players(state, ["Ada", "Bob"], first_player=0)
+        entries = list(entries)
+        while state.phase is not Phase.FINISHED:
+            if state.phase is Phase.CHOOSING_DICE and rng.random() < 0.3:
+                state, log = stop(state)
+            else:
+                option = rng.choice(observe(state).takes)
+                state, log = take(state, option.target, option.dice)
+            entries += log
+
+        expected = [[0] * 6, [0] * 6]
+        for entry in entries:
+            assert not isinstance(entry, DiceOffRound)
+            throws = (
+                [entry.opening_roll] if isinstance(entry, NoMove) else [r.dice for r in entry.rolls]
+            )
+            for die in (die for dice in throws for die in dice):
+                expected[entry.player][die - 1] += 1
+        assert [list(counts) for counts in state.dice_counts] == expected

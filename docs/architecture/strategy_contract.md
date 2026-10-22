@@ -26,6 +26,16 @@ The engine computes it on first use, so strategies, which never read it, don't p
 The observing seat is the player choosing next: the dice-off winner, then the player on turn.
 Outside those choice points `observe` raises `wrong_phase`.
 
+## Game stats
+
+The state, not the observation, counts what a finished game shows on the victory screen, so a reload keeps them:
+
+- `turn`: the turn number, so at the end the number of turns in the game, dead ones included.
+- `dice_counts[player][face - 1]`: how often that player threw `face`: opening rolls (dead ones too) and every later throw of a sequence, with the dice-off left out.
+  A throw counts once the sequence it belongs to ends, so a game in progress lags the throw on the table.
+
+Strategies don't see them, and they never change a roll or a result.
+
 ## Strategy protocol
 
 ```python

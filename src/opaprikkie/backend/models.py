@@ -116,13 +116,19 @@ def logs(log: engine.Log) -> list[LogEntry]:
 
 
 class Game(BaseModel):
-    """The game state; `seed` and `strategy` are shown in dev mode only."""
+    """The game state; `seed` and `strategy` are shown in dev mode only.
+
+    `turns` counts the turns so far, dead ones included. `dice_counts[player][face - 1]` is how
+    often that player threw `face`.
+    """
 
     ruleset: str
     phase: engine.Phase
     names: list[str]
     controllers: list[games.Controller]
     pegs: list[dict[int, int]]
+    turns: int
+    dice_counts: list[list[int]]
     observation: Observation | None
     winner: int | None
     seed: int | str | None
@@ -137,6 +143,8 @@ class Game(BaseModel):
             names=list(state.names),
             controllers=list(game.controllers),
             pegs=[dict(rows) for rows in state.pegs],
+            turns=state.turn,
+            dice_counts=[list(counts) for counts in state.dice_counts],
             observation=_observation(state),
             winner=state.winner,
             seed=state.seed if dev_mode else None,

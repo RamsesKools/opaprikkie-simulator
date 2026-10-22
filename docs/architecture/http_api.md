@@ -24,7 +24,8 @@ Choices, observations, and rejections follow the [strategy contract](strategy_co
 - Each `observation` lists the valid `takes` for the roll on the table, each with its `outcome` and `next_dice` ([strategy contract](strategy_contract.md#observation)), so a client offers takes and says what each leads to by looking up the selected dice, with no extra call.
 - `POST /api/game` takes one `controller` per seat: `["human", "human"]` is hot-seat, `["human", "ai"]` is versus AI.
 - `GameUpdate` is `{game, logs}`: the state after the action and every log entry it produced, including the AI's.
-- `Game` holds the phase, names, controllers, pegs, winner, and an `observation` at choice points (`null` while naming or finished).
+- `Game` holds the phase, names, controllers, pegs, winner, the game stats, and an `observation` at choice points (`null` while naming or finished).
+- The game stats are `turns`, the number of turns so far (dead ones included), and `dice_counts`, one list per seat with how often each face 1 to 6 was thrown (index 0 is face 1), the dice-off left out ([strategy contract](strategy_contract.md#game-stats)).
 - Successful naming stores the names in the session, so the menu can prefill them.
 
 ## Sessions

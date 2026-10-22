@@ -48,7 +48,7 @@ export function Stack({ count, player, onThrow, autoPress }: Props) {
   return (
     <button
       type="button"
-      className="stack"
+      className="stack throw"
       aria-label={strings.game.throwStack(count)}
       style={
         autoPress === undefined
@@ -57,7 +57,10 @@ export function Stack({ count, player, onThrow, autoPress }: Props) {
       }
       onClick={onThrow}
     >
-      {pile}
+      <span className="pile">{pile}</span>
+      <span className="throw-label" aria-hidden="true">
+        {strings.game.throwDice}
+      </span>
       {autoPress !== undefined && <span className="fill" />}
     </button>
   );
