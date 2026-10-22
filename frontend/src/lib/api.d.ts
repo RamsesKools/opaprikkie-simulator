@@ -73,6 +73,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/game/play_mode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Play Mode */
+        post: operations["set_play_mode_api_game_play_mode_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/game/names": {
         parameters: {
             query?: never;
@@ -273,6 +290,7 @@ export interface components {
             first_player?: number | null;
             /** Strategy */
             strategy?: string | null;
+            play_mode?: components["schemas"]["opaprikkie__backend__games__PlayMode"] | null;
         };
         /** NoMove */
         NoMove: {
@@ -411,6 +429,16 @@ export interface components {
         Target: {
             /** Target */
             target: number;
+        };
+        /**
+         * PlayMode
+         * @description How the human plays: by hand without or with hints, or automatically.
+         * @enum {string}
+         */
+        opaprikkie__backend__games__PlayMode: "without_hints" | "with_hints" | "automatic";
+        /** PlayMode */
+        opaprikkie__backend__models__PlayMode: {
+            play_mode: components["schemas"]["opaprikkie__backend__games__PlayMode"];
         };
     };
     responses: never;
@@ -630,6 +658,68 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameUpdate"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    set_play_mode_api_game_play_mode_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                opaprikkie_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["opaprikkie__backend__models__PlayMode"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -9,8 +9,8 @@ How the modules relate lives in [module dependencies](../architecture/module_dep
 src/opaprikkie/
   engine/          rules, board, dice, state, turn resolution, built-in strategies
   backend/         FastAPI app, sessions, settings
-  sim/             batch runner, HTTP client, aggregate stats
-  cli.py           `opaprikkie serve`, `opaprikkie simulate`
+  sim/             batch runner, tournament, HTTP client, aggregate stats
+  cli.py           `opaprikkie serve`, `simulate`, `tournament`
 frontend/          React SPA (Vite, TypeScript, npm)
   src/             app code, unit tests next to the source
   tests/contract/  contract suite against a live backend

@@ -70,9 +70,17 @@ def game_routes(settings: Settings, clock: Callable[[], float]) -> APIRouter:
             strategies = sorted(engine.BUILTIN_STRATEGIES)
             raise ApiError(422, "unknown_strategy", "no such strategy", strategies=strategies)
         game = games.new_game(
-            tuple(request.controllers), request.seed, request.strategy, request.first_player
+            tuple(request.controllers),
+            request.seed,
+            request.strategy,
+            request.first_player,
+            request.play_mode or games.PlayMode.AUTOMATIC,
         )
         return update(session, game, ())
+
+    @router.post("/game/play_mode")
+    async def set_play_mode(request: models.PlayMode, session: CurrentSession) -> models.GameUpdate:
+        return update(session, games.set_play_mode(current_game(session), request.play_mode), ())
 
     @router.post("/game/names")
     async def name_players(request: models.Names, session: CurrentSession) -> models.GameUpdate:

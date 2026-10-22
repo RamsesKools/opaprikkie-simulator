@@ -53,7 +53,10 @@ _Avoid_: Move, when referring only to the player's choice.
 What a player or strategy sees at a choice point: boards, the opening roll, and the legal targets.
 
 **Strategy**:
-A decision-maker that selects one legal target from a game observation.
+A decision-maker that selects one legal target from a game observation; a hand strategy instead selects its takes.
+
+**Tournament**:
+A seeded round robin of head-to-head games between every pair of strategies, ranked by overall win rate.
 
 **Controller**:
 Who decides for a seat: `human` (the caller) or `ai` (a built-in strategy played by the backend).

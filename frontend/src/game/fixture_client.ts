@@ -91,5 +91,6 @@ export function createFixtureClient(script: Script = scriptedGame): GameClient {
     stop: async () => {
       throw new GameError("wrong_phase", "manual turns are not scripted");
     },
+    setPlayMode: async () => respond([]),
   };
 }

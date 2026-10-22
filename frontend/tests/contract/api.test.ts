@@ -143,3 +143,14 @@ test("resumes the session and its game from the cookie", async () => {
 test("rejects a game action without a session", async () => {
   await expect(browser().chooseTarget(7)).rejects.toMatchObject({ code: "no_session" });
 });
+
+test("changes the play mode of a game without moving it on", async () => {
+  const client = browser();
+  await client.session();
+  const started = await client.start({ ...hotSeat, playMode: "with_hints" });
+
+  const changed = await client.setPlayMode("automatic");
+
+  expect(changed.logs).toEqual([]);
+  expect(changed.game).toEqual(started.game);
+});

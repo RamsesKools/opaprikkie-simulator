@@ -84,3 +84,11 @@ def test_a_rejected_choice_fails_the_batch_naming_the_strategy(dev_backend, monk
     assert result.exit_code == 1
     assert isinstance(result.exception, IllegalAction)
     assert result.exception.__notes__[0].startswith("random in seat 0 of game ")
+
+
+def test_a_seeded_tournament_over_http_prints_the_in_process_output(dev_backend):
+    def tournament(*args: str) -> str:
+        args = ("tournament", "sloppy", "smart", "highest", "-n", "6", "-s", "s", *args)
+        return CliRunner().invoke(cli.main, args).output
+
+    assert tournament("--url", dev_backend) == tournament()

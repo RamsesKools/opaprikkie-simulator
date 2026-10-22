@@ -69,3 +69,20 @@ def test_outside_dev_mode_nothing_reveals_the_seed_or_strategy(client):
     assert all(game["seed"] is None and game["strategy"] is None for game in games)
     for name in engine.BUILTIN_STRATEGIES:
         assert all(name not in r.text for r in responses)
+
+
+def test_a_sloppy_ai_plays_its_sequences_by_hand_and_never_stops(dev_client):
+    dev_client.post("/api/game", json=VERSUS_AI | {"strategy": "sloppy", "first_player": 0})
+    update = dev_client.post("/api/game/names", json=NAMES).json()
+
+    rolls = [
+        (entry["target"], roll)
+        for entry in ai_sequences(play_human_turns(dev_client, update))
+        for roll in entry["rolls"]
+    ]
+
+    def matching(target: int, roll: dict) -> int:
+        return len(engine.set_aside(engine.CLASSIC, target, roll["dice"]))
+
+    assert any(len(roll["set_aside"]) < matching(target, roll) for target, roll in rolls)
+    assert all(roll["set_aside"] or not matching(target, roll) for target, roll in rolls)

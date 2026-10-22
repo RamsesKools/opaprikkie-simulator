@@ -1,3 +1,4 @@
+import pytest
 from click.testing import CliRunner
 
 from opaprikkie import __version__, cli
@@ -55,3 +56,56 @@ def test_simulate_needs_a_strategy_per_seat():
 
     assert result.exit_code == 2
     assert "takes 2 values" in result.output
+
+
+def test_tournament_prints_the_matrix_and_the_ranking():
+    result = CliRunner().invoke(
+        cli.main, ["tournament", "random", "greedy", "smart", "-n", "10", "-s", "s"]
+    )
+
+    assert result.exit_code == 0
+    lines = result.output.splitlines()
+    assert lines[0] == "3 strategies, 10 games per pair, seed s"
+    matrix = lines[lines.index("Win rate of row against column") + 1 :][:4]
+    assert matrix[0].split() == ["random", "greedy", "smart"]
+    assert [row.split()[0] for row in matrix[1:]] == ["random", "greedy", "smart"]
+    assert matrix[1].split()[1] == "-"
+    ranking = lines[lines.index("Ranking by overall win rate") + 1 :]
+    assert [row.split()[0] for row in ranking] == ["1", "2", "3"]
+    assert {row.split()[1] for row in ranking} == {"random", "greedy", "smart"}
+
+
+def test_tournament_repeats_a_seeded_run_exactly():
+    args = ["tournament", "random", "highest", "sloppy", "--games", "10", "--seed", "s"]
+
+    assert CliRunner().invoke(cli.main, args).output == CliRunner().invoke(cli.main, args).output
+
+
+def test_tournament_prints_the_seed_it_picked():
+    result = CliRunner().invoke(cli.main, ["tournament", "random", "greedy", "-n", "1"])
+
+    seed = result.output.splitlines()[0].split("seed ")[1]
+    rerun = CliRunner().invoke(cli.main, ["tournament", "random", "greedy", "-n", "1", "-s", seed])
+    assert rerun.output == result.output
+
+
+@pytest.mark.parametrize(
+    ("strategies", "message"),
+    [
+        (["random"], "at least 2 strategies"),
+        (["random", "random"], "each strategy once"),
+        (["random", "nope"], "Invalid value"),
+    ],
+)
+def test_tournament_needs_distinct_known_strategies(strategies, message):
+    result = CliRunner().invoke(cli.main, ["tournament", *strategies])
+
+    assert result.exit_code == 2
+    assert message in result.output
+
+
+def test_simulate_accepts_the_new_strategies():
+    result = CliRunner().invoke(cli.main, ["simulate", "sloppy", "rarest", "-n", "5", "-s", "s"])
+
+    assert result.exit_code == 0
+    assert "5 games of sloppy vs rarest, seed s" in result.output
