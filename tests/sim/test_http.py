@@ -2,7 +2,7 @@ import httpx2
 import pytest
 
 from opaprikkie import __version__
-from opaprikkie.engine import Observation
+from opaprikkie.engine import Observation, TakeOption, TakeOutcome
 from opaprikkie.sim import BackendError, HttpDriver
 
 HEALTHY = {"version": __version__, "dev_mode": True}
@@ -65,3 +65,50 @@ def test_a_server_error_is_refused():
         BackendError, match=r"POST /api/game/names failed with 500: .*internal_error"
     ):
         driver.play("seed", 0, lowest)
+
+
+def test_a_take_choice_is_posted_as_a_take():
+    sent = []
+    observation = {
+        "seat": 0,
+        "pegs": [{"1": 0}, {"1": 0}],
+        "opening_roll": [1, 1],
+        "legal_targets": [{"target": 1, "matches": 2, "guaranteed_moves": 2, "set_aside": [0, 1]}],
+        "turn": 1,
+        "continuation": 0,
+        "sequence": {
+            "target": 1,
+            "rolls": [{"dice": [1, 1], "set_aside": [0], "reset": False, "matches": 1}],
+            "matches": 1,
+            "dice": [1],
+            "reset": False,
+        },
+    }
+    playing = {"game": {"phase": "choosing_dice", "observation": observation}, "logs": []}
+    finished = {"game": {"phase": "finished", "winner": 1}, "logs": []}
+    answers = iter([playing, finished])
+
+    def answer(request: httpx2.Request) -> httpx2.Response:
+        path = request.url.path
+        if path == "/api/health":
+            return httpx2.Response(200, json=HEALTHY)
+        if path in ("/api/game/names", "/api/game/take"):
+            sent.append((path, request.content))
+            return httpx2.Response(200, json=next(answers))
+        return httpx2.Response(201, json={})
+
+    driver = HttpDriver(
+        httpx2.Client(base_url="http://backend", transport=httpx2.MockTransport(answer))
+    )
+    seen = []
+
+    def choose(obs: Observation) -> TakeOption:
+        seen.append(obs.sequence)
+        return TakeOption(1, (0,), 1, 1, TakeOutcome.THROW, 0)
+
+    driver.play("seed", 0, choose)
+
+    assert sent[-1] == ("/api/game/take", b'{"target":1,"dice":[0]}')
+    assert seen[0] is not None
+    assert seen[0].target == 1
+    assert seen[0].matches == 1

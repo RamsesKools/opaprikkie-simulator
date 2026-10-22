@@ -190,3 +190,28 @@ test("only starts a session for a missing one", async () => {
   });
   expect(calls.map(({ route }) => route)).toEqual(["GET /api/session", "POST /api/game"]);
 });
+
+test("sends the play mode with the new game only when set", async () => {
+  const { client, calls } = serve({
+    "POST /api/game": () => ({ status: 201, body: update("naming") }),
+    "POST /api/game/names": () => ({ status: 200, body: update("choosing_first_player") }),
+  });
+
+  await client.start({ mode: "versus_ai", names: ["Ann", "Opa"], playMode: "with_hints" });
+
+  expect(calls[0]!.body).toEqual({ controllers: ["human", "ai"], play_mode: "with_hints" });
+});
+
+test("changes the play mode of the game in play", async () => {
+  const { client, calls } = serve({
+    "POST /api/game/play_mode": () => ({ status: 200, body: update("choosing_target") }),
+  });
+
+  const changed = await client.setPlayMode("without_hints");
+
+  expect(changed.game.phase).toBe("choosing_target");
+  expect(changed.logs).toEqual([]);
+  expect(calls).toEqual([
+    { route: "POST /api/game/play_mode", body: { play_mode: "without_hints" } },
+  ]);
+});

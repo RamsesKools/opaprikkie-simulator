@@ -42,6 +42,8 @@ function resumed(game: Game | null): Screen {
   return { kind: "menu" };
 }
 
+const INITIAL_PLAY_MODE: PlayMode = "automatic";
+
 const playModes = [
   { value: "without_hints", label: strings.play.withoutHints },
   { value: "with_hints", label: strings.play.withHints },
@@ -60,7 +62,7 @@ export function App({ client }: Props) {
   const [help, setHelp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
-  const [playMode, setPlayMode] = useState<PlayMode>("automatic");
+  const [playMode, setPlayMode] = useState<PlayMode>(INITIAL_PLAY_MODE);
 
   // Runs again after every failure, so a redeploy behind an open tab shows the reload banner.
   const handshake = useCallback(() => {
@@ -73,6 +75,8 @@ export function App({ client }: Props) {
       (session) => {
         setDraft((current) => prefill(current, session));
         setScreen(resumed(session.game));
+        // The slider doesn't survive a reload, so the backend learns where it starts again.
+        if (session.game) client.setPlayMode(INITIAL_PLAY_MODE).catch(() => {});
       },
       (failure: unknown) => {
         // Other failures leave a clean menu; Start reports them if they persist.
@@ -109,9 +113,14 @@ export function App({ client }: Props) {
     setError(null);
     setStarting(true);
     client
-      .start(chosen)
+      .start({ ...chosen, playMode })
       .then((update) => setScreen({ kind: "dice_off", update }), fail)
       .finally(() => setStarting(false));
+  };
+
+  const changePlayMode = (next: PlayMode) => {
+    setPlayMode(next);
+    client.setPlayMode(next).catch(gameFailed);
   };
 
   const play = useCallback((update: GameUpdate) => setScreen({ kind: "game", update }), []);
@@ -156,7 +165,7 @@ export function App({ client }: Props) {
                 label={strings.play.label}
                 options={playModes}
                 value={playMode}
-                onChange={setPlayMode}
+                onChange={changePlayMode}
               />
               <button
                 type="button"

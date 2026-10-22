@@ -2,14 +2,14 @@ from collections import Counter
 from collections.abc import Mapping
 from fractions import Fraction
 from functools import cache
-from itertools import combinations_with_replacement
+from itertools import combinations_with_replacement, product
 from math import factorial
 from random import Random
 from types import MappingProxyType
 from typing import Protocol, runtime_checkable
 
 from opaprikkie.engine.dice import count_matches
-from opaprikkie.engine.observation import Observation
+from opaprikkie.engine.observation import Observation, TakeOption
 from opaprikkie.engine.ruleset import Ruleset
 
 
@@ -23,6 +23,13 @@ class Strategy(Protocol):
     def choose_first_player(self, observation: Observation) -> int: ...
 
     def choose_target(self, observation: Observation, rng: Random) -> int: ...
+
+
+@runtime_checkable
+class HandStrategy(Strategy, Protocol):
+    """A strategy that plays its sequences by hand, take by take, instead of the automatic path."""
+
+    def choose_take(self, observation: Observation, rng: Random) -> TakeOption: ...
 
 
 class RandomStrategy:
@@ -48,6 +55,76 @@ class GreedyStrategy:
             key=lambda t: (t.guaranteed_moves, rows[t.target], -t.target),
         )
         return best.target
+
+
+class HighestStrategy:
+    name = "highest"
+
+    def choose_first_player(self, observation: Observation) -> int:
+        return observation.seat
+
+    def choose_target(self, observation: Observation, rng: Random) -> int:
+        return max(t.target for t in observation.legal_targets)
+
+
+class SumStrategy:
+    name = "sum"
+
+    def choose_first_player(self, observation: Observation) -> int:
+        return observation.seat
+
+    def choose_target(self, observation: Observation, rng: Random) -> int:
+        best = max(observation.legal_targets, key=lambda t: (t.matches * t.target, t.target))
+        return best.target
+
+
+class RarestStrategy:
+    """Picks the combination least likely to be thrown again."""
+
+    name = "rarest"
+
+    def choose_first_player(self, observation: Observation) -> int:
+        return observation.seat
+
+    def choose_target(self, observation: Observation, rng: Random) -> int:
+        ruleset = observation.ruleset
+        best = max(
+            observation.legal_targets,
+            key=lambda t: (-(_match_odds_of(ruleset, t.target) ** t.matches), t.target),
+        )
+        return best.target
+
+
+class BountyStrategy:
+    """Picks the most points, where a match is worth the odds of one die over the lane's odds."""
+
+    name = "bounty"
+
+    def choose_first_player(self, observation: Observation) -> int:
+        return observation.seat
+
+    def choose_target(self, observation: Observation, rng: Random) -> int:
+        ruleset = observation.ruleset
+        best = max(
+            observation.legal_targets,
+            key=lambda t: (t.matches * bounty_points(ruleset, t.target), t.target),
+        )
+        return best.target
+
+
+class SloppyStrategy:
+    """Plays its sequences by hand, taking uniformly among the valid takes and never stopping."""
+
+    name = "sloppy"
+
+    def choose_first_player(self, observation: Observation) -> int:
+        return observation.seat
+
+    def choose_target(self, observation: Observation, rng: Random) -> int:
+        return self.choose_take(observation, rng).target
+
+    def choose_take(self, observation: Observation, rng: Random) -> TakeOption:
+        return rng.choice(observation.takes)
 
 
 class SmartStrategy:
@@ -76,6 +153,20 @@ class SmartStrategy:
         distance = ruleset.rows - observation.pegs[observation.seat][target]
         rows, topping = _after_roll(ruleset, target, matches, distance, remaining)
         return rows + self.topping_bonus * topping
+
+
+@cache
+def _match_odds_of(ruleset: Ruleset, target: int) -> Fraction:
+    """The chance that one combo of dice makes `target`."""
+    combo_size = ruleset.targets[target]
+    faces = range(1, ruleset.dice_faces + 1)
+    ways = sum(sum(combo) == target for combo in product(faces, repeat=combo_size))
+    return Fraction(ways, ruleset.dice_faces**combo_size)
+
+
+def bounty_points(ruleset: Ruleset, target: int) -> Fraction:
+    """What a match for `target` is worth: the odds of one die over the odds of its lane."""
+    return Fraction(1, ruleset.dice_faces) / _match_odds_of(ruleset, target)
 
 
 def _after_roll(
@@ -124,5 +215,17 @@ def _orderings(values: tuple[int, ...]) -> int:
 
 
 BUILTIN_STRATEGIES: Mapping[str, Strategy] = MappingProxyType(
-    {strategy.name: strategy for strategy in (RandomStrategy(), GreedyStrategy(), SmartStrategy())}
+    {
+        strategy.name: strategy
+        for strategy in (
+            RandomStrategy(),
+            GreedyStrategy(),
+            SmartStrategy(),
+            HighestStrategy(),
+            SumStrategy(),
+            RarestStrategy(),
+            BountyStrategy(),
+            SloppyStrategy(),
+        )
+    }
 )

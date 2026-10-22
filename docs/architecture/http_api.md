@@ -16,6 +16,7 @@ Choices, observations, and rejections follow the [strategy contract](strategy_co
 | `POST /api/game/target` | `{target}`: resolves the roll sequence automatically | `GameUpdate` |
 | `POST /api/game/take` | `{target, dice}`: sets aside the dice at those places in the roll on the table, then rolls the rest | `GameUpdate` |
 | `POST /api/game/stop` | ends a sequence played by hand | `GameUpdate` |
+| `POST /api/game/play_mode` | `{play_mode}`: tells the backend how the human plays | `GameUpdate`, unchanged, with no logs |
 | `GET /api/game` | reads the state | `Game` |
 
 - Each game route is one engine action: `new_game`, `name_players`, `choose_first_player`, `choose_target`, `take`, `stop`.
@@ -40,7 +41,16 @@ Choices, observations, and rejections follow the [strategy contract](strategy_co
 
 - After every caller action, the backend plays the `ai` seats until the next `human` choice or the game end.
 - The AI's strategy is drawn uniformly from the built-ins with `Random(f"{seed}:strategy")`.
-- Each AI target choice gets `Random(f"{seed}:strategy:{roll_index}")`, so a seed and the human choices replay a game exactly.
+- Each AI choice gets `Random(f"{seed}:strategy:{roll_index}")`, so a seed and the human choices replay a game exactly.
+- A strategy that plays by hand (`sloppy`) takes dice roll by roll through the engine's `take`, unless it was drawn and the play mode is `automatic`; any other plays its sequences automatically.
+
+## Play mode
+
+- `play_mode` is `without_hints`, `with_hints`, or `automatic`, the names of the frontend's slider.
+- `POST /api/game` accepts it in any mode (default `automatic`), and `POST /api/game/play_mode` changes it for the game in play; it is a setting, so `Game` doesn't show it.
+- It only decides how a drawn AI strategy plays: a `HandStrategy` (`sloppy`) plays as `random` while the mode is `automatic`, and by hand otherwise ([ADR 0007](../adr/0007_strategies_that_play_by_hand.md)).
+- A strategy picked in dev mode always plays as itself, and so does the simulator's, which never sends a mode.
+- The frontend sends its mode when the game starts, whenever the slider changes, and after a reload with a game in progress, since the slider doesn't survive a reload.
 
 ## Dev mode
 

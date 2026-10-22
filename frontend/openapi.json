@@ -317,6 +317,92 @@
         }
       }
     },
+    "/api/game/play_mode": {
+      "post": {
+        "summary": "Set Play Mode",
+        "operationId": "set_play_mode_api_game_play_mode_post",
+        "parameters": [
+          {
+            "name": "opaprikkie_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Opaprikkie Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/opaprikkie__backend__models__PlayMode"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameUpdate"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        }
+      }
+    },
     "/api/game/names": {
       "post": {
         "summary": "Name Players",
@@ -1108,6 +1194,16 @@
               }
             ],
             "title": "Strategy"
+          },
+          "play_mode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/opaprikkie__backend__games__PlayMode"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -1488,6 +1584,29 @@
           "target"
         ],
         "title": "Target"
+      },
+      "opaprikkie__backend__games__PlayMode": {
+        "type": "string",
+        "enum": [
+          "without_hints",
+          "with_hints",
+          "automatic"
+        ],
+        "title": "PlayMode",
+        "description": "How the human plays: by hand without or with hints, or automatically."
+      },
+      "opaprikkie__backend__models__PlayMode": {
+        "properties": {
+          "play_mode": {
+            "$ref": "#/components/schemas/opaprikkie__backend__games__PlayMode"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "play_mode"
+        ],
+        "title": "PlayMode"
       }
     }
   }

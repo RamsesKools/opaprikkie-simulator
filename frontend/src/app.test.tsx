@@ -561,3 +561,42 @@ test("clears the lost-game alert once the menu changes", async () => {
 
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 });
+
+test("sends the play mode at the start and whenever the slider changes", async () => {
+  const fixture = createFixtureClient();
+  const start = vi.fn<GameClient["start"]>((setup) => fixture.start(setup));
+  const setPlayMode = vi.fn<GameClient["setPlayMode"]>((mode) => fixture.setPlayMode(mode));
+  await renderApp({ ...fixture, start, setPlayMode });
+
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") })),
+  );
+  await until(() => screen.queryByText(strings.game.pick("Player 1")));
+  expect(start).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ playMode: "automatic" }));
+  expect(setPlayMode).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("radio", { name: strings.play.withoutHints }));
+  fireEvent.click(screen.getByRole("radio", { name: strings.play.withHints }));
+
+  expect(setPlayMode.mock.calls).toEqual([["without_hints"], ["with_hints"]]);
+}, 60_000);
+
+test("tells the backend where the slider starts after a reload", async () => {
+  const game = scriptedGame.branches[0]!.steps[0]!.game;
+  const setPlayMode = vi.fn<GameClient["setPlayMode"]>(async () => ({
+    game: saved(game).game,
+    logs: [],
+  }));
+  await resumeWith(saved(game), { setPlayMode });
+
+  await until(() => screen.queryByText(strings.game.pick("Ann")));
+
+  expect(setPlayMode).toHaveBeenCalledExactlyOnceWith("automatic");
+});
+
+test("sends no play mode on reload when there is no game", async () => {
+  const setPlayMode = vi.fn<GameClient["setPlayMode"]>();
+  await renderApp({ ...createFixtureClient(), setPlayMode });
+
+  expect(setPlayMode).not.toHaveBeenCalled();
+});

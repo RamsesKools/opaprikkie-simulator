@@ -163,7 +163,7 @@ A pile of the dice the player has left to throw, left of the throw area, in a py
 
 ## Play modes
 
-A three-way slider in the header, "Play without hints", "Play with hints", "Play automatically", decides how human turns play; it's a frontend setting only.
+A three-way slider in the header, "Play without hints", "Play with hints", "Play automatically", decides how human turns play; the frontend also tells the backend, which decides how a drawn AI plays ([HTTP API](architecture/http_api.md#play-mode)).
 It starts on "Play automatically" and keeps its position for the next game, but not across a reload.
 
 - Play without hints: manual turns, and no lane in the opening roll lights up until dice are selected.

@@ -45,6 +45,9 @@ uv run opaprikkie simulate random random --games 1000 --seed 42
 # The same batch over HTTP, against a backend started with OPAPRIKKIE_DEV_MODE=true
 uv run opaprikkie simulate random random --games 1000 --seed 42 --url http://127.0.0.1:8000
 
+# Rank strategies with a round robin of head-to-head games (also takes --url)
+uv run opaprikkie tournament random greedy smart highest sum rarest bounty sloppy --games 1000 --seed 42
+
 # Show all commands
 uv run opaprikkie --help
 ```

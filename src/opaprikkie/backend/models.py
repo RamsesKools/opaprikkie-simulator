@@ -203,11 +203,16 @@ class NewGame(Request):
     seed: int | str | None = None
     first_player: Annotated[StrictInt, Field(ge=0, lt=engine.CLASSIC.players)] | None = None
     strategy: str | None = None
+    play_mode: games.PlayMode | None = None
 
     def dev_only_fields(self) -> list[str]:
         return [
             name for name in ("seed", "first_player", "strategy") if getattr(self, name) is not None
         ]
+
+
+class PlayMode(Request):
+    play_mode: games.PlayMode
 
 
 class Names(Request):

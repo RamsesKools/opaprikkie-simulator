@@ -48,10 +48,11 @@ export function createApiClient(options: Options = {}): GameClient {
         return createSession();
       }
     },
-    start: async ({ mode, names, seed, strategy }: GameSetup) => {
+    start: async ({ mode, names, playMode, seed, strategy }: GameSetup) => {
       const controllers: Controller[] = ["human", mode === "versus_ai" ? "ai" : "human"];
       const body = {
         controllers,
+        ...(playMode === undefined ? {} : { play_mode: playMode }),
         ...(seed === undefined ? {} : { seed }),
         ...(strategy === undefined ? {} : { strategy }),
       };
@@ -63,5 +64,7 @@ export function createApiClient(options: Options = {}): GameClient {
     chooseTarget: (target) => call(api.POST("/api/game/target", { body: { target } })),
     take: (target, dice) => call(api.POST("/api/game/take", { body: { target, dice } })),
     stop: () => call(api.POST("/api/game/stop")),
+    setPlayMode: (playMode) =>
+      call(api.POST("/api/game/play_mode", { body: { play_mode: playMode } })),
   };
 }

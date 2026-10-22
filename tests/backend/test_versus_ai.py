@@ -95,3 +95,20 @@ def test_a_finished_game_reports_its_turns_and_each_players_dice(client):
         turns += entry["continuation"] == 0
     assert game["dice_counts"] == expected
     assert game["turns"] == turns
+
+
+def test_a_sloppy_ai_plays_its_sequences_by_hand_and_never_stops(dev_client):
+    dev_client.post("/api/game", json=VERSUS_AI | {"strategy": "sloppy", "first_player": 0})
+    update = dev_client.post("/api/game/names", json=NAMES).json()
+
+    rolls = [
+        (entry["target"], roll)
+        for entry in ai_sequences(play_human_turns(dev_client, update))
+        for roll in entry["rolls"]
+    ]
+
+    def matching(target: int, roll: dict) -> int:
+        return len(engine.set_aside(engine.CLASSIC, target, roll["dice"]))
+
+    assert any(len(roll["set_aside"]) < matching(target, roll) for target, roll in rolls)
+    assert all(roll["set_aside"] or not matching(target, roll) for target, roll in rolls)
