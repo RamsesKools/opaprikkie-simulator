@@ -1,7 +1,7 @@
 # Simulation paths benchmark (issue #12)
 
 Measured on 2026-10-20: the same seeded batches through `opaprikkie simulate` in-process and over HTTP.
-This is evidence only; picking the default is [#13](https://github.com/RamsesKools/opaprikkie-simulator/issues/13).
+This is evidence only; the default is set in the [strategy contract](../architecture/strategy_contract.md#simulation-paths).
 
 ## TL;DR
 
