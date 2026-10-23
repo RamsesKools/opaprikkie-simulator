@@ -102,6 +102,12 @@ The ranking at seed 42 and 1000 games per pair, from `uv run opaprikkie tourname
 - The four simple target rules beat `smart`, which only maximizes the expected movement of one sequence.
 - `sloppy` places last, below `random`.
 
+## Simulation paths
+
+- In-process is the default for `simulate` and `tournament`; `--url` switches them to HTTP.
+- `--url` plays against a dev-mode backend of the same version.
+- The numbers are in [simulation paths](../research/simulation_paths.md).
+
 ## Seat controllers
 
 - Each game gives each seat a `controller`: `human` (the caller decides) or `ai` (a built-in strategy).
