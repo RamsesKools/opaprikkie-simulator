@@ -16,6 +16,5 @@ Issues live in GitHub Issues for `RamsesKools/opaprikkie-simulator`; use the `gh
   New work goes in standalone issues or a new map.
   `.plan/` is a read-only cache of the active map, refreshed with `uv run task wayfinder_pull`.
 - Implementation parts were sub-issues of #30, one branch and PR each, with native blockers; #30 is closed.
-  New work goes in standalone issues.
 - Implementation issues include an `## Expected proof` section saying what evidence the PR must show, such as commands and their output or screenshots.
   The PR shows it in its `## Proof` section.
