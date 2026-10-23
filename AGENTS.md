@@ -3,7 +3,7 @@
 ## Project
 
 Opa Prikkie, the Dutch dice game, as a browser game with an authoritative Python backend and a simulator for strategies.
-The browser MVP is being built; see [the roadmap](docs/roadmap/monorepo_mvp.md) and the implementation parts under issue #30.
+The browser MVP is done; see [the roadmap](docs/roadmap/monorepo_mvp.md) and the implementation parts under issue #30.
 
 - `src/opaprikkie/`: one distribution with the `engine`, `backend`, and `sim` subpackages, plus `cli.py`.
 - `frontend/`: the React SPA, playing against the backend's API.
@@ -39,7 +39,8 @@ The browser MVP is being built; see [the roadmap](docs/roadmap/monorepo_mvp.md) 
 
 ## Wayfinder planning
 
-The browser MVP map lives in GitHub: map issue #14, with its tickets as sub-issues.
-Read and write the map there with `gh`, following the GitHub mapping in the global wayfinder docs.
+The browser MVP map, issue #14 with its tickets as sub-issues, is closed and kept for reference.
+A new effort charts its own map.
+Read and write a map in GitHub with `gh`, following the GitHub mapping in the global wayfinder docs.
 `.plan/` is a gitignored, read-only cache for `wayfinder-maps status`, `lint`, and the viewer; never hand-edit it.
 Refresh it after every map change with `uv run task wayfinder_pull`.

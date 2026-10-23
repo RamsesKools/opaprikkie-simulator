@@ -18,8 +18,8 @@ The rules the engine implements are in [docs/game_rules.md](docs/game_rules.md).
 
 ## Status
 
-A browser version is being built: a React frontend, an authoritative Python backend, and a simulator for strategies.
-The plan is in [the roadmap](docs/roadmap/monorepo_mvp.md), and the work in issue [#30](https://github.com/RamsesKools/opaprikkie-simulator/issues/30).
+A browser version is playable: a React frontend, an authoritative Python backend, and a simulator for strategies.
+See [the roadmap](docs/roadmap/monorepo_mvp.md) for how it was planned and built.
 
 ## Setup
 

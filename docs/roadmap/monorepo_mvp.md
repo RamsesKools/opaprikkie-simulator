@@ -1,5 +1,7 @@
 # Opa Prikkie monorepo plan
 
+Done on 2026-10-23: the browser MVP map [#14](https://github.com/RamsesKools/opaprikkie-simulator/issues/14) is closed, and every part under [#30](https://github.com/RamsesKools/opaprikkie-simulator/issues/30) has merged.
+
 ## Destination
 
 Create an execution-ready architecture and implementation plan for a local browser MVP, then implement it in a monorepo with a frontend, backend, and separate simulator.
@@ -65,7 +67,7 @@ Details are in [module dependencies](../architecture/module_dependencies.md), [r
 4. Benchmark HTTP and in-process simulation, then choose a default while retaining both modes.
 5. Break the settled architecture into implementation issues for engine extraction, API, simulator, browser flows, and local development.
 
-The implementation runs as the sub-issues of [Implement the browser MVP](https://github.com/RamsesKools/opaprikkie-simulator/issues/30), in the order set by [#29](https://github.com/RamsesKools/opaprikkie-simulator/issues/29).
+The implementation ran as the sub-issues of [Implement the browser MVP](https://github.com/RamsesKools/opaprikkie-simulator/issues/30), in the order set by [#29](https://github.com/RamsesKools/opaprikkie-simulator/issues/29).
 
 ## MVP acceptance
 
