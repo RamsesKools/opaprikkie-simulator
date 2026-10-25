@@ -155,6 +155,7 @@ A pile of the dice the player has left to throw, left of the throw area, in a py
   - Red, orange, pink, purple, blue, cyan, slate, and maroon.
   - No green, so they stand out on the felt, and no yellow or brown, so they aren't mistaken for the gold of topped pegs and combos or the wood.
 - The boards are wood-coloured with dark holes.
+- The favicon (`frontend/public/favicon.svg`) is a white die showing a five, with dark pips and a dark outline like the splash die, so it reads at 16 px on light and dark tab bars; it is an SVG only, with no PNG or touch icon.
 - The header and the [sliders](#sliders) use a pixel wood texture (`frontend/src/assets/wood.svg`); the header's play mode slider is a darker wood than the header bar, with a drop shadow, so it stands out.
 - The page is a green pixel velvet (`frontend/src/assets/felt.svg`), dimmed to 40% over the off-white paper colour so it stays calm; the throw area and the bowl use the same velvet at full strength.
 
