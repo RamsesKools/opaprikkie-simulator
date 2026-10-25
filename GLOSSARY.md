@@ -10,6 +10,7 @@ A player's play from the opening roll until the turn passes: one or more roll se
 
 **Dice-off**:
 The start of a game: each player rolls two dice, and the highest sum chooses who starts.
+In the Dutch UI it's the "dobbelduel".
 
 **Ruleset**:
 A named set of game dimensions and rules the engine plays by; `CLASSIC` is the only one.

@@ -1,4 +1,5 @@
-import { act, render } from "@testing-library/react";
+import { act } from "@testing-library/react";
+import { render } from "../test_utils.tsx";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { timing } from "../game/timing.ts";
 import { Confetti } from "./confetti.tsx";

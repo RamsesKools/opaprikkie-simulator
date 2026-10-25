@@ -17,8 +17,13 @@ async function call<T>(request: Promise<Result<T>>): Promise<T> {
   const { data, error, response } = result;
   if (error === undefined) return data as T;
   if (typeof error === "object" && error !== null && "code" in error) {
-    const { code, message } = error as { code: string; message?: string };
-    throw new GameError(code, message ?? code);
+    const { code, message, reason, legal_targets } = error as {
+      code: string;
+      message?: string;
+      reason?: string;
+      legal_targets?: number[];
+    };
+    throw new GameError(code, message ?? code, { reason, legalTargets: legal_targets });
   }
   throw new GameError("http_error", `HTTP ${response.status}`);
 }

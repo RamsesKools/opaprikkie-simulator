@@ -8,7 +8,8 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 1. Menu: pick the mode, enter names, and pick colours.
    - A big wooden switch flips between "Player vs AI", the default, and "Player vs Player" (hot-seat).
    - Names are trimmed, 1 to 20 characters, and stored in the session so they're prefilled next time, in the mode of the session's last game.
-   - Defaults: "Player 1", "Player 2", and "Opa" for the AI; all editable.
+   - Defaults: "Speler 1", "Speler 2", and "Opa" for the AI, or "Player 1" and "Player 2" in English; all editable.
+   - [Switching language](#language) turns names still on their default into the other language's default (tracked per seat, so a typed or session name that equals a default, such as "Speler 1", stays).
    - The menu keeps three names: player 1 sits in both modes, while player 2 and the AI each keep their own, so switching modes brings back the other mode's name.
    - The app keeps them across games until the page reloads; the session only stores the last game's two.
    - Duplicate names are fine; seat colours tell players apart.
@@ -161,7 +162,7 @@ A pile of the dice the player has left to throw, left of the throw area, in a py
 
 ## Header
 
-- A wooden bar across the top with the title and the "Rules" button, on every screen.
+- A wooden bar across the top with the title, the "Rules" button, and the [language switch](#language), on every screen.
 - Outside the menu, a "New Game" button sits right of the title.
 - During the game it also holds the [play mode](#play-modes) slider, with a small round "?" button next to it that opens the [explanation of the modes](#play-modes-help); below 540 px, the slider and the "?" take a full row of their own, with smaller labels.
 
@@ -244,8 +245,23 @@ A splash covers the page until everything is ready, so no half-styled screen eve
 
 ## Language
 
-- English only for the MVP.
-- Keep UI strings in one module, `frontend/src/lib/strings.ts`, so adding a language is easy.
+- Dutch and English, Dutch by default; a small "NL" / "EN" wooden slider (the [slider](#sliders) component) in the header, right of "Rules", on every screen.
+  It sits in the header's controls, which wrap, so at phone width it drops next to "Rules" and the play mode slider keeps its own row.
+- The choice is kept in `localStorage` (`opaprikkie.language`); reads and writes are wrapped in try/catch, and a missing, unknown, or blocked value gives Dutch.
+- Switching changes the whole UI at once, mid-game too, without a reload and without touching the game: no request goes out, and the dice, pegs, and turn stay as they are.
+  A message or pop-up already on screen is reworded in place.
+- `<html lang>` follows the language.
+- Everything the player reads is translated: menu, dice-off, game messages, pop-ups, buttons, the rules booklet, the play modes help, the victory stats, the version banner, and error messages.
+  The colour names are translated too.
+  What isn't: the title "Opa Prikkie", the AI's name "Opa", names the player typed or that come from the session, and dev mode's seed and strategy names.
+- Strings live in `frontend/src/lib/`, one dictionary per language, `strings_nl.ts` and `strings_en.ts`, sharing the `Strings` type in `strings.ts`, so a string missing in one fails `tsc`.
+  Components read the current dictionary with `useStrings()` from `language.ts`; the `LanguageProvider` in `main.tsx` holds the language.
+  There's no i18n library.
+- A scene's message and pop-up (`game/scenes.ts`) are functions of the dictionary, so a language switch rewords them without rebuilding the scenes or replaying the throws.
+- The copy quoted in this document is the English.
+- Dutch is informal ("je"), short like the English.
+  The vocabulary: a peg is a "prikkie", a die a "dobbelsteen" ("steen" on buttons), a match a "combinatie", a target a "doel", the dice-off the "dobbelduel", a roll or throw "gooien", and the throw button "Dobbelen".
+- Rejections show a sentence written in the frontend per API `code` and, where it helps, `reason` ([view model](#view-model)), never the API's English message.
 
 ## View model
 
@@ -254,7 +270,7 @@ A splash covers the page until everything is ready, so no half-styled screen eve
 - A failed action rejects with a `GameError` carrying the API's `code`, and `game/errors.ts` picks the message:
   - `network`: "Can't reach the server. Check your connection and try again."
   - `no_session` or `no_game`: the game is lost, so the app goes back to the menu, with the last names kept, saying "Your game was lost. Start a new one."
-  - a rejected choice: the API's message, as above
+  - a rejected choice: a sentence per `code` and `reason` in the current [language](#language)
   - anything else: "Something went wrong."
 - Except for a lost game, the player stays put and can try again.
 - When the session can't load because the server is unreachable, the menu shows with the network message; any other failure there leaves a clean menu.
@@ -265,13 +281,14 @@ A splash covers the page until everything is ready, so no half-styled screen eve
   - no game, a finished one, or one never named: the menu, with the names prefilled
 - Unit tests use a fixture client that replays a game recorded from the engine; each choice point offers only the recorded target, and manual turns aren't scripted.
 - Which dice may be selected, the lanes a selection lights, the ghost peg's row, and the label of the button that takes it are looked up in the observation's `takes`, whose `outcome` and `next_dice` say what each take leads to; the frontend has no matching rules of its own.
-- A rejection of a choice (`wrong_phase`, `illegal_target`, `illegal_dice`) shows the API's message as a sentence; since the UI only offers legal choices, that's after a race, like another tab moving the game on.
+- A rejection of a choice (`wrong_phase`, `illegal_target`, `illegal_dice`) shows a frontend sentence for its `code`, refined by its `reason` (`locked` with the one legal target, `not_a_target`, `topped`, `no_match`, `empty`, `not_dice`), and a general one for an unknown reason; since the UI only offers legal choices, that's after a race, like another tab moving the game on.
+- The game screen and the app keep the failure, not its text, so an error on screen is reworded when the language switches.
 - After a `wrong_phase` rejection, for example when another tab moved the game on, the game screen reloads the game from the session.
 
 ## Version handshake
 
 - On load and after every failed action, the app compares `GET /api/health`'s `version` with its own from `package.json`.
-- On a mismatch, a banner under the header says "A new version of Opa Prikkie is out." with a "Reload" button.
+- On a mismatch, a banner under the header says "A new version of Opa Prikkie is out." (in Dutch "Er is een nieuwe versie van Opa Prikkie.") with a "Reload" button.
 - A failed health check changes nothing; the next failure checks again.
 
 ## Dev mode
@@ -284,7 +301,3 @@ When `GET /api/health` reports `dev_mode`:
 - the game shows the seed and the AI's strategy under the message
 
 The AI strategy is never shown otherwise.
-
-## Later
-
-- A language selector, starting with Dutch.

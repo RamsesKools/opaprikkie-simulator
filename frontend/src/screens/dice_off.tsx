@@ -5,7 +5,7 @@ import { Stack } from "../components/stack.tsx";
 import { emptyPegs, type DiceOffRound, type GameUpdate } from "../game/model.ts";
 import { timing } from "../game/timing.ts";
 import { useSeatStyle } from "../lib/seat_colours.ts";
-import { strings } from "../lib/strings.ts";
+import { useStrings } from "../lib/language.ts";
 
 type ThrowerProps = {
   player: number;
@@ -48,6 +48,7 @@ type Props = {
 };
 
 export function DiceOff({ update, onChooseFirst, onAiStarts }: Props) {
+  const strings = useStrings();
   const seatStyle = useSeatStyle();
   const { game } = update;
   const rounds = update.logs.filter((entry): entry is DiceOffRound => entry.kind === "dice_off");

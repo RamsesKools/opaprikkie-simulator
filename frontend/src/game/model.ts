@@ -39,12 +39,17 @@ export type GameSetup = {
   strategy?: string;
 };
 
+/** What a rejection adds to its code: why, and for a locked sequence the only legal target. */
+export type Rejected = { reason?: string; legalTargets?: number[] };
+
 export class GameError extends Error {
   readonly code: string;
+  readonly rejected: Rejected;
 
-  constructor(code: string, message: string) {
+  constructor(code: string, message: string, rejected: Rejected = {}) {
     super(message);
     this.code = code;
+    this.rejected = rejected;
   }
 }
 

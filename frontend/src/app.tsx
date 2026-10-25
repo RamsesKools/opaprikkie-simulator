@@ -13,10 +13,10 @@ import type {
   Session,
 } from "./game/model.ts";
 import { loadColours, resolveColours, saveColours, seatColours } from "./lib/colours.ts";
-import { newDraft, withSeats, type Draft } from "./lib/names.ts";
+import { dictionaries, useLanguage, type Language } from "./lib/language.ts";
+import { newDraft, translateRoster, withSeats, withStartedSeats, type Draft } from "./lib/names.ts";
 import { SeatColours } from "./lib/seat_colours.ts";
 import { hideSplash } from "./lib/splash.ts";
-import { strings } from "./lib/strings.ts";
 import { version } from "./lib/version.ts";
 import { DiceOff } from "./screens/dice_off.tsx";
 import { GameScreen } from "./screens/game_screen.tsx";
@@ -52,23 +52,26 @@ function resumed(game: Game | null): Screen {
 
 const INITIAL_PLAY_MODE: PlayMode = "automatic";
 
-const playModes = [
-  { value: "without_hints", label: strings.play.withoutHints },
-  { value: "with_hints", label: strings.play.withHints },
-  { value: "automatic", label: strings.play.automatic },
-] as const satisfies { value: PlayMode; label: string }[];
+const languageOptions = [
+  { value: "nl", label: "NL" },
+  { value: "en", label: "EN" },
+] as const satisfies { value: Language; label: string }[];
 
 type Props = { client: GameClient; assets?: Promise<unknown> };
 
 export function App({ client, assets = Promise.resolve() }: Props) {
+  const { language, strings, setLanguage } = useLanguage();
   const [screen, setScreen] = useState<Screen>({ kind: "loading" });
-  const [draft, setDraft] = useState<Draft>(() => ({ ...newDraft, colours: loadColours() }));
+  const [draft, setDraft] = useState<Draft>(() => ({
+    ...newDraft(strings),
+    colours: loadColours(),
+  }));
   // Bumped by New Game, so answers for the abandoned game are ignored.
   const round = useRef(0);
   const [health, setHealth] = useState<Health | null>(null);
   const [rules, setRules] = useState(false);
   const [help, setHelp] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ cause: unknown } | null>(null);
   const [starting, setStarting] = useState(false);
   const [playMode, setPlayMode] = useState<PlayMode>(INITIAL_PLAY_MODE);
   const [loaded, setLoaded] = useState(false);
@@ -91,7 +94,7 @@ export function App({ client, assets = Promise.resolve() }: Props) {
       },
       (failure: unknown) => {
         // Other failures leave a clean menu; Start reports them if they persist.
-        if (isNetwork(failure)) setError(errorMessage(failure));
+        if (isNetwork(failure)) setError({ cause: failure });
         setScreen({ kind: "menu" });
       },
     );
@@ -111,7 +114,7 @@ export function App({ client, assets = Promise.resolve() }: Props) {
   const gameFailed = useCallback(
     (failure: unknown) => {
       if (isLost(failure)) {
-        setError(errorMessage(failure));
+        setError({ cause: failure });
         setScreen({ kind: "menu" });
       }
       handshake();
@@ -120,7 +123,7 @@ export function App({ client, assets = Promise.resolve() }: Props) {
   );
   const fail = useCallback(
     (failure: unknown) => {
-      setError(errorMessage(failure));
+      setError({ cause: failure });
       gameFailed(failure);
     },
     [gameFailed],
@@ -129,7 +132,7 @@ export function App({ client, assets = Promise.resolve() }: Props) {
   const start = (chosen: GameSetup) => {
     setDraft((current) => ({
       ...current,
-      roster: withSeats(current.roster, chosen.mode, chosen.names),
+      roster: withStartedSeats(current.roster, chosen.mode, chosen.names),
     }));
     setError(null);
     setStarting(true);
@@ -137,6 +140,14 @@ export function App({ client, assets = Promise.resolve() }: Props) {
       .start({ ...chosen, playMode })
       .then((update) => setScreen({ kind: "dice_off", update }), fail)
       .finally(() => setStarting(false));
+  };
+
+  const changeLanguage = (next: Language) => {
+    setDraft((current) => ({
+      ...current,
+      roster: translateRoster(current.roster, dictionaries[next]),
+    }));
+    setLanguage(next);
   };
 
   const changePlayMode = (next: PlayMode) => {
@@ -165,6 +176,11 @@ export function App({ client, assets = Promise.resolve() }: Props) {
   const finished = useCallback((game: Game) => setScreen({ kind: "victory", game }), []);
   const closeRules = useCallback(() => setRules(false), []);
   const closeHelp = useCallback(() => setHelp(false), []);
+  const playModes = [
+    { value: "without_hints", label: strings.play.withoutHints },
+    { value: "with_hints", label: strings.play.withHints },
+    { value: "automatic", label: strings.play.automatic },
+  ] as const satisfies { value: PlayMode; label: string }[];
   const stale = health !== null && health.version !== version;
   const dev = health?.dev_mode ? { strategies: health.strategies ?? [] } : null;
 
@@ -203,6 +219,12 @@ export function App({ client, assets = Promise.resolve() }: Props) {
           <button type="button" onClick={() => setRules(true)}>
             {strings.rules}
           </button>
+          <Slider
+            label={strings.language}
+            options={languageOptions}
+            value={language}
+            onChange={changeLanguage}
+          />
         </div>
       </header>
       {stale && (
@@ -214,7 +236,7 @@ export function App({ client, assets = Promise.resolve() }: Props) {
         </div>
       )}
       <main>
-        {error && <p role="alert">{error}</p>}
+        {error && <p role="alert">{errorMessage(error.cause, strings)}</p>}
         {screen.kind === "menu" && (
           <Menu
             draft={draft}

@@ -1,8 +1,9 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
+import { render } from "../test_utils.tsx";
 import { useState } from "react";
 import { expect, test, vi } from "vitest";
 import type { GameSetup } from "../game/model.ts";
-import { strings } from "../lib/strings.ts";
+import { en as strings } from "../lib/strings_en.ts";
 import { newDraft, type Draft } from "../lib/names.ts";
 import { Menu } from "./menu.tsx";
 
@@ -12,7 +13,7 @@ type Shown = { initial?: Partial<Draft>; dev?: Dev; pending?: boolean };
 function show({ initial = {}, dev = null, pending = false }: Shown = {}) {
   const onStart = vi.fn<(setup: GameSetup) => void>();
   function Controlled() {
-    const [draft, setDraft] = useState<Draft>({ ...newDraft, ...initial });
+    const [draft, setDraft] = useState<Draft>({ ...newDraft(strings), ...initial });
     return <Menu draft={draft} onChange={setDraft} dev={dev} pending={pending} onStart={onStart} />;
   }
   render(<Controlled />);
@@ -78,7 +79,12 @@ test("blocks a second start while one is pending", () => {
 });
 
 test("shows the draft's mode and names", () => {
-  show({ initial: { mode: "hot_seat", roster: { players: ["Ann", "Bob"], ai: "Oma" } } });
+  show({
+    initial: {
+      mode: "hot_seat",
+      roster: { players: ["Ann", "Bob"], ai: "Oma", isDefault: [false, false, false] },
+    },
+  });
 
   expect(screen.getByLabelText(strings.menu.player(0))).toHaveValue("Ann");
   expect(screen.getByLabelText(strings.menu.player(1))).toHaveValue("Bob");

@@ -1,4 +1,5 @@
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, within } from "@testing-library/react";
+import { render } from "./test_utils.tsx";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { App } from "./app.tsx";
 import { createApiClient } from "./game/api_client.ts";
@@ -8,10 +9,13 @@ import {
   type Game,
   type GameClient,
   type GameUpdate,
+  type LogEntry,
   type Session,
 } from "./game/model.ts";
 import { timing } from "./game/timing.ts";
-import { strings } from "./lib/strings.ts";
+import { STORAGE_KEY } from "./lib/language.ts";
+import { en as strings } from "./lib/strings_en.ts";
+import { nl } from "./lib/strings_nl.ts";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -73,7 +77,7 @@ test("clicks a hot-seat game through from the menu to the victory screen", async
 
   fireEvent.click(screen.getByRole("button", { name: strings.victory.again }));
   expect(screen.getByLabelText(strings.menu.player(0))).toHaveValue("Player 1");
-}, 60_000);
+});
 
 test("clicks a game versus AI through with the AI starting", async () => {
   await renderApp();
@@ -86,7 +90,7 @@ test("clicks a game versus AI through with the AI starting", async () => {
   await until(() => screen.queryByText(strings.game.aiThinking("Opa")));
   await playToVictory("Opa");
   expect(screen.getByText(strings.victory.wins("Opa"))).toBeInTheDocument();
-}, 60_000);
+});
 
 test("lets an AI dice-off winner start by itself", async () => {
   const choice = scriptedGame.first_player_choice;
@@ -133,7 +137,7 @@ test("switches how to play from the header during the game", async () => {
   await until(throwStack);
   fireEvent.click(mode(strings.play.automatic));
   expect(throwStack()).not.toBeInTheDocument();
-}, 60_000);
+});
 
 test("opens and closes the rules booklet", async () => {
   await renderApp();
@@ -219,7 +223,7 @@ test("lets the dice-off winner choose again after a failed choice", async () => 
 
   await until(() => screen.queryByText(strings.game.pick("Player 1")));
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-}, 60_000);
+});
 
 test("prefills the names and mode from the session's finished game", async () => {
   const game = { ...scriptedGame.branches[0]!.final, names: ["Ann", "Bob"] };
@@ -404,7 +408,7 @@ test("goes back to the menu when the game is lost mid-game", async () => {
   expect(screen.getByLabelText(strings.menu.you)).toHaveValue("Ann");
   fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-}, 60_000);
+});
 
 test("goes back to the menu when the game is lost in the dice-off", async () => {
   const gone = () => Promise.reject(new GameError("no_game", "start a game first"));
@@ -440,7 +444,7 @@ test("leaves other game errors to the game screen", async () => {
   expect(await until(() => screen.queryByText(strings.errors.generic))).toBeInTheDocument();
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   expect(legalTarget()).toBeDefined();
-}, 60_000);
+});
 
 const saved = (game: Omit<Game, "names" | "controllers">, names = ["Ann", "Bob"]) => ({
   names,
@@ -545,7 +549,7 @@ test("goes back to the menu when a resumed game is lost", async () => {
 
   expect(await until(() => screen.queryByRole("alert"))).toHaveTextContent(strings.errors.lost);
   expect(screen.getByLabelText(strings.menu.player(0))).toHaveValue("Ann");
-}, 60_000);
+});
 
 test.each([
   ["finished", scriptedGame.branches[0]!.final],
@@ -580,7 +584,7 @@ test("starts over with New Game, keeping every name", async () => {
   expect(screen.getByLabelText(strings.menu.you)).toHaveValue("Ann");
   expect(screen.getByLabelText(strings.menu.opponent)).toHaveValue("Oma");
   expect(newGame()).not.toBeInTheDocument();
-}, 60_000);
+});
 
 test("ignores a dice-off choice that lands after New Game", async () => {
   const fixture = createFixtureClient();
@@ -600,7 +604,7 @@ test("ignores a dice-off choice that lands after New Game", async () => {
   await act(() => vi.advanceTimersByTimeAsync(5000));
 
   expect(screen.getByRole("button", { name: strings.menu.start })).toBeInTheDocument();
-}, 60_000);
+});
 
 test("ignores a pick that fails after New Game", async () => {
   let fail = () => {};
@@ -620,7 +624,7 @@ test("ignores a pick that fails after New Game", async () => {
   await act(() => vi.advanceTimersByTimeAsync(0));
 
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-}, 60_000);
+});
 
 test("offers New Game on the victory screen too", async () => {
   await renderApp();
@@ -633,7 +637,7 @@ test("offers New Game on the victory screen too", async () => {
   fireEvent.click(newGame()!);
 
   expect(screen.getByLabelText(strings.menu.opponent)).toHaveValue("Opa");
-}, 60_000);
+});
 
 test("clears the lost-game alert once the menu changes", async () => {
   const gone = () => Promise.reject(new GameError("no_game", "start a game first"));
@@ -666,7 +670,7 @@ test("sends the play mode at the start and whenever the slider changes", async (
   fireEvent.click(screen.getByRole("radio", { name: strings.play.withHints }));
 
   expect(setPlayMode.mock.calls).toEqual([["without_hints"], ["with_hints"]]);
-}, 60_000);
+});
 
 test("tells the backend where the slider starts after a reload", async () => {
   const game = scriptedGame.branches[0]!.steps[0]!.game;
@@ -718,7 +722,7 @@ test("plays in the chosen colours and keeps them across a reload", async () => {
       screen.getByRole("radiogroup", { name: strings.menu.colourOf(strings.menu.you) }),
     ).getByRole("radio", { name: strings.menu.colours.pink }),
   ).toBeChecked();
-}, 60_000);
+});
 
 test("resumes a game in the saved colours", async () => {
   localStorage.setItem(
@@ -731,4 +735,202 @@ test("resumes a game in the saved colours", async () => {
   await until(() => screen.queryByText(strings.game.pick("Ann")));
   expect(seatOf("Ann")).toBe("#8c1d40");
   expect(seatOf("Bob")).toBe("#4a4f5c");
+});
+
+const language = (label: string) => screen.getByRole("radio", { name: label });
+
+test("starts in Dutch on a first visit, with Dutch default names", async () => {
+  localStorage.clear();
+  render(<App client={createFixtureClient()} />);
+
+  await until(() => screen.queryByRole("button", { name: nl.menu.start }));
+
+  expect(document.documentElement.lang).toBe("nl");
+  expect(language("NL")).toBeChecked();
+  expect(screen.getByLabelText(nl.menu.you)).toHaveValue("Speler 1");
+  expect(screen.getByLabelText(nl.menu.opponent)).toHaveValue("Opa");
+  expect(screen.getByRole("heading", { name: nl.title })).toBeInTheDocument();
+});
+
+test("switches the menu to English, keeping the choice and the names typed", async () => {
+  localStorage.clear();
+  render(<App client={createFixtureClient()} />);
+  await until(() => screen.queryByRole("button", { name: nl.menu.start }));
+  fireEvent.change(screen.getByLabelText(nl.menu.you), { target: { value: "Ann" } });
+
+  fireEvent.click(language("EN"));
+
+  expect(screen.getByRole("button", { name: strings.menu.start })).toBeInTheDocument();
+  expect(screen.getByLabelText(strings.menu.you)).toHaveValue("Ann");
+  expect(screen.getByLabelText(strings.menu.opponent)).toHaveValue("Opa");
+  expect(document.documentElement.lang).toBe("en");
+  expect(localStorage.getItem(STORAGE_KEY)).toBe("en");
+  hotSeat();
+  expect(screen.getByLabelText(strings.menu.player(1))).toHaveValue("Player 2");
+  fireEvent.click(language("NL"));
+  expect(screen.getByLabelText(nl.menu.player(1))).toHaveValue("Speler 2");
+});
+
+test("a typed name equal to a default stays on a switch", async () => {
+  await renderApp();
+  fireEvent.change(screen.getByLabelText(strings.menu.you), { target: { value: "Ann" } });
+  fireEvent.change(screen.getByLabelText(strings.menu.you), { target: { value: "Player 1" } });
+
+  fireEvent.click(language("NL"));
+
+  expect(screen.getByLabelText(nl.menu.you)).toHaveValue("Player 1");
+  expect(screen.getByLabelText(nl.menu.opponent)).toHaveValue("Opa");
+});
+
+test("a name from the session equal to a default stays on a switch", async () => {
+  await renderApp(
+    {
+      ...createFixtureClient(),
+      session: async () => ({ names: ["Player 1", "Player 2"], game: null }),
+    },
+    false,
+  );
+  await until(() => screen.queryByRole("button", { name: strings.menu.start }));
+
+  fireEvent.click(language("NL"));
+
+  expect(screen.getByLabelText(nl.menu.you)).toHaveValue("Player 1");
+  expect(screen.getByLabelText(nl.menu.opponent)).toHaveValue("Player 2");
+});
+
+test("remembers the language on the next visit", async () => {
+  const { unmount } = render(<App client={createFixtureClient()} />);
+  await until(() => screen.queryByRole("button", { name: strings.menu.start }));
+  fireEvent.click(language("NL"));
+  unmount();
+
+  render(<App client={createFixtureClient()} />);
+
+  expect(
+    await until(() => screen.queryByRole("button", { name: nl.menu.start })),
+  ).toBeInTheDocument();
+});
+
+test("switches the whole UI at once mid-game, without touching the game", async () => {
+  const fixture = createFixtureClient();
+  const calls = {
+    start: vi.fn<GameClient["start"]>((setup) => fixture.start(setup)),
+    chooseFirstPlayer: vi.fn<GameClient["chooseFirstPlayer"]>((p) => fixture.chooseFirstPlayer(p)),
+    chooseTarget: vi.fn<GameClient["chooseTarget"]>((t) => fixture.chooseTarget(t)),
+    take: vi.fn<GameClient["take"]>((t, dice) => fixture.take(t, dice)),
+    stop: vi.fn<GameClient["stop"]>(() => fixture.stop()),
+    setPlayMode: vi.fn<GameClient["setPlayMode"]>((m) => fixture.setPlayMode(m)),
+    session: vi.fn<GameClient["session"]>(() => fixture.session()),
+  };
+  await renderApp({ ...fixture, ...calls });
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") })),
+  );
+  await until(() => screen.queryByText(strings.game.pick("Player 1")));
+  const before = Object.values(calls).map((call) => call.mock.calls.length);
+  const dice = screen.getByRole("img", { name: strings.game.dice([2, 3, 4, 5, 3, 2]) });
+
+  fireEvent.click(language("NL"));
+
+  expect(screen.getByText(nl.game.pick("Player 1"))).toBeInTheDocument();
+  expect(screen.getByText(nl.game.turn(1, "Player 1"))).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: nl.newGame })).toBeInTheDocument();
+  expect(screen.getByRole("radio", { name: nl.play.withHints })).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: nl.game.dice([2, 3, 4, 5, 3, 2]) })).toBe(dice);
+  expect(screen.getByRole("region", { name: nl.game.board("Player 1") })).toBeInTheDocument();
+  expect(Object.values(calls).map((call) => call.mock.calls.length)).toEqual(before);
+  fireEvent.click(screen.getByRole("button", { name: nl.rules }));
+  expect(screen.getByRole("dialog", { name: nl.booklet.title })).toBeInTheDocument();
+});
+
+test("translates the message of a sequence being replayed", async () => {
+  await renderApp();
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") })),
+  );
+  fireEvent.click(await until(legalTarget));
+  await until(() => screen.queryByText(/^Player 1 goes for \d+\.$/));
+
+  fireEvent.click(language("NL"));
+
+  expect(screen.getByText(/^Player 1 gaat voor de \d+\.$/)).toBeInTheDocument();
+});
+
+test("rewords an open pop-up on a switch", async () => {
+  const fixture = createFixtureClient();
+  const deadTurn: LogEntry = {
+    kind: "no_move",
+    player: 0,
+    turn: 1,
+    continuation: 0,
+    opening_roll: [2, 2, 2, 2, 2, 2],
+  };
+  await renderApp({
+    ...fixture,
+    chooseFirstPlayer: async (player) => ({
+      ...(await fixture.chooseFirstPlayer(player)),
+      logs: [deadTurn],
+    }),
+  });
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") })),
+  );
+  const popup = await until(() => screen.queryByText(strings.game.ohNo("Player 1", true)));
+  expect(popup).toHaveAttribute("role", "status");
+
+  fireEvent.click(language("NL"));
+
+  expect(screen.queryByText(strings.game.ohNo("Player 1", true))).not.toBeInTheDocument();
+  expect(screen.getByText(nl.game.ohNo("Player 1", true))).toHaveAttribute("role", "status");
+});
+
+test("words a rejection in the current language and rewords it on a switch", async () => {
+  const locked = () =>
+    Promise.reject(
+      new GameError("illegal_target", "the sequence is locked to 7", {
+        reason: "locked",
+        legalTargets: [7],
+      }),
+    );
+  await renderApp({ ...createFixtureClient(), chooseTarget: locked });
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") })),
+  );
+
+  fireEvent.click(await until(legalTarget));
+
+  expect(
+    await until(() => screen.queryByText(strings.errors.illegalTarget.locked(7))),
+  ).toBeVisible();
+  fireEvent.click(language("NL"));
+  expect(screen.getByText(nl.errors.illegalTarget.locked(7))).toBeVisible();
+});
+
+test("shows the version banner and a lost game in the current language", async () => {
+  localStorage.setItem(STORAGE_KEY, "nl");
+  const gone = () => Promise.reject(new GameError("no_game", "start a game first"));
+  await renderApp(
+    {
+      ...createFixtureClient(),
+      health: async () => health("0.0.0-other"),
+      chooseFirstPlayer: gone,
+    },
+    false,
+  );
+  await until(() => screen.queryByRole("button", { name: nl.menu.start }));
+  fireEvent.click(screen.getByRole("button", { name: nl.menu.start }));
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: nl.diceOff.starts("Speler 1") })),
+  );
+
+  const alerts = await until(
+    () => screen.queryAllByRole("alert")[1] && screen.queryAllByRole("alert"),
+  );
+  expect(alerts[0]).toHaveTextContent(nl.stale);
+  expect(alerts[1]).toHaveTextContent(nl.errors.lost);
+  expect(screen.getByRole("button", { name: nl.reload })).toBeInTheDocument();
 });
