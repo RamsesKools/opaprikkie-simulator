@@ -1,4 +1,5 @@
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { timing } from "../game/timing.ts";
 import { assetsReady } from "./assets.ts";
 
 const decoded: string[] = [];
@@ -89,4 +90,69 @@ test("waits for fonts", async () => {
 test("doesn't wait for a texture that failed to load", async () => {
   images(() => Promise.reject(new Error("broken")));
   await expect(assetsReady()).resolves.toBeUndefined();
+});
+
+test("doesn't wait for a stylesheet that is already loaded", async () => {
+  images(async () => {});
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  Object.defineProperty(link, "sheet", { value: {} });
+  document.head.append(link);
+
+  await expect(assetsReady()).resolves.toBeUndefined();
+});
+
+describe("a stalled request", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  const stalled = new Promise<void>(() => {});
+
+  async function finishesAt(ready: Promise<void>): Promise<boolean> {
+    let done = false;
+    void ready.then(() => (done = true));
+    await vi.advanceTimersByTimeAsync(timing.assetsCap - 1);
+    expect(done).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    return done;
+  }
+
+  test("stops holding the app back after the cap, for a texture", async () => {
+    images(() => stalled);
+
+    expect(await finishesAt(assetsReady())).toBe(true);
+  });
+
+  test("stops holding the app back after the cap, for a stylesheet", async () => {
+    images(async () => {});
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    document.head.append(link);
+
+    expect(await finishesAt(assetsReady())).toBe(true);
+  });
+
+  test("stops holding the app back after the cap, for fonts", async () => {
+    images(async () => {});
+    Object.defineProperty(document, "fonts", { configurable: true, value: { ready: stalled } });
+
+    expect(await finishesAt(assetsReady())).toBe(true);
+  });
+
+  test("gives up on a stylesheet that failed before the check", async () => {
+    images(async () => {});
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    document.head.append(link);
+    link.dispatchEvent(new Event("error"));
+
+    expect(await finishesAt(assetsReady())).toBe(true);
+  });
+
+  test("leaves no timer behind once everything loaded", async () => {
+    images(async () => {});
+    await assetsReady();
+
+    expect(vi.getTimerCount()).toBe(0);
+  });
 });

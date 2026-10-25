@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { App } from "./app.tsx";
+import { createApiClient } from "./game/api_client.ts";
 import { createFixtureClient, scriptedGame, type Script } from "./game/fixture_client.ts";
 import {
   GameError,
@@ -9,6 +10,7 @@ import {
   type GameUpdate,
   type Session,
 } from "./game/model.ts";
+import { timing } from "./game/timing.ts";
 import { strings } from "./lib/strings.ts";
 
 beforeEach(() => {
@@ -287,6 +289,32 @@ describe("splash", () => {
     answer({ names: null, game: null });
     await until(() => screen.queryByRole("button", { name: strings.menu.start }));
     expect(hidden()).toBe(true);
+  });
+
+  test("goes away when the textures fail to load", async () => {
+    render(<App client={createFixtureClient()} assets={Promise.reject(new Error("broken"))} />);
+    await until(() => screen.queryByRole("button", { name: strings.menu.start }));
+
+    expect(hidden()).toBe(true);
+  });
+
+  test("goes away with the network message when the session stalls", async () => {
+    const client = createApiClient({
+      baseUrl: "http://test",
+      fetch: (request) =>
+        new Promise<Response>((_, reject) =>
+          request.signal.addEventListener("abort", () => reject(request.signal.reason)),
+        ),
+    });
+    render(<App client={client} />);
+    await act(() => vi.advanceTimersByTimeAsync(timing.sessionCap - 1));
+    expect(hidden()).toBe(false);
+
+    await act(() => vi.advanceTimersByTimeAsync(1));
+    await until(() => screen.queryByRole("button", { name: strings.menu.start }));
+
+    expect(hidden()).toBe(true);
+    expect(screen.getByRole("alert")).toHaveTextContent(strings.errors.network);
   });
 
   test("goes away for a resumed game, without showing the menu first", async () => {

@@ -1,5 +1,6 @@
 import createClient from "openapi-fetch";
 import type { paths } from "../lib/api.d.ts";
+import { timing } from "./timing.ts";
 import { GameError, type Controller, type GameClient, type GameSetup } from "./model.ts";
 
 type Options = { baseUrl?: string; fetch?: (request: Request) => Promise<Response> };
@@ -22,11 +23,27 @@ async function call<T>(request: Promise<Result<T>>): Promise<T> {
   throw new GameError("http_error", `HTTP ${response.status}`);
 }
 
+/** Aborts the request after the cap; a stalled one then fails as a network error. */
+async function capped<T>(
+  request: (signal: AbortSignal) => Promise<Result<T>>,
+  ms: number,
+): Promise<T> {
+  const abort = new AbortController();
+  const cap = setTimeout(() => abort.abort(new Error("Request timed out")), ms);
+  try {
+    return await call(request(abort.signal));
+  } finally {
+    clearTimeout(cap);
+  }
+}
+
 const isNoSession = (error: unknown) => error instanceof GameError && error.code === "no_session";
 
 export function createApiClient(options: Options = {}): GameClient {
   const api = createClient<paths>(options);
   const createSession = () => call(api.POST("/api/sessions"));
+  const createSessionCapped = () =>
+    capped((signal) => api.POST("/api/sessions", { signal }), timing.sessionCap);
 
   async function withSession<T>(action: () => Promise<T>): Promise<T> {
     try {
@@ -42,10 +59,10 @@ export function createApiClient(options: Options = {}): GameClient {
     health: () => call(api.GET("/api/health")),
     session: async () => {
       try {
-        return await call(api.GET("/api/session"));
+        return await capped((signal) => api.GET("/api/session", { signal }), timing.sessionCap);
       } catch (error) {
         if (!isNoSession(error)) throw error;
-        return createSession();
+        return createSessionCapped();
       }
     },
     start: async ({ mode, names, playMode, seed, strategy }: GameSetup) => {

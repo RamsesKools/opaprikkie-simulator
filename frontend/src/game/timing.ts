@@ -12,6 +12,8 @@ export const timing = {
   autoThrowMin: 3000,
   autoThrowMax: 5000,
   diceOffResult: 1800,
+  assetsCap: 5000,
+  sessionCap: 10000,
 };
 
 const reducedMotion = () =>

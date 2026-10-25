@@ -1,5 +1,6 @@
-import { expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { createApiClient } from "./api_client.ts";
+import { timing } from "./timing.ts";
 import { GameError, type Game, type GameUpdate } from "./model.ts";
 
 type Reply = { status: number; body: unknown };
@@ -64,6 +65,59 @@ test("resumes the session from its cookie", async () => {
 
   expect(await client.session()).toEqual(session);
   expect(calls).toHaveLength(1);
+});
+
+describe("a stalled session", () => {
+  afterEach(() => vi.useRealTimers());
+
+  const hangs = (request: Request) =>
+    new Promise<Response>((_, reject) =>
+      request.signal.addEventListener("abort", () => reject(request.signal.reason)),
+    );
+
+  async function outcome(promise: Promise<unknown>) {
+    const result = promise.then(
+      () => "resolved",
+      (error: unknown) => (error instanceof GameError ? error.code : "other"),
+    );
+    await vi.advanceTimersByTimeAsync(timing.sessionCap - 1);
+    const early = await Promise.race([result, Promise.resolve("pending")]);
+    await vi.advanceTimersByTimeAsync(1);
+    return { early, late: await result };
+  }
+
+  test("fails as a network error after the cap", async () => {
+    vi.useFakeTimers();
+    const client = createApiClient({ baseUrl: "http://test", fetch: hangs });
+
+    expect(await outcome(client.session())).toEqual({ early: "pending", late: "network" });
+  });
+
+  test("fails the same way when creating the replacement session stalls", async () => {
+    vi.useFakeTimers();
+    const fetch = (request: Request) =>
+      request.method === "GET"
+        ? Promise.resolve(
+            new Response(JSON.stringify({ code: "no_session", message: "no_session" }), {
+              status: 401,
+              headers: { "content-type": "application/json" },
+            }),
+          )
+        : hangs(request);
+    const client = createApiClient({ baseUrl: "http://test", fetch });
+
+    expect(await outcome(client.session())).toEqual({ early: "pending", late: "network" });
+  });
+
+  test("leaves no timer behind once the session answered", async () => {
+    vi.useFakeTimers();
+    const { client } = serve({
+      "GET /api/session": () => ({ status: 200, body: { names: null, game: null } }),
+    });
+    await client.session();
+
+    expect(vi.getTimerCount()).toBe(0);
+  });
 });
 
 test("starts a session when there is none", async () => {
