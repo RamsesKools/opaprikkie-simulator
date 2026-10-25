@@ -13,6 +13,7 @@ import type {
   Session,
 } from "./game/model.ts";
 import { newDraft, withSeats, type Draft } from "./lib/names.ts";
+import { hideSplash } from "./lib/splash.ts";
 import { strings } from "./lib/strings.ts";
 import { version } from "./lib/version.ts";
 import { DiceOff } from "./screens/dice_off.tsx";
@@ -50,9 +51,9 @@ const playModes = [
   { value: "automatic", label: strings.play.automatic },
 ] as const satisfies { value: PlayMode; label: string }[];
 
-type Props = { client: GameClient };
+type Props = { client: GameClient; assets?: Promise<unknown> };
 
-export function App({ client }: Props) {
+export function App({ client, assets = Promise.resolve() }: Props) {
   const [screen, setScreen] = useState<Screen>({ kind: "loading" });
   const [draft, setDraft] = useState<Draft>(newDraft);
   // Bumped by New Game, so answers for the abandoned game are ignored.
@@ -63,6 +64,7 @@ export function App({ client }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [playMode, setPlayMode] = useState<PlayMode>(INITIAL_PLAY_MODE);
+  const [loaded, setLoaded] = useState(false);
 
   // Runs again after every failure, so a redeploy behind an open tab shows the reload banner.
   const handshake = useCallback(() => {
@@ -85,6 +87,15 @@ export function App({ client }: Props) {
       },
     );
   }, [client, handshake]);
+
+  useEffect(() => {
+    void assets.then(() => setLoaded(true));
+  }, [assets]);
+
+  const ready = loaded && screen.kind !== "loading";
+  useEffect(() => {
+    if (ready) hideSplash();
+  }, [ready]);
 
   // The game screen shows its own errors, so only a lost game reaches the app's alert.
   const gameFailed = useCallback(
@@ -147,12 +158,14 @@ export function App({ client }: Props) {
   const stale = health !== null && health.version !== version;
   const dev = health?.dev_mode ? { strategies: health.strategies ?? [] } : null;
 
+  if (!ready) return null;
+
   return (
     <>
       <header className="wood">
         <div className="title">
           <h1>{strings.title}</h1>
-          {screen.kind !== "menu" && screen.kind !== "loading" && (
+          {screen.kind !== "menu" && (
             <button type="button" onClick={startOver}>
               {strings.newGame}
             </button>

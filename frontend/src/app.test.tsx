@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { App } from "./app.tsx";
 import { createFixtureClient, scriptedGame, type Script } from "./game/fixture_client.ts";
 import {
@@ -244,6 +244,65 @@ test("says on load when the server can't be reached", async () => {
 
   expect(screen.getByRole("alert")).toHaveTextContent(strings.errors.network);
   expect(screen.getByLabelText(strings.menu.you)).toHaveValue("Player 1");
+});
+
+describe("splash", () => {
+  const title = () => screen.queryByRole("heading", { name: strings.title });
+  const splash = () => document.getElementById("splash");
+  const hidden = () => splash()?.classList.contains("done") ?? true;
+
+  beforeEach(() => {
+    document.body.insertAdjacentHTML("beforeend", '<div id="splash"></div>');
+    vi.stubGlobal("matchMedia", () => ({ matches: false }));
+  });
+
+  afterEach(() => {
+    splash()?.remove();
+    vi.unstubAllGlobals();
+  });
+
+  test("keeps the splash and shows nothing else until the textures are loaded", async () => {
+    let loaded!: () => void;
+    const assets = new Promise<void>((resolve) => (loaded = resolve));
+    render(<App client={createFixtureClient()} assets={assets} />);
+    await act(() => vi.advanceTimersByTimeAsync(5000));
+
+    expect(title()).not.toBeInTheDocument();
+    expect(hidden()).toBe(false);
+
+    loaded();
+    await until(() => screen.queryByRole("button", { name: strings.menu.start }));
+    expect(hidden()).toBe(true);
+  });
+
+  test("keeps the splash and shows nothing else until the session is loaded", async () => {
+    let answer!: (session: Session) => void;
+    const session = () => new Promise<Session>((resolve) => (answer = resolve));
+    render(<App client={{ ...createFixtureClient(), session }} />);
+    await act(() => vi.advanceTimersByTimeAsync(5000));
+
+    expect(title()).not.toBeInTheDocument();
+    expect(hidden()).toBe(false);
+
+    answer({ names: null, game: null });
+    await until(() => screen.queryByRole("button", { name: strings.menu.start }));
+    expect(hidden()).toBe(true);
+  });
+
+  test("goes away for a resumed game, without showing the menu first", async () => {
+    const game = scriptedGame.branches[0]!.steps[0]!.game;
+    await resumeWith(saved(game));
+    await until(() => screen.queryByText(strings.game.pick("Ann")));
+
+    expect(screen.queryByRole("button", { name: strings.menu.start })).not.toBeInTheDocument();
+    expect(hidden()).toBe(true);
+  });
+
+  test("goes away when the session fails to load", async () => {
+    await renderApp({ ...createFixtureClient(), session: down });
+
+    expect(hidden()).toBe(true);
+  });
 });
 
 test("shows a first visit's menu without an alert", async () => {
