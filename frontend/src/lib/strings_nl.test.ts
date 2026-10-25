@@ -51,8 +51,8 @@ test("words the table", () => {
 
   expect(game.moves(7, 1)).toBe("Prikkie 7 gaat 1 rij omhoog.");
   expect(game.moves(7, 3)).toBe("Prikkie 7 gaat 3 rijen omhoog.");
-  expect(game.saved(1, 7)).toBe("1 treffer voor de 7");
-  expect(game.saved(3, 7)).toBe("3 treffers voor de 7");
+  expect(game.saved(1, 7)).toBe("1 combinatie voor de 7");
+  expect(game.saved(3, 7)).toBe("3 combinaties voor de 7");
   expect(game.kept([2, 5])).toBe("Bewaard: 2, 5");
   expect(game.kept([])).toBe("Niets bewaard");
   expect(game.board("Ann")).toBe("Bord van Ann");
@@ -61,7 +61,7 @@ test("words the table", () => {
   expect(game.die(4)).toBe("Dobbelsteen 4");
   expect(game.stack(1)).toBe("Nog 1 dobbelsteen om te gooien");
   expect(game.stack(5)).toBe("Nog 5 dobbelstenen om te gooien");
-  expect(game.throwStack(5)).toBe("Gooi dobbelstenen, nog 5");
+  expect(game.throwStack(5)).toBe("Dobbelen, nog 5");
   expect(game.seed("abc")).toBe("Seed: abc");
   expect(game.strategy("greedy")).toBe("AI-strategie: greedy");
 });
@@ -75,16 +75,16 @@ test("words the end of a sequence for a human and for another player", () => {
   const { game } = nl;
 
   expect(game.noMore("Ann", true, 10, 3, 3)).toBe(
-    "Geen 10'en meer. Je pakte 3 treffers voor de 10, je prikkie gaat 3 stappen omhoog.",
+    "Geen 10'en meer. Je pakte 3 combinaties voor de 10, je prikkie gaat 3 stappen omhoog.",
   );
   expect(game.noMore("Opa", false, 10, 1, 1)).toBe(
-    "Geen 10'en meer. Opa pakte 1 treffer voor de 10, het prikkie van Opa gaat 1 stap omhoog.",
+    "Geen 10'en meer. Opa pakte 1 combinatie voor de 10, het prikkie van Opa gaat 1 stap omhoog.",
   );
   expect(game.ended("Ann", true, 10, 3, 3)).toBe(
-    "Je rondde je beurt af. Je pakte 3 treffers voor de 10, je prikkie gaat 3 stappen omhoog.",
+    "Je rondde je beurt af. Je pakte 3 combinaties voor de 10, je prikkie gaat 3 stappen omhoog.",
   );
   expect(game.ended("Opa", false, 10, 3, 3)).toBe(
-    "Opa rondde de beurt af. Opa pakte 3 treffers voor de 10, het prikkie van Opa gaat 3 stappen omhoog.",
+    "Opa rondde de beurt af. Opa pakte 3 combinaties voor de 10, het prikkie van Opa gaat 3 stappen omhoog.",
   );
 });
 

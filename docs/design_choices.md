@@ -259,7 +259,7 @@ A splash covers the page until everything is ready, so no half-styled screen eve
 - A scene's message and pop-up (`game/scenes.ts`) are functions of the dictionary, so a language switch rewords them without rebuilding the scenes or replaying the throws.
 - The copy quoted in this document is the English.
 - Dutch is informal ("je"), short like the English.
-  The vocabulary: a peg is a "prikkie", a die a "dobbelsteen" ("steen" on buttons), a match a "treffer", a target a "doel", the dice-off the "dobbelduel", and a roll or throw "gooien".
+  The vocabulary: a peg is a "prikkie", a die a "dobbelsteen" ("steen" on buttons), a match a "combinatie", a target a "doel", the dice-off the "dobbelduel", a roll or throw "gooien", and the throw button "Dobbelen".
 - Rejections show a sentence written in the frontend per API `code` and, where it helps, `reason` ([view model](#view-model)), never the API's English message.
 
 ## View model

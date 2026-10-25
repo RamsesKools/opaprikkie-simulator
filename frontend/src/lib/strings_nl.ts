@@ -22,7 +22,7 @@ const shortStep: Record<TakeOutcome, (dice: number) => string> = {
 
 const steps = (count: number) => `${count} ${count === 1 ? "stap" : "stappen"}`;
 const hits = (count: number, target: number) =>
-  `${count} ${count === 1 ? "treffer" : "treffers"} voor de ${target}`;
+  `${count} ${count === 1 ? "combinatie" : "combinaties"} voor de ${target}`;
 const summary = (name: string, human: boolean, count: number, target: number, movement: number) =>
   `${human ? "Je pakte" : `${name} pakte`} ${hits(count, target)}, ${human ? "je prikkie" : `het prikkie van ${name}`} gaat ${steps(movement)} omhoog.`;
 
@@ -42,15 +42,15 @@ export const nl: Strings = {
     helpModes: [
       {
         heading: "Zonder hints",
-        text: "Je kiest de dobbelstenen zelf. Er licht niets op tot je dobbelstenen selecteert, dus je moet de treffers zelf zien.",
+        text: "Je kiest de dobbelstenen zelf. Er licht niets op tot je dobbelstenen selecteert, dus je moet de combinaties zelf zien.",
       },
       {
         heading: "Met hints",
-        text: "Je kiest nog steeds de dobbelstenen, maar elke kolom die je kunt spelen licht op. Een klik op een kolom pakt meteen de meeste treffers.",
+        text: "Je kiest nog steeds de dobbelstenen, maar elke kolom die je kunt spelen licht op. Een klik op een kolom pakt meteen de meeste combinaties.",
       },
       {
         heading: "Automatisch",
-        text: "Je kiest alleen de kolom. Het spel pakt alle treffers en gooit voor je door.",
+        text: "Je kiest alleen de kolom. Het spel pakt alle combinaties en gooit voor je door.",
       },
     ],
   },
@@ -124,8 +124,8 @@ export const nl: Strings = {
     dice: (values) => `Dobbelstenen: ${values.join(", ")}`,
     die: (value) => `Dobbelsteen ${value}`,
     stack: (count) => `Nog ${count} ${dice(count)} om te gooien`,
-    throwStack: (count) => `Gooi dobbelstenen, nog ${count}`,
-    throwDice: "Gooi dobbelstenen",
+    throwStack: (count) => `Dobbelen, nog ${count}`,
+    throwDice: "Dobbelen",
     combo: (throws) => `Combo x${throws}`,
     noMore: (name, human, target, count, movement) =>
       `Geen ${target}'en meer. ${summary(name, human, count, target, movement)}`,
@@ -144,12 +144,12 @@ export const nl: Strings = {
       locked: (target) => `Deze beurt zit vast aan de ${target}.`,
       notATarget: "Dat is geen doel.",
       topped: "Dat prikkie staat al bovenaan.",
-      noMatch: "Daar heb je geen treffer voor.",
+      noMatch: "Daar heb je geen combinatie voor.",
       other: "Dat doel kan niet.",
     },
     illegalDice: {
-      empty: "Kies minstens 1 treffer.",
-      noMatch: "Niet elke gekozen dobbelsteen hoort bij een treffer voor dat doel.",
+      empty: "Kies minstens 1 combinatie.",
+      noMatch: "Niet elke gekozen dobbelsteen hoort bij een combinatie voor dat doel.",
       notDice: "Kies de dobbelstenen opnieuw.",
       other: "Die dobbelstenen kun je niet pakken.",
     },
@@ -175,23 +175,23 @@ export const nl: Strings = {
       },
       {
         heading: "Jouw beurt",
-        text: "Je gooit alle zes de dobbelstenen en kiest een prikkie waar een treffer voor is. Daarna blijf je gooien voor dat prikkie, of het spel doet het voor je als de beurten automatisch gaan. Speel je met de hand, dan kies je zelf welke dobbelstenen je apart legt: je mag minder treffers pakken dan je gooide, of na elke worp je beurt afronden, maar uit je eerste worp moet je minstens 1 treffer pakken.",
+        text: "Je gooit alle zes de dobbelstenen en kiest een prikkie waar een combinatie voor is. Daarna blijf je gooien voor dat prikkie, of het spel doet het voor je als de beurten automatisch gaan. Speel je met de hand, dan kies je zelf welke dobbelstenen je apart legt: je mag minder combinaties pakken dan je gooide, of na elke worp je beurt afronden, maar uit je eerste worp moet je minstens 1 combinatie pakken.",
       },
       {
-        heading: "Treffers",
-        text: "De prikkies 1 tot en met 6 hebben een treffer met een enkele dobbelsteen met die waarde. De prikkies 7 tot en met 12 hebben een treffer met twee dobbelstenen die samen het getal vormen, zoals 3 en 4 voor prikkie 7.",
+        heading: "Combinaties",
+        text: "De prikkies 1 tot en met 6 hebben een combinatie met een enkele dobbelsteen met die waarde. De prikkies 7 tot en met 12 hebben een combinatie met twee dobbelstenen die samen het getal vormen, zoals 3 en 4 voor prikkie 7.",
       },
       {
         heading: "Doorgooien",
-        text: "Dobbelstenen met een treffer leg je apart en de rest gooi je opnieuw. Liggen alle dobbelstenen apart, dan gaan alle zes opnieuw en telt het aantal treffers door. Het gooien stopt als een worp geen treffer heeft, als er te weinig dobbelstenen over zijn voor een treffer, of als het prikkie bovenaan komt.",
+        text: "Dobbelstenen met een combinatie leg je apart en de rest gooi je opnieuw. Liggen alle dobbelstenen apart, dan gaan alle zes opnieuw en telt het aantal combinaties door. Het gooien stopt als een worp geen combinatie heeft, als er te weinig dobbelstenen over zijn voor een combinatie, of als het prikkie bovenaan komt.",
       },
       {
         heading: "Verplaatsen",
-        text: "Je prikkie gaat voor elke treffer een rij omhoog, tot het bovenaan staat. Staat een prikkie bovenaan, dan gooi je alle zes weer voor een nieuwe.",
+        text: "Je prikkie gaat voor elke combinatie een rij omhoog, tot het bovenaan staat. Staat een prikkie bovenaan, dan gooi je alle zes weer voor een nieuwe.",
       },
       {
-        heading: "Pech",
-        text: "Als een verse worp met alle zes geen treffer heeft voor een van je prikkies, gaat de beurt over. Dat geldt ook voor een worp nadat je een prikkie hebt afgemaakt.",
+        heading: "Mislukte worp",
+        text: "Als een verse worp met alle zes geen combinatie heeft voor een van je prikkies, gaat de beurt over. Dat geldt ook voor een worp nadat je een prikkie hebt afgemaakt.",
       },
     ],
   },
