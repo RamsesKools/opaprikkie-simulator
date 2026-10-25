@@ -5,13 +5,18 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
 
 ## Flow
 
-1. Menu: pick the mode and enter names.
+1. Menu: pick the mode, enter names, and pick colours.
    - A big wooden switch flips between "Player vs AI", the default, and "Player vs Player" (hot-seat).
    - Names are trimmed, 1 to 20 characters, and stored in the session so they're prefilled next time, in the mode of the session's last game.
    - Defaults: "Player 1", "Player 2", and "Opa" for the AI; all editable.
    - The menu keeps three names: player 1 sits in both modes, while player 2 and the AI each keep their own, so switching modes brings back the other mode's name.
    - The app keeps them across games until the page reloads; the session only stores the last game's two.
    - Duplicate names are fine; seat colours tell players apart.
+   - Next to each name field, the AI's too, a row of [colour](#colours) swatches is a radio group, "Colour: Opponent", with an accessible name per colour.
+   - Like the names, the menu keeps three colours: player 1, player 2, and the AI, defaulting to red, blue, and blue.
+   - The two seats of the mode never share a colour: the other seat's colour is disabled, crossed out.
+     A mode switch that would make them clash moves the second seat to the first free colour of the palette.
+   - Colours are kept in the browser's `localStorage`, so a reload, one that resumes a game too, keeps them; without storage, the defaults apply.
    - Start stays disabled while a name is out of range or the game is being created.
    - Versus AI, the human is seat 1 and the AI seat 2.
 2. Dice-off, animated and explained on screen.
@@ -144,8 +149,11 @@ A pile of the dice the player has left to throw, left of the throw area, in a py
 
 ## Colours
 
-- Seat 1 is red, seat 2 is blue.
-- Colours come from one palette in the frontend (`frontend/src/lib/palette.ts`); the engine doesn't know about them.
+- Each seat has a colour the player [picks in the menu](#flow), red for seat 1 and blue for seat 2 by default.
+- The colour shows everywhere the seat does: boards, dice, stack, pill, ghost pegs, dice-off, confetti, the victory name, and the charts.
+- Colours come from one palette of eight in the frontend (`frontend/src/lib/palette.ts`), each with a main and a soft tone; the engine and backend don't know about them.
+  - Red, orange, pink, purple, blue, cyan, slate, and maroon.
+  - No green, so they stand out on the felt, and no yellow or brown, so they aren't mistaken for the gold of topped pegs and combos or the wood.
 - The boards are wood-coloured with dark holes.
 - The header and the [sliders](#sliders) use a pixel wood texture (`frontend/src/assets/wood.svg`); the header's play mode slider is a darker wood than the header bar, with a drop shadow, so it stands out.
 - The page is a green pixel velvet (`frontend/src/assets/felt.svg`), dimmed to 40% over the off-white paper colour so it stays calm; the throw area and the bowl use the same velvet at full strength.
@@ -272,4 +280,3 @@ The AI strategy is never shown otherwise.
 ## Later
 
 - A language selector, starting with Dutch.
-- More player colours.

@@ -1,10 +1,11 @@
-import { seatStyle } from "../lib/palette.ts";
+import { useSeatStyle } from "../lib/seat_colours.ts";
 import { strings } from "../lib/strings.ts";
 
 type Props = { seat: number; name: string; counts: number[]; max: number };
 
 /** How often each face was thrown, as bars that share `max` so players compare. */
 export function DiceChart({ seat, name, counts, max }: Props) {
+  const seatStyle = useSeatStyle();
   return (
     <figure
       className="dice-chart"

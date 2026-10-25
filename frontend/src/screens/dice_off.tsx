@@ -4,7 +4,7 @@ import { Dice } from "../components/dice.tsx";
 import { Stack } from "../components/stack.tsx";
 import { emptyPegs, type DiceOffRound, type GameUpdate } from "../game/model.ts";
 import { timing } from "../game/timing.ts";
-import { seatStyle } from "../lib/palette.ts";
+import { useSeatStyle } from "../lib/seat_colours.ts";
 import { strings } from "../lib/strings.ts";
 
 type ThrowerProps = {
@@ -17,6 +17,7 @@ type ThrowerProps = {
 };
 
 function Thrower({ player, name, human, count, thrown, onThrow }: ThrowerProps) {
+  const seatStyle = useSeatStyle();
   const [delay] = useState(() =>
     human
       ? timing.autoThrowMin + Math.random() * (timing.autoThrowMax - timing.autoThrowMin)
@@ -47,6 +48,7 @@ type Props = {
 };
 
 export function DiceOff({ update, onChooseFirst, onAiStarts }: Props) {
+  const seatStyle = useSeatStyle();
   const { game } = update;
   const rounds = update.logs.filter((entry): entry is DiceOffRound => entry.kind === "dice_off");
   const [round, setRound] = useState(0);

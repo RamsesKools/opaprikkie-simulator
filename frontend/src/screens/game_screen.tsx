@@ -13,7 +13,7 @@ import {
 } from "../game/model.ts";
 import { errorMessage } from "../game/errors.ts";
 import { bowl, buildScenes, throwKey, type Scene } from "../game/scenes.ts";
-import { seatStyle } from "../lib/palette.ts";
+import { useSeatStyle } from "../lib/seat_colours.ts";
 import { strings } from "../lib/strings.ts";
 
 type Playback = { game: Game; scenes: Scene[]; index: number };
@@ -32,6 +32,7 @@ type Props = {
 };
 
 export function GameScreen({ client, initial, playMode, onFinished, onError }: Props) {
+  const seatStyle = useSeatStyle();
   const autoPlay = playMode === "automatic";
   const hints = playMode !== "without_hints";
   const [playback, setPlayback] = useState<Playback>(() => ({

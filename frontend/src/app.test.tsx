@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { App } from "./app.tsx";
 import { createFixtureClient, scriptedGame, type Script } from "./game/fixture_client.ts";
@@ -658,4 +658,49 @@ test("sends no play mode on reload when there is no game", async () => {
   await renderApp({ ...createFixtureClient(), setPlayMode });
 
   expect(setPlayMode).not.toHaveBeenCalled();
+});
+
+const pick = (group: string, colour: keyof typeof strings.menu.colours) =>
+  fireEvent.click(
+    within(screen.getByRole("radiogroup", { name: strings.menu.colourOf(group) })).getByRole(
+      "radio",
+      { name: strings.menu.colours[colour] },
+    ),
+  );
+const seatOf = (name: string) =>
+  screen.getByRole("region", { name: strings.game.board(name) }).style.getPropertyValue("--seat");
+
+test("plays in the chosen colours and keeps them across a reload", async () => {
+  await renderApp();
+  pick(strings.menu.you, "pink");
+  pick(strings.menu.opponent, "purple");
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") })),
+  );
+
+  await until(() => screen.queryByText(strings.game.pick("Player 1")));
+  expect(seatOf("Player 1")).toBe("#d6479c");
+  expect(seatOf("Opa")).toBe("#7b3fc4");
+
+  cleanup();
+  await renderApp();
+  expect(
+    within(
+      screen.getByRole("radiogroup", { name: strings.menu.colourOf(strings.menu.you) }),
+    ).getByRole("radio", { name: strings.menu.colours.pink }),
+  ).toBeChecked();
+}, 60_000);
+
+test("resumes a game in the saved colours", async () => {
+  localStorage.setItem(
+    "opaprikkie.colours",
+    JSON.stringify({ players: ["maroon", "slate"], ai: "slate" }),
+  );
+  const game = scriptedGame.branches[0]!.steps[0]!.game;
+  await resumeWith(saved(game));
+
+  await until(() => screen.queryByText(strings.game.pick("Ann")));
+  expect(seatOf("Ann")).toBe("#8c1d40");
+  expect(seatOf("Bob")).toBe("#4a4f5c");
 });

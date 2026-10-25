@@ -3,12 +3,13 @@ import { Board } from "../components/board.tsx";
 import { Confetti } from "../components/confetti.tsx";
 import { DiceChart } from "../components/dice_chart.tsx";
 import type { Game } from "../game/model.ts";
-import { seatStyle } from "../lib/palette.ts";
+import { useSeatStyle } from "../lib/seat_colours.ts";
 import { strings } from "../lib/strings.ts";
 
 type Props = { game: Game; onAgain: () => void };
 
 export function Victory({ game, onAgain }: Props) {
+  const seatStyle = useSeatStyle();
   const winner = game.winner!;
   const [celebrating, setCelebrating] = useState(true);
   const stopCelebrating = useCallback(() => setCelebrating(false), []);
