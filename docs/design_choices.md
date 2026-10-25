@@ -220,6 +220,8 @@ The rules booklet and the play modes explanation are text pop-ups drawn as an ol
 | Continuation cue | 1.8 s |
 | AI dice-off throw | 1.2 s |
 | Dice-off result | 1.8 s |
+| Splash wait for assets (cap) | 5 s |
+| Splash wait for the session (cap) | 10 s |
 
 ## Loading
 
@@ -229,9 +231,14 @@ A splash covers the page until everything is ready, so no half-styled screen eve
 - Its markup and styles are inline in `frontend/index.html`, so it paints before the bundle's CSS and JavaScript arrive.
 - The app renders nothing until the stylesheet, the felt and wood textures, any fonts, and the session are ready; the splash then fades out over 250 ms, and reduced motion removes it at once.
   - The textures are preloaded from the HTML and decoded before the first render (`lib/assets.ts`), since CSS only fetches them once an element using them exists, which made the header's wood and the page's felt pop in one after the other.
-  - A texture or stylesheet that fails to load doesn't block the app.
+  - A texture or stylesheet that fails to load doesn't block the app, and neither does one that stalls: the asset wait is capped at 5 s, after which the app shows anyway and late textures pop in.
+  - The app also shows when the asset promise rejects, not only when it resolves.
 - The session is part of "ready", so a reload that resumes a game shows that screen straight away instead of the menu first.
   When the session fails to load, the menu shows after the splash, with the usual [message](#view-model).
+  - A session request that stalls is aborted after 10 s and counts as a `network` failure, so the menu shows "Can't reach the server..." instead of the splash staying up forever.
+  - 10 s is twice the asset cap on purpose: the call is tiny, but a cold backend can take several seconds, and a slow working connection shouldn't be told it's offline.
+  - The cap covers `GET /api/session` and the `POST /api/sessions` that replaces a missing session, each on its own; game actions have no cap.
+- `frontend/index.html` repeats the texture paths and the paper, ink, and dark wood colours, so a test pins them to the texture imports and the `:root` tokens in `styles.css`.
 - The splash also covers `task dev`, where it stays until the unbundled modules have loaded.
 
 ## Language

@@ -98,7 +98,8 @@ export function App({ client, assets = Promise.resolve() }: Props) {
   }, [client, handshake]);
 
   useEffect(() => {
-    void assets.then(() => setLoaded(true));
+    const reveal = () => setLoaded(true);
+    void assets.then(reveal, reveal);
   }, [assets]);
 
   const ready = loaded && screen.kind !== "loading";
