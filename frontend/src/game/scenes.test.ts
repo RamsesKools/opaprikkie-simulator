@@ -1,8 +1,19 @@
 import { expect, test } from "vitest";
-import { strings } from "../lib/strings.ts";
+import { en as strings } from "../lib/strings_en.ts";
 import type { Game, LogEntry, Roll, RollSequence } from "./model.ts";
-import { buildScenes, openingKey } from "./scenes.ts";
+import { nl } from "../lib/strings_nl.ts";
+import { buildScenes as build, openingKey, type Scene } from "./scenes.ts";
 import { timing } from "./timing.ts";
+
+type Shown = Omit<Scene, "message" | "popup"> & { message: string; popup?: string };
+
+/** The scenes with their text in English. */
+const buildScenes = (...args: Parameters<typeof build>): Shown[] =>
+  build(...args).map(({ message, popup, ...scene }) => ({
+    ...scene,
+    message: message(strings),
+    ...(popup && { popup: popup(strings) }),
+  }));
 
 const board = (rows: Record<number, number> = {}) => ({ 1: 0, 7: 0, ...rows });
 
@@ -416,4 +427,16 @@ test("makes the no legal target scene a pop-up", () => {
   );
 
   expect(scenes.at(-1)).toMatchObject({ popup: strings.game.ohNo("Ann", true), tone: "oh_no" });
+});
+
+test("keeps its text open to the language, so a switch changes a scene being shown", () => {
+  const scenes = build(
+    [board(), board()],
+    [{ kind: "no_move", player: 0, turn: 1, continuation: 0, opening_roll: [2, 2, 2, 2, 2, 2] }],
+    game({ seat: 1 }),
+  );
+
+  expect(scenes[0]!.message(strings)).toBe(strings.game.throws("Ann"));
+  expect(scenes[0]!.message(nl)).toBe(nl.game.throws("Ann"));
+  expect(scenes.at(-1)!.popup!(nl)).toBe(nl.game.ohNo("Ann", true));
 });

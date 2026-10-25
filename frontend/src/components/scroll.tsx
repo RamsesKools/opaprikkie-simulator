@@ -1,10 +1,11 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
-import { strings } from "../lib/strings.ts";
+import { useStrings } from "../lib/language.ts";
 
 type Props = { title: string; onClose: () => void; children: ReactNode };
 
 /** A modal old paper scroll: the rolled header and footer stay put while the text scrolls. */
 export function Scroll({ title, onClose, children }: Props) {
+  const strings = useStrings();
   const titleId = useId();
   const body = useRef<HTMLDivElement>(null);
   const close = useRef<HTMLButtonElement>(null);

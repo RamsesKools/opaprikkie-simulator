@@ -1,6 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
+import { render } from "../test_utils.tsx";
 import { expect, test, vi } from "vitest";
-import { strings } from "../lib/strings.ts";
+import { en as strings } from "../lib/strings_en.ts";
 import { Stack } from "./stack.tsx";
 
 const rows = (stack: HTMLElement) =>

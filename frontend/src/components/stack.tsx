@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { useSeatStyle } from "../lib/seat_colours.ts";
-import { strings } from "../lib/strings.ts";
+import { useStrings } from "../lib/language.ts";
 import { Pips } from "./dice.tsx";
 
 const pyramids: Record<number, number[]> = {
@@ -23,6 +23,7 @@ type Props = {
 };
 
 export function Stack({ count, player, onThrow, autoPress }: Props) {
+  const strings = useStrings();
   const style = useSeatStyle()(player);
   if (count === 0) return <div className="stack" aria-hidden="true" style={style} />;
   const rows = pyramids[count] ?? [];

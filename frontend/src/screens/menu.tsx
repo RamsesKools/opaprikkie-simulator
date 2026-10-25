@@ -2,15 +2,10 @@ import type { CSSProperties } from "react";
 import { Slider } from "../components/slider.tsx";
 import type { GameSetup, Mode } from "../game/model.ts";
 import { resolveColours, seatColours, withColour } from "../lib/colours.ts";
-import { nameProblem, seatNames, withSeat, type Draft } from "../lib/names.ts";
+import { useStrings } from "../lib/language.ts";
+import { namesValid, seatNames, withSeat, type Draft } from "../lib/names.ts";
 import { palette, type ColourId } from "../lib/palette.ts";
 import { useSeatStyle } from "../lib/seat_colours.ts";
-import { strings } from "../lib/strings.ts";
-
-const modes = [
-  { value: "versus_ai", label: strings.menu.versusAi },
-  { value: "hot_seat", label: strings.menu.hotSeat },
-] as const satisfies { value: Mode; label: string }[];
 
 type Props = {
   draft: Draft;
@@ -22,11 +17,16 @@ type Props = {
 };
 
 export function Menu({ draft, onChange, dev, pending, onStart }: Props) {
+  const strings = useStrings();
   const seatStyle = useSeatStyle();
   const { mode, roster, colours, seed, strategy } = draft;
   const current = seatNames(roster, mode);
   const chosen = seatColours(colours, mode);
-  const problem = nameProblem(current);
+  const valid = namesValid(current);
+  const modes = [
+    { value: "versus_ai", label: strings.menu.versusAi },
+    { value: "hot_seat", label: strings.menu.hotSeat },
+  ] as const satisfies { value: Mode; label: string }[];
   const labels =
     mode === "hot_seat"
       ? [strings.menu.player(0), strings.menu.player(1)]
@@ -42,7 +42,7 @@ export function Menu({ draft, onChange, dev, pending, onStart }: Props) {
       className="menu"
       onSubmit={(event) => {
         event.preventDefault();
-        if (problem === null && !pending) {
+        if (valid && !pending) {
           const setup: GameSetup = { mode, names: [current[0].trim(), current[1].trim()] };
           if (dev && seed.trim()) setup.seed = seed.trim();
           if (dev && strategy && mode === "versus_ai") setup.strategy = strategy;
@@ -122,12 +122,12 @@ export function Menu({ draft, onChange, dev, pending, onStart }: Props) {
           )}
         </fieldset>
       )}
-      {problem && (
+      {!valid && (
         <p className="problem" role="alert">
-          {problem}
+          {strings.menu.nameLength}
         </p>
       )}
-      <button type="submit" className="primary" disabled={problem !== null || pending}>
+      <button type="submit" className="primary" disabled={!valid || pending}>
         {strings.menu.start}
       </button>
     </form>

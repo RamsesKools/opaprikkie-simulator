@@ -1,4 +1,5 @@
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, within } from "@testing-library/react";
+import { render } from "../test_utils.tsx";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import {
   GameError,
@@ -10,7 +11,7 @@ import {
   type TakeOption,
 } from "../game/model.ts";
 import { timing } from "../game/timing.ts";
-import { strings } from "../lib/strings.ts";
+import { en as strings } from "../lib/strings_en.ts";
 import { GameScreen } from "./game_screen.tsx";
 
 beforeEach(() => {

@@ -1,6 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
+import { render } from "../test_utils.tsx";
 import { expect, test, vi } from "vitest";
-import { strings } from "../lib/strings.ts";
+import { en as strings } from "../lib/strings_en.ts";
 import { Scroll } from "./scroll.tsx";
 
 const open = (onClose = vi.fn<() => void>()) => {

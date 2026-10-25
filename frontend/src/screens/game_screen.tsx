@@ -14,7 +14,7 @@ import {
 import { errorMessage } from "../game/errors.ts";
 import { bowl, buildScenes, throwKey, type Scene } from "../game/scenes.ts";
 import { useSeatStyle } from "../lib/seat_colours.ts";
-import { strings } from "../lib/strings.ts";
+import { useStrings } from "../lib/language.ts";
 
 type Playback = { game: Game; scenes: Scene[]; index: number };
 
@@ -32,6 +32,7 @@ type Props = {
 };
 
 export function GameScreen({ client, initial, playMode, onFinished, onError }: Props) {
+  const strings = useStrings();
   const seatStyle = useSeatStyle();
   const autoPlay = playMode === "automatic";
   const hints = playMode !== "without_hints";
@@ -41,7 +42,7 @@ export function GameScreen({ client, initial, playMode, onFinished, onError }: P
     index: 0,
   }));
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ cause: unknown } | null>(null);
   const [hovered, setHovered] = useState<number | null>(null);
   const [selected, setSelected] = useState<number[]>([]);
   const [confetti, setConfetti] = useState<{ id: number; seat: number } | null>(null);
@@ -120,7 +121,7 @@ export function GameScreen({ client, initial, playMode, onFinished, onError }: P
       },
       (failure: unknown) => {
         if (!mounted.current) return;
-        setError(errorMessage(failure));
+        setError({ cause: failure });
         setBusy(false);
         if (automatic) setStalled(game);
         if (failure instanceof GameError && failure.code === "wrong_phase") void resync();
@@ -207,7 +208,7 @@ export function GameScreen({ client, initial, playMode, onFinished, onError }: P
   const next = sequence ? options[0] : undefined;
   const choices = sequence ? [] : options;
 
-  let message = scene?.message ?? "";
+  let message = scene?.message(strings) ?? "";
   if (humanChoice) message = strings.game.pick(name);
   if (manual) {
     message = sequence
@@ -216,7 +217,7 @@ export function GameScreen({ client, initial, playMode, onFinished, onError }: P
   }
   if (waiting) message = strings.game.throwPrompt(name);
   if (scene?.popup && scene.tone === "oh_no") message = "";
-  if (error) message = error;
+  if (error) message = errorMessage(error.cause, strings);
 
   return (
     <div className="game">
@@ -290,7 +291,7 @@ export function GameScreen({ client, initial, playMode, onFinished, onError }: P
               role="status"
               onClick={() => setPlayback(nextScene)}
             >
-              {scene.popup}
+              {scene.popup(strings)}
             </div>
           )}
           {manual && sequence && (

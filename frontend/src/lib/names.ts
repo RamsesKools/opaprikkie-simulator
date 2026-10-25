@@ -1,21 +1,33 @@
 import type { Mode } from "../game/model.ts";
 import { defaultColours, type Colours } from "./colours.ts";
-import { strings } from "./strings.ts";
+import type { Strings } from "./strings.ts";
 
 const MAX_NAME = 20;
 
-export function nameProblem(names: string[]): string | null {
-  const valid = names.every((name) => name.trim().length > 0 && name.trim().length <= MAX_NAME);
-  return valid ? null : strings.menu.nameLength;
-}
+export const namesValid = (names: string[]) =>
+  names.every((name) => name.trim().length > 0 && name.trim().length <= MAX_NAME);
 
 /** Player 1 sits in both modes; player 2 and the AI each keep their own name. */
 export type Roster = { players: [string, string]; ai: string };
 
-export const defaultRoster: Roster = {
-  players: [strings.menu.player(0), strings.menu.player(1)],
-  ai: strings.menu.defaultAiName,
-};
+export const defaultRoster = ({ menu }: Strings): Roster => ({
+  players: [menu.player(0), menu.player(1)],
+  ai: menu.defaultAiName,
+});
+
+/** Names still on their default follow the language; typed ones stay. */
+export function translateRoster(roster: Roster, from: Strings, to: Strings): Roster {
+  const before = defaultRoster(from);
+  const after = defaultRoster(to);
+  const pick = (name: string, old: string, fresh: string) => (name === old ? fresh : name);
+  return {
+    players: [
+      pick(roster.players[0], before.players[0], after.players[0]),
+      pick(roster.players[1], before.players[1], after.players[1]),
+    ],
+    ai: pick(roster.ai, before.ai, after.ai),
+  };
+}
 
 export const seatNames = ({ players, ai }: Roster, mode: Mode): [string, string] =>
   mode === "versus_ai" ? [players[0], ai] : players;
@@ -39,10 +51,10 @@ export type Draft = {
   strategy: string;
 };
 
-export const newDraft: Draft = {
+export const newDraft = (strings: Strings): Draft => ({
   mode: "versus_ai",
-  roster: defaultRoster,
+  roster: defaultRoster(strings),
   colours: defaultColours,
   seed: "",
   strategy: "",
-};
+});

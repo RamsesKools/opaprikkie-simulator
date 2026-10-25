@@ -1,4 +1,5 @@
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, within } from "@testing-library/react";
+import { render } from "./test_utils.tsx";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { App } from "./app.tsx";
 import { createApiClient } from "./game/api_client.ts";
@@ -11,7 +12,9 @@ import {
   type Session,
 } from "./game/model.ts";
 import { timing } from "./game/timing.ts";
-import { strings } from "./lib/strings.ts";
+import { STORAGE_KEY } from "./lib/language.ts";
+import { en as strings } from "./lib/strings_en.ts";
+import { nl } from "./lib/strings_nl.ts";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -731,4 +734,146 @@ test("resumes a game in the saved colours", async () => {
   await until(() => screen.queryByText(strings.game.pick("Ann")));
   expect(seatOf("Ann")).toBe("#8c1d40");
   expect(seatOf("Bob")).toBe("#4a4f5c");
+});
+
+const language = (label: string) => screen.getByRole("radio", { name: label });
+
+test("starts in Dutch on a first visit, with Dutch default names", async () => {
+  localStorage.clear();
+  render(<App client={createFixtureClient()} />);
+
+  await until(() => screen.queryByRole("button", { name: nl.menu.start }));
+
+  expect(document.documentElement.lang).toBe("nl");
+  expect(language("NL")).toBeChecked();
+  expect(screen.getByLabelText(nl.menu.you)).toHaveValue("Speler 1");
+  expect(screen.getByLabelText(nl.menu.opponent)).toHaveValue("Opa");
+  expect(screen.getByRole("heading", { name: nl.title })).toBeInTheDocument();
+});
+
+test("switches the menu to English, keeping the choice and the names typed", async () => {
+  localStorage.clear();
+  render(<App client={createFixtureClient()} />);
+  await until(() => screen.queryByRole("button", { name: nl.menu.start }));
+  fireEvent.change(screen.getByLabelText(nl.menu.you), { target: { value: "Ann" } });
+
+  fireEvent.click(language("EN"));
+
+  expect(screen.getByRole("button", { name: strings.menu.start })).toBeInTheDocument();
+  expect(screen.getByLabelText(strings.menu.you)).toHaveValue("Ann");
+  expect(screen.getByLabelText(strings.menu.opponent)).toHaveValue("Opa");
+  expect(document.documentElement.lang).toBe("en");
+  expect(localStorage.getItem(STORAGE_KEY)).toBe("en");
+  hotSeat();
+  expect(screen.getByLabelText(strings.menu.player(1))).toHaveValue("Player 2");
+  fireEvent.click(language("NL"));
+  expect(screen.getByLabelText(nl.menu.player(1))).toHaveValue("Speler 2");
+});
+
+test("remembers the language on the next visit", async () => {
+  const { unmount } = render(<App client={createFixtureClient()} />);
+  await until(() => screen.queryByRole("button", { name: strings.menu.start }));
+  fireEvent.click(language("NL"));
+  unmount();
+
+  render(<App client={createFixtureClient()} />);
+
+  expect(
+    await until(() => screen.queryByRole("button", { name: nl.menu.start })),
+  ).toBeInTheDocument();
+});
+
+test("switches the whole UI at once mid-game, without touching the game", async () => {
+  const fixture = createFixtureClient();
+  const calls = {
+    start: vi.fn<GameClient["start"]>((setup) => fixture.start(setup)),
+    chooseFirstPlayer: vi.fn<GameClient["chooseFirstPlayer"]>((p) => fixture.chooseFirstPlayer(p)),
+    chooseTarget: vi.fn<GameClient["chooseTarget"]>((t) => fixture.chooseTarget(t)),
+    take: vi.fn<GameClient["take"]>((t, dice) => fixture.take(t, dice)),
+    stop: vi.fn<GameClient["stop"]>(() => fixture.stop()),
+    setPlayMode: vi.fn<GameClient["setPlayMode"]>((m) => fixture.setPlayMode(m)),
+    session: vi.fn<GameClient["session"]>(() => fixture.session()),
+  };
+  await renderApp({ ...fixture, ...calls });
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") })),
+  );
+  await until(() => screen.queryByText(strings.game.pick("Player 1")));
+  const before = Object.values(calls).map((call) => call.mock.calls.length);
+  const dice = screen.getByRole("img", { name: strings.game.dice([2, 3, 4, 5, 3, 2]) });
+
+  fireEvent.click(language("NL"));
+
+  expect(screen.getByText(nl.game.pick("Player 1"))).toBeInTheDocument();
+  expect(screen.getByText(nl.game.turn(1, "Player 1"))).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: nl.newGame })).toBeInTheDocument();
+  expect(screen.getByRole("radio", { name: nl.play.withHints })).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: nl.game.dice([2, 3, 4, 5, 3, 2]) })).toBe(dice);
+  expect(screen.getByRole("region", { name: nl.game.board("Player 1") })).toBeInTheDocument();
+  expect(Object.values(calls).map((call) => call.mock.calls.length)).toEqual(before);
+  fireEvent.click(screen.getByRole("button", { name: nl.rules }));
+  expect(screen.getByRole("dialog", { name: nl.booklet.title })).toBeInTheDocument();
+}, 60_000);
+
+test("translates the message of a sequence being replayed", async () => {
+  await renderApp();
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") })),
+  );
+  fireEvent.click(await until(legalTarget));
+  await until(() => screen.queryByText(/^Player 1 goes for \d+\.$/));
+
+  fireEvent.click(language("NL"));
+
+  expect(screen.getByText(/^Player 1 gaat voor de \d+\.$/)).toBeInTheDocument();
+}, 60_000);
+
+test("words a rejection in the current language and rewords it on a switch", async () => {
+  const locked = () =>
+    Promise.reject(
+      new GameError("illegal_target", "the sequence is locked to 7", {
+        reason: "locked",
+        legalTargets: [7],
+      }),
+    );
+  await renderApp({ ...createFixtureClient(), chooseTarget: locked });
+  fireEvent.click(screen.getByRole("button", { name: strings.menu.start }));
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: strings.diceOff.starts("Player 1") })),
+  );
+
+  fireEvent.click(await until(legalTarget));
+
+  expect(
+    await until(() => screen.queryByText(strings.errors.illegalTarget.locked(7))),
+  ).toBeVisible();
+  fireEvent.click(language("NL"));
+  expect(screen.getByText(nl.errors.illegalTarget.locked(7))).toBeVisible();
+}, 60_000);
+
+test("shows the version banner and a lost game in the current language", async () => {
+  localStorage.setItem(STORAGE_KEY, "nl");
+  const gone = () => Promise.reject(new GameError("no_game", "start a game first"));
+  await renderApp(
+    {
+      ...createFixtureClient(),
+      health: async () => health("0.0.0-other"),
+      chooseFirstPlayer: gone,
+    },
+    false,
+  );
+  await until(() => screen.queryByRole("button", { name: nl.menu.start }));
+  fireEvent.click(screen.getByRole("button", { name: nl.menu.start }));
+  fireEvent.click(
+    await until(() => screen.queryByRole("button", { name: nl.diceOff.starts("Speler 1") })),
+  );
+
+  const alerts = await until(
+    () => screen.queryAllByRole("alert")[1] && screen.queryAllByRole("alert"),
+  );
+  expect(alerts[0]).toHaveTextContent(nl.stale);
+  expect(alerts[1]).toHaveTextContent(nl.errors.lost);
+  expect(screen.getByRole("button", { name: nl.reload })).toBeInTheDocument();
 });

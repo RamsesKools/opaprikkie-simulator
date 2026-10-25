@@ -1,5 +1,5 @@
 import { useSeatStyle } from "../lib/seat_colours.ts";
-import { strings } from "../lib/strings.ts";
+import { useStrings } from "../lib/language.ts";
 
 const pips: Record<number, number[]> = {
   1: [4],
@@ -42,6 +42,7 @@ export function Dice({
   onToggle,
   disabled = false,
 }: Props) {
+  const strings = useStrings();
   const seatStyle = useSeatStyle();
   return (
     <div

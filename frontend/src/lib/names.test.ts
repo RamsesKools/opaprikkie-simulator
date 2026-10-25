@@ -1,24 +1,27 @@
 import { expect, test } from "vitest";
 import {
   defaultRoster,
-  nameProblem,
+  namesValid,
+  newDraft,
+  translateRoster,
   seatNames,
   withSeat,
   withSeats,
   type Roster,
 } from "./names.ts";
-import { strings } from "./strings.ts";
+import { en, en as strings } from "./strings_en.ts";
+import { nl } from "./strings_nl.ts";
 
 test.each([
-  [["Ann", "Bob"], null],
-  [[" Ann ", "Bob"], null],
-  [["a".repeat(20), "Bob"], null],
-  [["", "Bob"], strings.menu.nameLength],
-  [["   ", "Bob"], strings.menu.nameLength],
-  [["a".repeat(21), "Bob"], strings.menu.nameLength],
-  [["Ann", " Ann"], null],
-])("%j gives %j", (names, problem) => {
-  expect(nameProblem(names)).toBe(problem);
+  [["Ann", "Bob"], true],
+  [[" Ann ", "Bob"], true],
+  [["a".repeat(20), "Bob"], true],
+  [["", "Bob"], false],
+  [["   ", "Bob"], false],
+  [["a".repeat(21), "Bob"], false],
+  [["Ann", " Ann"], true],
+])("%j is valid: %j", (names, valid) => {
+  expect(namesValid(names)).toBe(valid);
 });
 
 const roster: Roster = { players: ["Ann", "Bob"], ai: "Oma" };
@@ -46,8 +49,20 @@ test("fills both seats at once", () => {
 });
 
 test("starts from the default names", () => {
-  expect(defaultRoster).toEqual({
+  expect(defaultRoster(strings)).toEqual({
     players: [strings.menu.player(0), strings.menu.player(1)],
     ai: strings.menu.defaultAiName,
+  });
+  expect(newDraft(nl).roster.players).toEqual(["Speler 1", "Speler 2"]);
+});
+
+test("translates default names and keeps the others", () => {
+  expect(translateRoster(defaultRoster(en), en, nl)).toEqual({
+    players: ["Speler 1", "Speler 2"],
+    ai: "Opa",
+  });
+  expect(translateRoster({ players: ["Ann", "Player 2"], ai: "Oma" }, en, nl)).toEqual({
+    players: ["Ann", "Speler 2"],
+    ai: "Oma",
   });
 });

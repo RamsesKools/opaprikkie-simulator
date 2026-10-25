@@ -1,6 +1,7 @@
-import { render, screen, within } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
+import { render } from "../test_utils.tsx";
 import { expect, test } from "vitest";
-import { strings } from "../lib/strings.ts";
+import { en as strings } from "../lib/strings_en.ts";
 import { DiceChart } from "./dice_chart.tsx";
 
 const counts = [1, 2, 3, 4, 5, 6];

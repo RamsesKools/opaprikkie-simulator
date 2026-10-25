@@ -218,6 +218,19 @@ test("rejects with the API's error code", async () => {
   await expect(rejection).rejects.toMatchObject({ code: "illegal_target" });
 });
 
+test("carries a rejection's reason and legal targets", async () => {
+  const { client } = serve({
+    "POST /api/game/target": () => ({
+      status: 422,
+      body: { code: "illegal_target", message: "locked", reason: "locked", legal_targets: [7] },
+    }),
+  });
+
+  await expect(client.chooseTarget(3)).rejects.toMatchObject({
+    rejected: { reason: "locked", legalTargets: [7] },
+  });
+});
+
 test("rejects with a generic code when the body isn't an API error", async () => {
   const { client } = serve({
     "POST /api/game/target": () => ({ status: 502, body: "Bad gateway" }),

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { strings } from "../lib/strings.ts";
+import { useStrings } from "../lib/language.ts";
 import { Dice } from "./dice.tsx";
 import { Stack } from "./stack.tsx";
 
@@ -38,6 +38,7 @@ export function Table({
   onToggle,
   disabled,
 }: Props) {
+  const strings = useStrings();
   return (
     <div className="table">
       <div className={action ? "stack-slot action" : "stack-slot"}>

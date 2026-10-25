@@ -1,9 +1,12 @@
-import { strings } from "../lib/strings.ts";
+import type { Strings } from "../lib/strings.ts";
 import type { Game, LogEntry, Pegs, Roll, RollSequence } from "./model.ts";
 import { isGreatTurn } from "./great_turns.ts";
 import { popupMs, timing } from "./timing.ts";
 
 export type Tone = "info" | "oh_no" | "cue";
+
+/** Text in the language chosen at the time it shows, so a scene survives a language switch. */
+export type Text = (strings: Strings) => string;
 
 export type Scene = {
   pegs: Pegs[];
@@ -20,12 +23,12 @@ export type Scene = {
   kept: number[];
   count: number;
   target: number | null;
-  message: string;
+  message: Text;
   tone: Tone;
   /** The peg has moved, so no ghost peg marks where the sequence so far would put it. */
   moved?: boolean;
   /** Text for the pop-up over the table, shown for the scene's whole time. */
-  popup?: string;
+  popup?: Text;
   /** The throw's place in a run of throws with a match, from the third on: "Combo x3". */
   combo?: number;
   /** The sequence moved a peg far for its lane, so confetti. */
@@ -113,14 +116,18 @@ export function buildScenes(
     };
     // A human throws the opening roll of a sequence before picking its target.
     if (!human || entry.kind === "no_move") {
-      const message = strings.game.throws(name);
+      const message: Text = (strings) => strings.game.throws(name);
       scenes.push(readyScene({ ...still, hand: opening.length, message }));
     }
     if (!human) {
-      scenes.push({ ...still, message: strings.game.aiThinking(name), ms: timing.aiThink });
+      scenes.push({
+        ...still,
+        message: (strings) => strings.game.aiThinking(name),
+        ms: timing.aiThink,
+      });
     }
     if (entry.kind === "no_move") {
-      const message = strings.game.ohNo(name, human);
+      const message: Text = (strings) => strings.game.ohNo(name, human);
       scenes.push({ ...still, message, popup: message, tone: "oh_no", ms: popupMs() });
       return;
     }
@@ -131,7 +138,9 @@ export function buildScenes(
     for (const [throwIndex, roll] of rolls.entries()) {
       // A reset rolls all six again, so the bowl empties back onto the table.
       if (roll.reset) kept = [];
-      const message = roll.reset ? strings.game.reset : strings.game.goesFor(name, target);
+      const message: Text = roll.reset
+        ? (strings) => strings.game.reset
+        : (strings) => strings.game.goesFor(name, target);
       const shared = { ...base, pegs, kept, count, target, message };
       if (throwIndex >= Math.max(onTable, 1)) {
         scenes.push(readyScene({ ...shared, hand: roll.dice.length }));
@@ -170,17 +179,24 @@ export function buildScenes(
       moved: true,
     };
     const missed = last.set_aside.length === 0;
-    const wrapUp = index === 0 && stopped ? strings.game.ended : strings.game.noMore;
+    const wrapUp: Text = (strings) =>
+      (index === 0 && stopped ? strings.game.ended : strings.game.noMore)(
+        name,
+        human,
+        target,
+        entry.matches,
+        movement,
+      );
     scenes.push({
       ...shown,
-      message: strings.game.moves(target, movement),
-      ...(missed && { popup: wrapUp(name, human, target, entry.matches, movement) }),
+      message: (strings) => strings.game.moves(target, movement),
+      ...(missed && { popup: wrapUp }),
       ...(isGreatTurn(target, movement) && { great: true }),
       ms: missed ? popupMs() : timing.move,
     });
     const following = turnLog[index + 1] ?? nextPosition;
     if (isContinuation(entry, following)) {
-      const message = strings.game.continuation(target);
+      const message: Text = (strings) => strings.game.continuation(target);
       scenes.push({
         ...shown,
         dice: [],
@@ -205,12 +221,15 @@ export function buildScenes(
         kept: bowl(sequence.rolls, sequence.reset),
         count: sequence.matches,
         target: sequence.target,
-        message: sequence.reset ? strings.game.reset : strings.game.throws(name),
+        message: sequence.reset
+          ? (strings) => strings.game.reset
+          : (strings) => strings.game.throws(name),
       }),
     );
   }
   if (next.phase === "choosing_target" && observation) {
     const player = observation.seat;
+    const playerName = next.names[player]!;
     if (next.controllers[player] === "human") {
       scenes.push(
         readyScene({
@@ -221,7 +240,7 @@ export function buildScenes(
           kept: [],
           count: 0,
           target: null,
-          message: strings.game.throws(next.names[player]!),
+          message: (strings) => strings.game.throws(playerName),
         }),
       );
     }
