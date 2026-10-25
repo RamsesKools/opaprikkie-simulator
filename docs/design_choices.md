@@ -213,6 +213,19 @@ The rules booklet and the play modes explanation are text pop-ups drawn as an ol
 | AI dice-off throw | 1.2 s |
 | Dice-off result | 1.8 s |
 
+## Loading
+
+A splash covers the page until everything is ready, so no half-styled screen ever shows:
+
+- It's the "Opa Prikkie" title under a tumbling die on the paper colour, language-neutral on purpose.
+- Its markup and styles are inline in `frontend/index.html`, so it paints before the bundle's CSS and JavaScript arrive.
+- The app renders nothing until the stylesheet, the felt and wood textures, any fonts, and the session are ready; the splash then fades out over 250 ms, and reduced motion removes it at once.
+  - The textures are preloaded from the HTML and decoded before the first render (`lib/assets.ts`), since CSS only fetches them once an element using them exists, which made the header's wood and the page's felt pop in one after the other.
+  - A texture or stylesheet that fails to load doesn't block the app.
+- The session is part of "ready", so a reload that resumes a game shows that screen straight away instead of the menu first.
+  When the session fails to load, the menu shows after the splash, with the usual [message](#view-model).
+- The splash also covers `task dev`, where it stays until the unbundled modules have loaded.
+
 ## Language
 
 - English only for the MVP.

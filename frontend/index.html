@@ -4,9 +4,95 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Opa Prikkie</title>
+    <link rel="preload" as="image" type="image/svg+xml" href="/src/assets/felt.svg" />
+    <link rel="preload" as="image" type="image/svg+xml" href="/src/assets/wood.svg" />
+    <style>
+      body {
+        background: #f6f1e7;
+      }
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+        background: #f6f1e7;
+        color: #22201c;
+        font-family: system-ui, sans-serif;
+        transition: opacity 250ms ease-out;
+      }
+      #splash.done {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #splash p {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+      }
+      #splash .die {
+        display: grid;
+        grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+        width: 56px;
+        height: 56px;
+        padding: 9px;
+        border: 3px solid #22201c;
+        border-radius: 12px;
+        background: white;
+        box-shadow: 3px 3px 0 #8a6334;
+        animation: splash-tumble 1.2s ease-in-out infinite;
+      }
+      #splash .die i {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #22201c;
+        place-self: center;
+      }
+      #splash .die i:nth-child(1) {
+        grid-area: 1 / 1;
+      }
+      #splash .die i:nth-child(2) {
+        grid-area: 1 / 3;
+      }
+      #splash .die i:nth-child(3) {
+        grid-area: 2 / 2;
+      }
+      #splash .die i:nth-child(4) {
+        grid-area: 3 / 1;
+      }
+      #splash .die i:nth-child(5) {
+        grid-area: 3 / 3;
+      }
+      @keyframes splash-tumble {
+        0%,
+        100% {
+          transform: translateY(0) rotate(0);
+        }
+        50% {
+          transform: translateY(-14px) rotate(180deg);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #splash {
+          transition: none;
+        }
+        #splash .die {
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+    <div id="splash" role="status">
+      <div class="die" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+      <p>Opa Prikkie</p>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
