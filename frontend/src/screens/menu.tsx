@@ -1,7 +1,10 @@
+import type { CSSProperties } from "react";
 import { Slider } from "../components/slider.tsx";
 import type { GameSetup, Mode } from "../game/model.ts";
+import { resolveColours, seatColours, withColour } from "../lib/colours.ts";
 import { nameProblem, seatNames, withSeat, type Draft } from "../lib/names.ts";
-import { seatStyle } from "../lib/palette.ts";
+import { palette, type ColourId } from "../lib/palette.ts";
+import { useSeatStyle } from "../lib/seat_colours.ts";
 import { strings } from "../lib/strings.ts";
 
 const modes = [
@@ -19,14 +22,18 @@ type Props = {
 };
 
 export function Menu({ draft, onChange, dev, pending, onStart }: Props) {
-  const { mode, roster, seed, strategy } = draft;
+  const seatStyle = useSeatStyle();
+  const { mode, roster, colours, seed, strategy } = draft;
   const current = seatNames(roster, mode);
+  const chosen = seatColours(colours, mode);
   const problem = nameProblem(current);
   const labels =
     mode === "hot_seat"
       ? [strings.menu.player(0), strings.menu.player(1)]
       : [strings.menu.you, strings.menu.opponent];
 
+  const recolour = (seat: number, colour: ColourId) =>
+    onChange({ ...draft, colours: withColour(colours, mode, seat, colour) });
   const rename = (seat: number, name: string) =>
     onChange({ ...draft, roster: withSeat(roster, mode, seat, name) });
 
@@ -36,10 +43,10 @@ export function Menu({ draft, onChange, dev, pending, onStart }: Props) {
       onSubmit={(event) => {
         event.preventDefault();
         if (problem === null && !pending) {
-          const chosen: GameSetup = { mode, names: [current[0].trim(), current[1].trim()] };
-          if (dev && seed.trim()) chosen.seed = seed.trim();
-          if (dev && strategy && mode === "versus_ai") chosen.strategy = strategy;
-          onStart(chosen);
+          const setup: GameSetup = { mode, names: [current[0].trim(), current[1].trim()] };
+          if (dev && seed.trim()) setup.seed = seed.trim();
+          if (dev && strategy && mode === "versus_ai") setup.strategy = strategy;
+          onStart(setup);
         }
       }}
     >
@@ -47,14 +54,45 @@ export function Menu({ draft, onChange, dev, pending, onStart }: Props) {
         label={strings.menu.mode}
         options={modes}
         value={mode}
-        onChange={(chosen) => onChange({ ...draft, mode: chosen })}
+        onChange={(next) =>
+          onChange({ ...draft, mode: next, colours: resolveColours(colours, next) })
+        }
       />
       {current.map((name, seat) => (
-        <label key={`${mode}:${seat}`} className="name" style={seatStyle(seat)}>
-          <span className="swatch" />
-          {labels[seat]}
-          <input value={name} onChange={(event) => rename(seat, event.target.value)} />
-        </label>
+        <div key={`${mode}:${seat}`} className="name" style={seatStyle(seat)}>
+          <label>
+            {labels[seat]}
+            <input value={name} onChange={(event) => rename(seat, event.target.value)} />
+          </label>
+          <div
+            role="radiogroup"
+            aria-label={strings.menu.colourOf(labels[seat]!)}
+            className="colours"
+          >
+            {palette.map(({ id, main }) => {
+              const taken = chosen[1 - seat] === id;
+              const colour = strings.menu.colours[id];
+              return (
+                <label
+                  key={id}
+                  className="colour"
+                  style={{ "--swatch": main } as CSSProperties}
+                  title={taken ? strings.menu.colourTaken(colour) : colour}
+                >
+                  <input
+                    type="radio"
+                    name={`colour-${seat}`}
+                    aria-label={colour}
+                    checked={chosen[seat] === id}
+                    disabled={taken}
+                    onChange={() => recolour(seat, id)}
+                  />
+                  <span />
+                </label>
+              );
+            })}
+          </div>
+        </div>
       ))}
       {dev && (
         <fieldset className="dev">

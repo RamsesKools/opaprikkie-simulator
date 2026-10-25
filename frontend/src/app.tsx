@@ -12,7 +12,9 @@ import type {
   PlayMode,
   Session,
 } from "./game/model.ts";
+import { loadColours, resolveColours, saveColours, seatColours } from "./lib/colours.ts";
 import { newDraft, withSeats, type Draft } from "./lib/names.ts";
+import { SeatColours } from "./lib/seat_colours.ts";
 import { hideSplash } from "./lib/splash.ts";
 import { strings } from "./lib/strings.ts";
 import { version } from "./lib/version.ts";
@@ -31,7 +33,12 @@ type Screen =
 function prefill(draft: Draft, { names, game }: Session): Draft {
   if (names?.length !== 2) return draft;
   const mode = game && !game.controllers.includes("ai") ? "hot_seat" : "versus_ai";
-  return { ...draft, mode, roster: withSeats(draft.roster, mode, [names[0]!, names[1]!]) };
+  return {
+    ...draft,
+    mode,
+    roster: withSeats(draft.roster, mode, [names[0]!, names[1]!]),
+    colours: resolveColours(draft.colours, mode),
+  };
 }
 
 function resumed(game: Game | null): Screen {
@@ -55,7 +62,7 @@ type Props = { client: GameClient; assets?: Promise<unknown> };
 
 export function App({ client, assets = Promise.resolve() }: Props) {
   const [screen, setScreen] = useState<Screen>({ kind: "loading" });
-  const [draft, setDraft] = useState<Draft>(newDraft);
+  const [draft, setDraft] = useState<Draft>(() => ({ ...newDraft, colours: loadColours() }));
   // Bumped by New Game, so answers for the abandoned game are ignored.
   const round = useRef(0);
   const [health, setHealth] = useState<Health | null>(null);
@@ -65,6 +72,8 @@ export function App({ client, assets = Promise.resolve() }: Props) {
   const [starting, setStarting] = useState(false);
   const [playMode, setPlayMode] = useState<PlayMode>(INITIAL_PLAY_MODE);
   const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => saveColours(draft.colours), [draft.colours]);
 
   // Runs again after every failure, so a redeploy behind an open tab shows the reload banner.
   const handshake = useCallback(() => {
@@ -161,7 +170,7 @@ export function App({ client, assets = Promise.resolve() }: Props) {
   if (!ready) return null;
 
   return (
-    <>
+    <SeatColours value={seatColours(draft.colours, draft.mode)}>
       <header className="wood">
         <div className="title">
           <h1>{strings.title}</h1>
@@ -235,6 +244,6 @@ export function App({ client, assets = Promise.resolve() }: Props) {
       </main>
       {rules && <RulesBooklet onClose={closeRules} />}
       {help && <PlayHelp onClose={closeHelp} />}
-    </>
+    </SeatColours>
   );
 }

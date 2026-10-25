@@ -1,6 +1,6 @@
 import { useEffect, type CSSProperties } from "react";
 import { confettiMs } from "../game/timing.ts";
-import { seatStyle } from "../lib/palette.ts";
+import { useSeatStyle } from "../lib/seat_colours.ts";
 
 const PIECES = 80;
 // Each property walks the pieces with its own irrational step, so no two line up.
@@ -11,6 +11,7 @@ type Props = { seat: number; onDone?: () => void };
 
 /** A short burst from the top of the screen; it never takes clicks and clears itself. */
 export function Confetti({ seat, onDone }: Props) {
+  const seatStyle = useSeatStyle();
   useEffect(() => {
     if (!onDone) return;
     const timer = setTimeout(onDone, confettiMs());

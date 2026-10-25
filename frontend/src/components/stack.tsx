@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { seatStyle } from "../lib/palette.ts";
+import { useSeatStyle } from "../lib/seat_colours.ts";
 import { strings } from "../lib/strings.ts";
 import { Pips } from "./dice.tsx";
 
@@ -23,7 +23,7 @@ type Props = {
 };
 
 export function Stack({ count, player, onThrow, autoPress }: Props) {
-  const style = seatStyle(player);
+  const style = useSeatStyle()(player);
   if (count === 0) return <div className="stack" aria-hidden="true" style={style} />;
   const rows = pyramids[count] ?? [];
   const pile = rows.map((width, row) => {

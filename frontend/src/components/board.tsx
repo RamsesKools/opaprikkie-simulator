@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { TOP_ROW, type Pegs } from "../game/model.ts";
-import { seatStyle } from "../lib/palette.ts";
+import { useSeatStyle } from "../lib/seat_colours.ts";
 import { strings } from "../lib/strings.ts";
 
 type Props = {
@@ -32,6 +32,7 @@ export function Board({
   onPick,
   onHover,
 }: Props) {
+  const seatStyle = useSeatStyle();
   const targets = Object.keys(pegs)
     .map(Number)
     .toSorted((a, b) => a - b);

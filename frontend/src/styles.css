@@ -423,25 +423,79 @@ header .slider .option:active {
 }
 
 .name {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.name input {
-  grid-column: 1 / -1;
+.name label {
+  display: grid;
+  gap: 4px;
+}
+
+.name label > input {
   font: inherit;
   padding: 8px;
   border: 2px solid var(--seat);
   border-radius: 8px;
 }
 
-.swatch {
-  width: 14px;
-  height: 14px;
+.colours {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.colour {
+  position: relative;
+  width: 32px;
+  height: 32px;
+}
+
+.colour input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.colour span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 3px solid white;
   border-radius: 50%;
-  background: var(--seat);
+  background: var(--swatch);
+  box-shadow: 0 0 0 1px var(--muted);
+  transition: transform 150ms;
+}
+
+.colour input:checked + span {
+  box-shadow:
+    0 0 0 3px var(--ink),
+    0 2px 6px rgb(0 0 0 / 35%);
+  transform: scale(1.08);
+}
+
+.colour input:focus-visible + span {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.colour input:disabled {
+  cursor: not-allowed;
+}
+
+.colour input:disabled + span {
+  opacity: 0.35;
+  background-image: linear-gradient(
+    135deg,
+    transparent 44%,
+    var(--ink) 44%,
+    var(--ink) 56%,
+    transparent 56%
+  );
 }
 
 .menu .dev {

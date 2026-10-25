@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
 import { expect, test, vi } from "vitest";
 import type { GameSetup } from "../game/model.ts";
@@ -157,4 +157,61 @@ test("keeps the previous seed and strategy in dev mode", () => {
 
   expect(screen.getByLabelText(strings.menu.seed)).toHaveValue("7");
   expect(screen.getByLabelText(strings.menu.strategy)).toHaveValue("greedy");
+});
+
+const swatches = (group: string) =>
+  within(screen.getByRole("radiogroup", { name: strings.menu.colourOf(group) }));
+const swatch = (group: string, colour: keyof typeof strings.menu.colours) =>
+  swatches(group).getByRole("radio", { name: strings.menu.colours[colour] });
+
+test("offers every colour as a radio per player, the AI too", () => {
+  show();
+
+  for (const group of [strings.menu.you, strings.menu.opponent]) {
+    expect(swatches(group).getAllByRole("radio")).toHaveLength(8);
+  }
+  expect(swatch(strings.menu.you, "red")).toBeChecked();
+  expect(swatch(strings.menu.opponent, "blue")).toBeChecked();
+});
+
+test("disables the colour of the other seat", () => {
+  show();
+
+  expect(swatch(strings.menu.you, "blue")).toBeDisabled();
+  expect(swatch(strings.menu.opponent, "red")).toBeDisabled();
+  expect(swatch(strings.menu.you, "pink")).toBeEnabled();
+});
+
+test("picks a colour per seat", () => {
+  show({ initial: { mode: "hot_seat" } });
+
+  fireEvent.click(swatch(strings.menu.player(0), "pink"));
+  fireEvent.click(swatch(strings.menu.player(1), "red"));
+
+  expect(swatch(strings.menu.player(0), "pink")).toBeChecked();
+  expect(swatch(strings.menu.player(1), "red")).toBeChecked();
+  expect(swatch(strings.menu.player(0), "red")).toBeDisabled();
+});
+
+test("keeps the AI's colour apart from player 2's", () => {
+  show();
+
+  fireEvent.click(swatch(strings.menu.opponent, "purple"));
+  switchTo(strings.menu.hotSeat);
+
+  expect(swatch(strings.menu.player(1), "blue")).toBeChecked();
+  switchTo(strings.menu.versusAi);
+  expect(swatch(strings.menu.opponent, "purple")).toBeChecked();
+});
+
+test("moves the second seat on when a mode switch would make the colours clash", () => {
+  show();
+  fireEvent.click(swatch(strings.menu.opponent, "purple"));
+  fireEvent.click(swatch(strings.menu.you, "blue"));
+
+  switchTo(strings.menu.hotSeat);
+
+  expect(swatch(strings.menu.player(0), "blue")).toBeChecked();
+  expect(swatch(strings.menu.player(1), "red")).toBeChecked();
+  expect(swatch(strings.menu.player(1), "blue")).toBeDisabled();
 });
