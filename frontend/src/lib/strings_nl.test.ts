@@ -93,6 +93,6 @@ test("words the victory screen", () => {
   expect(nl.victory.turns(1)).toBe("Het spel duurde 1 beurt.");
   expect(nl.victory.turns(54)).toBe("Het spel duurde 54 beurten.");
   expect(nl.victory.chart("Ann", [1, 2, 3, 4, 5, 6])).toBe(
-    "Dobbelstenen van Ann: 1 1 keer gegooid, 2 2 keer gegooid, 3 3 keer gegooid, 4 4 keer gegooid, 5 5 keer gegooid, 6 6 keer gegooid",
+    "Dobbelstenen van Ann: 1 keer een 1, 2 keer een 2, 3 keer een 3, 4 keer een 4, 5 keer een 5, 6 keer een 6",
   );
 });

@@ -79,7 +79,12 @@ test("blocks a second start while one is pending", () => {
 });
 
 test("shows the draft's mode and names", () => {
-  show({ initial: { mode: "hot_seat", roster: { players: ["Ann", "Bob"], ai: "Oma" } } });
+  show({
+    initial: {
+      mode: "hot_seat",
+      roster: { players: ["Ann", "Bob"], ai: "Oma", isDefault: [false, false, false] },
+    },
+  });
 
   expect(screen.getByLabelText(strings.menu.player(0))).toHaveValue("Ann");
   expect(screen.getByLabelText(strings.menu.player(1))).toHaveValue("Bob");

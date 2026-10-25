@@ -59,8 +59,8 @@ export const nl: Strings = {
   reload: "Herladen",
   menu: {
     mode: "Spelvorm",
-    hotSeat: "Speler tegen speler",
-    versusAi: "Speler tegen AI",
+    hotSeat: "Tegen elkaar",
+    versusAi: "Tegen AI",
     player: (seat) => `Speler ${seat + 1}`,
     you: "Jouw naam",
     opponent: "Tegenstander",
@@ -160,7 +160,7 @@ export const nl: Strings = {
     turns: (turns) => `Het spel duurde ${turns} ${turns === 1 ? "beurt" : "beurten"}.`,
     dice: "Gegooide dobbelstenen",
     chart: (name, counts) =>
-      `Dobbelstenen van ${name}: ${counts.map((count, face) => `${face + 1} ${count} keer gegooid`).join(", ")}`,
+      `Dobbelstenen van ${name}: ${counts.map((count, face) => `${count} keer een ${face + 1}`).join(", ")}`,
   },
   booklet: {
     title: "Zo speel je",

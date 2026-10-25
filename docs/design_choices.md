@@ -9,7 +9,7 @@ When this grows too large, split it, for example into `docs/design/ux_choices.md
    - A big wooden switch flips between "Player vs AI", the default, and "Player vs Player" (hot-seat).
    - Names are trimmed, 1 to 20 characters, and stored in the session so they're prefilled next time, in the mode of the session's last game.
    - Defaults: "Speler 1", "Speler 2", and "Opa" for the AI, or "Player 1" and "Player 2" in English; all editable.
-   - [Switching language](#language) turns names still on their default into the other language's default; typed names and names from the session stay.
+   - [Switching language](#language) turns names still on their default into the other language's default (tracked per seat, so a typed or session name that equals a default, such as "Speler 1", stays).
    - The menu keeps three names: player 1 sits in both modes, while player 2 and the AI each keep their own, so switching modes brings back the other mode's name.
    - The app keeps them across games until the page reloads; the session only stores the last game's two.
    - Duplicate names are fine; seat colours tell players apart.
@@ -251,7 +251,7 @@ A splash covers the page until everything is ready, so no half-styled screen eve
   A message or pop-up already on screen is reworded in place.
 - `<html lang>` follows the language.
 - Everything the player reads is translated: menu, dice-off, game messages, pop-ups, buttons, the rules booklet, the play modes help, the victory stats, the version banner, and error messages.
-  The colour names are translated too ("Rood", "Oranje", "Roze", "Paars", "Blauw", "Cyaan", "Leigrijs", "Bordeaux").
+  The colour names are translated too.
   What isn't: the title "Opa Prikkie", the AI's name "Opa", names the player typed or that come from the session, and dev mode's seed and strategy names.
 - Strings live in `frontend/src/lib/`, one dictionary per language, `strings_nl.ts` and `strings_en.ts`, sharing the `Strings` type in `strings.ts`, so a string missing in one fails `tsc`.
   Components read the current dictionary with `useStrings()` from `language.ts`; the `LanguageProvider` in `main.tsx` holds the language.

@@ -30,6 +30,7 @@ test.each([
   ["not_a_target", [], strings.errors.illegalTarget.notATarget, nl.errors.illegalTarget.notATarget],
   ["topped", [], strings.errors.illegalTarget.topped, nl.errors.illegalTarget.topped],
   ["no_match", [], strings.errors.illegalTarget.noMatch, nl.errors.illegalTarget.noMatch],
+  ["locked", [7, 9], strings.errors.illegalTarget.other, nl.errors.illegalTarget.other],
   ["new_reason", [], strings.errors.illegalTarget.other, nl.errors.illegalTarget.other],
   [undefined, [], strings.errors.illegalTarget.other, nl.errors.illegalTarget.other],
 ])("words an illegal target for reason %s", (reason, legalTargets, english, dutch) => {

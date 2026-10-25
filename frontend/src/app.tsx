@@ -14,7 +14,7 @@ import type {
 } from "./game/model.ts";
 import { loadColours, resolveColours, saveColours, seatColours } from "./lib/colours.ts";
 import { dictionaries, useLanguage, type Language } from "./lib/language.ts";
-import { newDraft, translateRoster, withSeats, type Draft } from "./lib/names.ts";
+import { newDraft, translateRoster, withSeats, withStartedSeats, type Draft } from "./lib/names.ts";
 import { SeatColours } from "./lib/seat_colours.ts";
 import { hideSplash } from "./lib/splash.ts";
 import { version } from "./lib/version.ts";
@@ -132,7 +132,7 @@ export function App({ client, assets = Promise.resolve() }: Props) {
   const start = (chosen: GameSetup) => {
     setDraft((current) => ({
       ...current,
-      roster: withSeats(current.roster, chosen.mode, chosen.names),
+      roster: withStartedSeats(current.roster, chosen.mode, chosen.names),
     }));
     setError(null);
     setStarting(true);
@@ -145,7 +145,7 @@ export function App({ client, assets = Promise.resolve() }: Props) {
   const changeLanguage = (next: Language) => {
     setDraft((current) => ({
       ...current,
-      roster: translateRoster(current.roster, strings, dictionaries[next]),
+      roster: translateRoster(current.roster, dictionaries[next]),
     }));
     setLanguage(next);
   };
